@@ -1,6 +1,8 @@
+$here = $PSScriptRoot
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -ErrorAction Stop
 
 $environments = $datum.Global.Azure.Keys
+$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 
 foreach ($environment in $environments)
 {
