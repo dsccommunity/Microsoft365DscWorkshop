@@ -6,7 +6,7 @@ Task AzureInit {
     $datum = New-DatumStructure -DefinitionFile $ProjectPath\source\Datum.yml
     $global:azBuildParameters = @{}
 
-    foreach ($env in $datum.Global.Azure.GetEnumerator())
+    foreach ($env in $datum.Global.Azure.Environments.GetEnumerator())
     {
         if (-not $env.Value.AzKeyVaultTenantId)
         {

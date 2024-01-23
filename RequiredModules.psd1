@@ -50,6 +50,7 @@
     FileSystemDsc                                          = '1.1.1'
     SecurityPolicyDsc                                      = '2.10.0.0'
     xDscDiagnostics                                        = '2.8.0'
+    PSDesiredStateConfiguration                            = '2.0.7'
 
     Microsoft365DSC                                        = '1.24.117.1'
 
