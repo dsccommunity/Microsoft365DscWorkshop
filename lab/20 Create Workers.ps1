@@ -30,7 +30,7 @@ foreach ($environmentName in $environments) {
     Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
 
     Write-Host "Creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
-    New-LabDefinition -Name "M365DscWorkshopWorker$($environment)$($azureData.LabNumber)" -DefaultVirtualizationEngine Azure -Notes $notes
+    New-LabDefinition -Name "M365DscWorkshopWorker$($environmentName)$($azureData.LabNumber)" -DefaultVirtualizationEngine Azure -Notes $notes
 
     Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation 'UK South'
 
