@@ -1,26 +1,38 @@
 $here = $PSScriptRoot
-$environments = 'Dev', 'Test', 'Prod'
 
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
+$environments = $azureData.Environments.Keys
 
-foreach ($environment in $environments)
-{
+foreach ($environmentName in $environments) {
+    $environment = $azureData.Environments.$environmentName
+    Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
+    
+    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
+    try {
+        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
+        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
+    }
+    catch {
+        Write-Host "Failed to connect to environment '$environmentName' with error '$($_.Exception.Message)'" -ForegroundColor Red
+        continue
+    }
+}
+
+foreach ($environmentName in $environments) {
+    $environment = $azureData.Environments.$environmentName
+    Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
     $notes = @{
-        Environment = $environment
+        Environment = $environmentName
     }
 
-    $subscription = Get-AzSubscription -TenantId $azureData.$environment.AzTenantId -SubscriptionId $azureData.$environment.AzSubscriptionId -ErrorAction SilentlyContinue
-    if (-not $subscription) {
-        #Connect-AzAccount -Tenant $azureData.Dev.AzTenantId -UseDeviceAuthentication
-        #$subscription = Get-AzSubscription -TenantId $azureData.$environment.AzTenantId -SubscriptionId $azureData.$environment.AzSubscriptionId -ErrorAction SilentlyContinue
-        $cred = New-Object pscredential($azureData.$environment.AzApplicationId, ($azureData.$environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
-        Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $azureData.$environment.AzTenantId
-        $subscription = Get-AzSubscription -TenantId $azureData.$environment.AzTenantId -SubscriptionId $azureData.$environment.AzSubscriptionId
-    }
+    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
+    $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
+    Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
 
+    Write-Host "Creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
     New-LabDefinition -Name "M365DscWorkshopWorker$($environment)$($azureData.LabNumber)" -DefaultVirtualizationEngine Azure -Notes $notes
 
-    Add-LabAzureSubscription -SubscriptionId $subscription.SubscriptionId -DefaultLocation 'UK South'
+    Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation 'UK South'
 
     Set-LabInstallationCredential -Username Install -Password Somepass1
 
@@ -29,10 +41,12 @@ foreach ($environment in $environments)
         'Add-LabMachineDefinition:OperatingSystem' = 'Windows Server 2022 Datacenter (Desktop Experience)'
     }
 
-    Add-LabDiskDefinition -Name "Lcm$($environment)Data1" -DiskSizeInGb 1000 -Label Data
+    Add-LabDiskDefinition -Name "Lcm$($environmentName)Data1" -DiskSizeInGb 1000 -Label Data
 
-    Add-LabMachineDefinition -Name "Lcm$($environment)" -AzureRoleSize Standard_D8lds_v5 -DiskName "Lcm$($environment)Data1"
+    Add-LabMachineDefinition -Name "Lcm$($environmentName)" -AzureRoleSize Standard_D8lds_v5 -DiskName "Lcm$($environmentName)Data1"
 
     Install-Lab
+
+    Write-Host "Finished creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
 
 }
