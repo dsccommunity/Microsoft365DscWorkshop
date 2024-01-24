@@ -4,6 +4,10 @@ $azDoAgentPoolName = 'DSC'
 
 #------------------------------------------------------------------------------------------------------------
 
+$here = $PSScriptRoot
+$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
+$labs = Get-Lab -List | Where-Object { $_ -Like 'M365DscWorkshopWorker*' }
+
 $vsCodeDownloadUrl = 'https://go.microsoft.com/fwlink/?Linkid=852157'
 $gitDownloadUrl = 'https://github.com/git-for-windows/git/releases/download/v2.39.2.windows.1/Git-2.39.2-64-bit.exe'
 $vscodePowerShellExtensionDownloadUrl = 'https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-vscode/vsextensions/PowerShell/2023.1.0/vspackage'
@@ -11,9 +15,6 @@ $notepadPlusPlusDownloadUrl = 'https://github.com/notepad-plus-plus/notepad-plus
 $vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/3.218.0/vsts-agent-win-x64-3.218.0.zip'
 $pwshUrl = 'https://github.com/PowerShell/PowerShell/releases/download/v7.3.3/PowerShell-7.3.3-win-x64.msi'
 $dotnetSdkUrl = 'https://download.visualstudio.microsoft.com/download/pr/c6ad374b-9b66-49ed-a140-588348d0c29a/78084d635f2a4011ccd65dc7fd9e83ce/dotnet-sdk-7.0.202-win-x64.exe'
-
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
-$labs = Get-Lab -List | Where-Object { $_ -Like 'M365DscWorkshopWorker*' }
 
 $vscodeInstaller = Get-LabInternetFile -Uri $vscodeDownloadUrl -Path $labSources\SoftwarePackages -PassThru
 $gitInstaller = Get-LabInternetFile -Uri $gitDownloadUrl -Path $labSources\SoftwarePackages -PassThru
@@ -26,16 +27,20 @@ $dotnetInstaller = Get-LabInternetFile -Uri $dotnetSdkUrl -Path $labSources\Soft
 foreach ($lab in $labs)
 {
     $lab -match '(?:M365DscWorkshopWorker)(?<Environment>\w+)(?:\d{1,4})' | Out-Null
-    $environment = $Matches.Environment
+    $environmentName = $Matches.Environment
+    $environment = $azureData.Environments.$environmentName
+    Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
     
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
-    $cred = New-Object pscredential($azureData.$environment.AzApplicationId, ($azureData.$environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
-    Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $azureData.$environment.AzTenantId
-    $subscription = Get-AzSubscription -TenantId $azureData.$environment.AzTenantId -SubscriptionId $azureData.$environment.AzSubscriptionId    
-    Set-AzContext -SubscriptionId $lab.AzureSettings.DefaultSubscription.SubscriptionId
-    
+    Write-Host "Imported lab '$($lab.Name)' with $($lab.Machines.Count) machines"
+
+    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
+    $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
+    Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
+
     $vms = Get-LabVM
 
+    Write-Host "Installing software on $($vms.Count) machines"
     Install-LabSoftwarePackage -Path $vscodeInstaller.FullName -CommandLine /SILENT -ComputerName $vms
     Install-LabSoftwarePackage -Path $gitInstaller.FullName -CommandLine /SILENT -ComputerName $vms
     Install-LabSoftwarePackage -Path $notepadPlusPlusInstaller.FullName -CommandLine /S -ComputerName $vms
@@ -63,5 +68,8 @@ foreach ($lab in $labs)
 
     } -ComputerName $vms -ArgumentList $lab.Notes.Environment
 
+    Write-Host "Restarting $($vms.Count) machines"
     Restart-LabVM -ComputerName $vms -Wait
+
+    Write-Host "Finished installing AzDo Build Agent on $($vms.Count) machines in environment '$environmentName'"
 }
