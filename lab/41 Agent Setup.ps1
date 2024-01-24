@@ -1,32 +1,26 @@
-$azDoOrg = 'https://dev.azure.com/randree'
-$azDoPat = 'yecgrb5y3tedokhkcy3zw7dpv43caojv3hwouckd3kdssszmdpra'
-$azDoProjectName = 'Microsoft365DscWorkshop'
-$azDoAgentPoolName = 'DSC'
-
-#------------------------------------------------------------------------------------------------------------
-
 $here = $PSScriptRoot
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
+$azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml
 $labs = Get-Lab -List | Where-Object { $_ -Like 'M365DscWorkshopWorker*' }
+
+if (-not (Test-LabAzureModuleAvailability -ErrorAction SilentlyContinue)) {
+    Write-Error "PowerShell modules for AutomateLab Azure integration not found or could not be loaded. Please run 'Install-LabAzureRequiredModule' to install them. If this fails, please restart the PowerShell session and try again."
+    return
+}
 
 $vsCodeDownloadUrl = 'https://go.microsoft.com/fwlink/?Linkid=852157'
 $gitDownloadUrl = 'https://github.com/git-for-windows/git/releases/download/v2.39.2.windows.1/Git-2.39.2-64-bit.exe'
 $vscodePowerShellExtensionDownloadUrl = 'https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-vscode/vsextensions/PowerShell/2023.1.0/vspackage'
 $notepadPlusPlusDownloadUrl = 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.4.9/npp.8.4.9.Installer.x64.exe'
 $vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/3.218.0/vsts-agent-win-x64-3.218.0.zip'
-$pwshUrl = 'https://github.com/PowerShell/PowerShell/releases/download/v7.3.3/PowerShell-7.3.3-win-x64.msi'
-$dotnetSdkUrl = 'https://download.visualstudio.microsoft.com/download/pr/c6ad374b-9b66-49ed-a140-588348d0c29a/78084d635f2a4011ccd65dc7fd9e83ce/dotnet-sdk-7.0.202-win-x64.exe'
 
 $vscodeInstaller = Get-LabInternetFile -Uri $vscodeDownloadUrl -Path $labSources\SoftwarePackages -PassThru
 $gitInstaller = Get-LabInternetFile -Uri $gitDownloadUrl -Path $labSources\SoftwarePackages -PassThru
 Get-LabInternetFile -Uri $vscodePowerShellExtensionDownloadUrl -Path $labSources\SoftwarePackages\VSCodeExtensions\ps.vsix
 $notepadPlusPlusInstaller = Get-LabInternetFile -Uri $notepadPlusPlusDownloadUrl -Path $labSources\SoftwarePackages -PassThru
 $vstsAgenZip = Get-LabInternetFile -Uri $vstsAgentUrl -Path $labSources\SoftwarePackages -PassThru
-$pwshInstaller = Get-LabInternetFile -Uri $pwshUrl -Path $labSources\SoftwarePackages -PassThru
-$dotnetInstaller = Get-LabInternetFile -Uri $dotnetSdkUrl -Path $labSources\SoftwarePackages -PassThru
 
-foreach ($lab in $labs)
-{
+foreach ($lab in $labs) {
     $lab -match '(?:M365DscWorkshopWorker)(?<Environment>\w+)(?:\d{1,4})' | Out-Null
     $environmentName = $Matches.Environment
     $environment = $azureData.Environments.$environmentName
@@ -45,16 +39,14 @@ foreach ($lab in $labs)
     Install-LabSoftwarePackage -Path $vscodeInstaller.FullName -CommandLine /SILENT -ComputerName $vms
     Install-LabSoftwarePackage -Path $gitInstaller.FullName -CommandLine /SILENT -ComputerName $vms
     Install-LabSoftwarePackage -Path $notepadPlusPlusInstaller.FullName -CommandLine /S -ComputerName $vms
-    Install-LabSoftwarePackage -LocalPath ($pwshInstaller.FullName -replace '(\\\\automatedlabsources)([a-z]{1,6})\.file\.core\.windows\.net\\labsources', 'Z:') -CommandLine /quiet -ComputerName $vms
-    Install-LabSoftwarePackage -Path $dotnetInstaller.FullName -CommandLine '/install /quiet /norestart' -ComputerName $vms
-
+    
     Invoke-LabCommand -Activity 'Setup AzDo Build Agent' -ScriptBlock {
 
         Expand-Archive -Path $vstsAgenZip.FullName -DestinationPath C:\Agent -Force
-        "C:\Agent\config.cmd --unattended --url $azDoOrg --auth pat --token $azDoPat --pool $azDoAgentPoolName --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
-        C:\Agent\config.cmd --unattended --url $azDoOrg --auth pat --token $azDoPat --pool $azDoAgentPoolName --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
+        "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
+        C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
 
-    } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, azDoOrg, azDoPat, azDoAgentPoolName)
+    } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, azDoData)
 
     Invoke-LabCommand -Activity 'Installing NuGet and PowerShellGet' -ScriptBlock {
 

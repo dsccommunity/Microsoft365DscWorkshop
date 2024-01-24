@@ -1,4 +1,10 @@
-$requiredModules = 'Az.ManagedServiceIdentity', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Authentication', 'Az.Resources', 'Microsoft365DSC', 'powershell-yaml', 'VSTeam'
+$requiredModules = 'Az.ManagedServiceIdentity',
+'Microsoft.Graph.Applications',
+'Microsoft.Graph.Authentication',
+'Az.Resources',
+'Microsoft365DSC',
+'powershell-yaml',
+'VSTeam'
 
 foreach ($module in $requiredModules) {
     if (-not (Get-Module -Name $module -ListAvailable)) {

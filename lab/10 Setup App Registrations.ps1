@@ -16,7 +16,6 @@ foreach ($environmentName in $environments) {
     }
 
     Connect-MgGraph -TenantId $environment.AzTenantId -Scopes RoleManagement.ReadWrite.Directory, Directory.ReadWrite.All -NoWelcome -ErrorAction Stop
-
     Write-Host "Connected to Azure subscription '$($subscription.Name)' and Microsoft Graph with account '$($subscription.Account.Id)'"
     
     if (-not (Get-MgApplication -Filter "displayName eq '$applicationName'" -ErrorAction SilentlyContinue)) {
