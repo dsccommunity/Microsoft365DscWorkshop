@@ -1,5 +1,6 @@
 $azDoOrg = 'https://dev.azure.com/randree'
-$azDoPat = 'ejm5cvwh5dvmyqn2omnc6l7phkfn7ktqvpluris5jdvrvm553wtq'
+$azDoPat = 'yecgrb5y3tedokhkcy3zw7dpv43caojv3hwouckd3kdssszmdpra'
+$azDoProjectName = 'Microsoft365DscWorkshop'
 $azDoAgentPoolName = 'DSC'
 
 #------------------------------------------------------------------------------------------------------------

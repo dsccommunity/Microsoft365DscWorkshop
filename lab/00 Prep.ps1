@@ -1,6 +1,11 @@
-Install-Module -Name Az.ManagedServiceIdentity -Force
-Install-Module -Name Microsoft.Graph.Applications -Force
-Install-Module -Name Microsoft.Graph.Authentication -Force
-Install-Module -Name Az.Resources -Force
-Install-Module -Name Microsoft365DSC -Force
-Install-Module -Name powershell-yaml -Force
+$requiredModules = 'Az.ManagedServiceIdentity', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Authentication', 'Az.Resources', 'Microsoft365DSC', 'powershell-yaml', 'VSTeam'
+
+foreach ($module in $requiredModules) {
+    if (-not (Get-Module -Name $module -ListAvailable)) {
+        Write-Host "Installing module '$module'"
+        Install-Module -Name $module -Force -Scope AllUsers
+    }
+    else {
+        Write-Host "Module '$module' is already installed"
+    }
+}
