@@ -5,17 +5,17 @@ Environments:
     AzTenantId: b246c1af-87ab-41d8-9812-83cd5ff534cb
     AzTenantName: MngEnvMCAP576786.onmicrosoft.com
     AzSubscriptionId: 9522bd96-d34f-4910-9667-0517ab5dc595
-    AzApplicationId: b23624b3-c6a9-4790-b2d2-14d8e3ff3c69
-    AzApplicationSecret: y6O8Q~yPDcVkewqAwr1x3kFy0ckpVdwgZqNR.blE
+    AzApplicationId: ec5381d1-7a78-437a-9fdc-252cc9a65a00
+    AzApplicationSecret: VG08Q~DYy690AfHRvIIn-VE5MvnvpAkauKjIDc5O
   Test:
     AzTenantId: 85a26452-f44d-4090-b62b-ae668d70bdeb
     AzTenantName: MngEnvMCAP730875.onmicrosoft.com
     AzSubscriptionId: da78bd51-11ab-418d-8222-db661c2aa8d9
-    AzApplicationId: 4217923e-3d73-4f4e-a814-fcd6780851f7
-    AzApplicationSecret: Drl8Q~BMBRIYnYb4e92QbIoKt0RqgBzVzrxipbEd
+    AzApplicationId: f7a1cb69-19c5-43d8-bb86-17e6a9f1c222
+    AzApplicationSecret: J268Q~uwxMCFjNlmXTLzYjwH6h.L0c5SWwCrpcJt
   Prod:
     AzTenantId: 195822f4-c716-4ff8-ba91-90f1a2195700
     AzTenantName: MngEnvMCAP289781.onmicrosoft.com
     AzSubscriptionId: 329752f3-d90c-4ae8-8c85-46a678203df4
-    AzApplicationId: 6518ae46-2d31-4ff7-8e0c-982b11456422
-    AzApplicationSecret: s5K8Q~0cM02uiMK1Ft0d8tmwyGfFxzG~o69ZSbaI
+    AzApplicationId: e04e6486-85d4-42d8-800b-0fd21df44c75
+    AzApplicationSecret: lxY8Q~OJarIcpKiQpz5l7mcu6Z4NZF9qu6ZdlbF.

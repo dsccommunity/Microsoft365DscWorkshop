@@ -1,0 +1,4 @@
+OrganizationName: randree
+PersonalAccessToken: PAT
+ProjectName: Microsoft365DscWorkshop
+AgentPoolName: DSC
