@@ -1,12 +1,8 @@
-output/
+!output/
 
-#!output/
-#
-#output/*
-#!output/RequiredModules
-#
-#output/RequiredModules/*
-#
-#!output/RequiredModules/DscConfig.M365
-#
-#*.bkp
+output/*
+!output/RequiredModules
+
+output/RequiredModules/*
+
+!output/RequiredModules/ProtectedData
