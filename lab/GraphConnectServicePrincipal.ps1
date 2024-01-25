@@ -7,6 +7,27 @@ $environments = $azureData.Environments.Keys
 foreach ($environmentName in $environments) {
     $environment = $azureData.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
+
+    # Populate with the App Registration details and Tenant ID
+    $appid = $environment.AzApplicationId
+    $tenantid = $environment.AzTenantId
+    $secret = $environment.AzApplicationSecret
+
+    $body = @{
+        Grant_Type    = 'client_credentials'
+        Scope         = 'https://graph.microsoft.com/.default'
+        Client_Id     = $appid
+        Client_Secret = $secret
+    }
+
+    $connection = Invoke-RestMethod `
+        -Uri https://login.microsoftonline.com/$tenantid/oauth2/v2.0/token `
+        -Method POST `
+        -Body $body
+
+    $token = $connection.access_token | ConvertTo-SecureString -AsPlainText -Force
+
+    Connect-MgGraph -AccessToken $token
     
     $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
     try {

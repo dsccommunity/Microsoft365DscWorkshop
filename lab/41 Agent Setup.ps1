@@ -1,6 +1,6 @@
 $here = $PSScriptRoot
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
-$azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml
+$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml -ErrorAction Stop
+$azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml -ErrorAction Stop
 $labs = Get-Lab -List | Where-Object { $_ -Like 'M365DscWorkshopWorker*' }
 
 if (-not (Test-LabAzureModuleAvailability -ErrorAction SilentlyContinue)) {
@@ -12,13 +12,7 @@ $vsCodeDownloadUrl = 'https://go.microsoft.com/fwlink/?Linkid=852157'
 $gitDownloadUrl = 'https://github.com/git-for-windows/git/releases/download/v2.39.2.windows.1/Git-2.39.2-64-bit.exe'
 $vscodePowerShellExtensionDownloadUrl = 'https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-vscode/vsextensions/PowerShell/2023.1.0/vspackage'
 $notepadPlusPlusDownloadUrl = 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.4.9/npp.8.4.9.Installer.x64.exe'
-$vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/3.218.0/vsts-agent-win-x64-3.218.0.zip'
-
-$vscodeInstaller = Get-LabInternetFile -Uri $vscodeDownloadUrl -Path $labSources\SoftwarePackages -PassThru
-$gitInstaller = Get-LabInternetFile -Uri $gitDownloadUrl -Path $labSources\SoftwarePackages -PassThru
-Get-LabInternetFile -Uri $vscodePowerShellExtensionDownloadUrl -Path $labSources\SoftwarePackages\VSCodeExtensions\ps.vsix
-$notepadPlusPlusInstaller = Get-LabInternetFile -Uri $notepadPlusPlusDownloadUrl -Path $labSources\SoftwarePackages -PassThru
-$vstsAgenZip = Get-LabInternetFile -Uri $vstsAgentUrl -Path $labSources\SoftwarePackages -PassThru
+$vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/3.232.3/vsts-agent-win-x64-3.232.3.zip'
 
 foreach ($lab in $labs) {
     $lab -match '(?:M365DscWorkshopWorker)(?<Environment>\w+)(?:\d{1,4})' | Out-Null
@@ -33,15 +27,28 @@ foreach ($lab in $labs) {
     $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
     Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
 
+    $vscodeInstaller = Get-LabInternetFile -Uri $vscodeDownloadUrl -Path $labSources\SoftwarePackages -PassThru
+    $gitInstaller = Get-LabInternetFile -Uri $gitDownloadUrl -Path $labSources\SoftwarePackages -PassThru
+    Get-LabInternetFile -Uri $vscodePowerShellExtensionDownloadUrl -Path $labSources\SoftwarePackages\VSCodeExtensions\ps.vsix
+    $notepadPlusPlusInstaller = Get-LabInternetFile -Uri $notepadPlusPlusDownloadUrl -Path $labSources\SoftwarePackages -PassThru
+    $vstsAgenZip = Get-LabInternetFile -Uri $vstsAgentUrl -Path $labSources\SoftwarePackages -PassThru
+    
     $vms = Get-LabVM
 
     Write-Host "Installing software on $($vms.Count) machines"
     Install-LabSoftwarePackage -Path $vscodeInstaller.FullName -CommandLine /SILENT -ComputerName $vms
     Install-LabSoftwarePackage -Path $gitInstaller.FullName -CommandLine /SILENT -ComputerName $vms
     Install-LabSoftwarePackage -Path $notepadPlusPlusInstaller.FullName -CommandLine /S -ComputerName $vms
+
+    Invoke-LabCommand -Activity 'Connecting LabSources' -ScriptBlock {
+
+        C:\AL\AzureLabSources.ps1
+
+    } -ComputerName $vms
     
     Invoke-LabCommand -Activity 'Setup AzDo Build Agent' -ScriptBlock {
 
+        Write-Host $vstsAgenZip.FullName -ForegroundColor Magenta
         Expand-Archive -Path $vstsAgenZip.FullName -DestinationPath C:\Agent -Force
         "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
         C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
@@ -65,4 +72,5 @@ foreach ($lab in $labs) {
     Restart-LabVM -ComputerName $vms -Wait
 
     Write-Host "Finished installing AzDo Build Agent on $($vms.Count) machines in environment '$environmentName'"
+
 }
