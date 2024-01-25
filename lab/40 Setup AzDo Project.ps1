@@ -16,7 +16,7 @@ catch {
 $uri = "https://dev.azure.com/$($azDoData.OrganizationName)/$($azDoData.ProjectName)/_apis/distributedtask/queues/?api-version=5.1"
 $queues = Invoke-VSTeamRequest -Url $uri
 
-if (-not ($queues.value.name -eq $azDoData.AgentPoolName)){
+if (-not ($queues.value.name -eq $azDoData.AgentPoolName)) {
     $requestBodyAgentPool = @{
         name          = $azDoData.AgentPoolName
         autoProvision = $true
@@ -26,9 +26,28 @@ if (-not ($queues.value.name -eq $azDoData.AgentPoolName)){
         poolType      = 'automation'
     } | ConvertTo-Json
 
-    Invoke-VSTeamRequest -Url $uri -Method POST -ContentType 'application/json' -Body $requestBodyAgentPool -QueryString api-version=5.1 | Out-Null
+    Invoke-VSTeamRequest -Url $uri -Method POST -ContentType 'application/json' -Body $requestBodyAgentPool | Out-Null
     Write-Host "Agent pool '$($azDoData.AgentPoolName)' created."
 }
 else {
     Write-Host "Agent pool '$($azDoData.AgentPoolName)' already exists."
+}
+
+Write-Host ''
+Write-Host "Disabling features in project '$($azDoData.ProjectName)'."
+$project = Get-VSTeamProject -Name $azDoData.ProjectName
+
+$featuresToDisable = 'ms.feed.feed', #Artifacts
+'ms.vss-work.agile', #Boards
+'ms.vss-code.version-control', #Repos
+'ms.vss-test-web.test' #Test Plans
+
+foreach ($featureToDisable in $featuresToDisable) {
+    $id = "host/project/$($project.Id)/$featureToDisable"
+    $buildFeature = Invoke-VSTeamRequest -Area FeatureManagement -Resource FeatureStates -Id $id
+    $buildFeature.state = 'disabled'
+    $buildFeature = $buildFeature | ConvertTo-Json
+
+    Write-Host "Disabling feature '$featureToDisable' in project '$($azDoData.ProjectName)'."
+    Invoke-VSTeamRequest -Method Patch -ContentType 'application/json' -Body $buildFeature -Area FeatureManagement -Resource FeatureStates -Id $id -Version '4.1-preview.1'
 }
