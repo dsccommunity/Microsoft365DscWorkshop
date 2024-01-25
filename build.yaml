@@ -9,7 +9,14 @@ BuildWorkflow:
     - build
     - pack
 
-  init: |
+  init5: |
+    {
+        if ($PSVersionTable.PSEdition -ne 'Desktop') {
+            Write-Error "The build script required PowerShell 7+ to work"
+        }
+    }
+
+  init7: |
     {
         if ($PSVersionTable.PSEdition -ne 'Core') {
             Write-Error "The build script required PowerShell 7+ to work"
@@ -17,7 +24,7 @@ BuildWorkflow:
     }
 
   build:
-    - Init
+    - Init7
     - Clean
     - FixMSCloudLoginAssistant
     - Build_Module_ModuleBuilder
@@ -31,7 +38,7 @@ BuildWorkflow:
     - CompileRootMetaMof
 
   rsop:
-    - Init
+    - Init7
     - Clean
     - FixMSCloudLoginAssistant
     - LoadDatumConfigData
@@ -40,7 +47,7 @@ BuildWorkflow:
     - CompileDatumRsop
 
   pack:
-    - Init
+    - Init7
     - LoadDatumConfigData
     - NewMofChecksums
     - CompressModulesWithChecksum
@@ -48,11 +55,11 @@ BuildWorkflow:
     - TestBuildAcceptance
 
   startConfiguration:
-    - Init
+    - Init5
     - StartDscConfiguration
 
   testConfiguration:
-    - Init
+    - Init5
     - TestDscConfiguration
 
 ####################################################
