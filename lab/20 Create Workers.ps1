@@ -3,6 +3,11 @@ $here = $PSScriptRoot
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 $environments = $azureData.Environments.Keys
 
+if (-not (Test-LabAzureModuleAvailability))
+{
+    Install-LabAzureRequiredModule -Scope AllUsers
+}
+
 foreach ($environmentName in $environments) {
     $environment = $azureData.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
