@@ -1,5 +1,6 @@
 $here = $PSScriptRoot
 $azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml
+$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 
 Set-VSTeamAccount -Account "https://dev.azure.com/$($azDoData.OrganizationName)/" -PersonalAccessToken $azDoData.PersonalAccessToken
 Write-Host "Connected to Azure DevOps organization '$($azDoData.OrganizationName)' with PAT."
@@ -49,5 +50,24 @@ foreach ($featureToDisable in $featuresToDisable) {
     $buildFeature = $buildFeature | ConvertTo-Json
 
     Write-Host "Disabling feature '$featureToDisable' in project '$($azDoData.ProjectName)'."
-    Invoke-VSTeamRequest -Method Patch -ContentType 'application/json' -Body $buildFeature -Area FeatureManagement -Resource FeatureStates -Id $id -Version '4.1-preview.1'
+    Invoke-VSTeamRequest -Method Patch -ContentType 'application/json' -Body $buildFeature -Area FeatureManagement -Resource FeatureStates -Id $id -Version '7.1-preview.1' | Out-Null
+}
+
+Write-Host ''
+Write-Host "Creating environments in project '$($azDoData.ProjectName)'."
+
+$environments = $azureData.Environments.Keys
+$existingEnvironments = Invoke-VSTeamRequest -Method Get -Area distributedtask -Resource environments -Version '7.1-preview.1' -ProjectName $azDoData.ProjectName
+
+foreach ($environmentName in $environments) {
+    if (-not ($existingEnvironments.value | Where-Object { $_.name -eq $environmentName })) {
+        Write-Host "Creating environment '$environmentName' in project '$($azDoData.ProjectName)'."
+        $requestBodyEnvironment = @{
+            name = $environmentName
+        } | ConvertTo-Json
+    
+        Invoke-VSTeamRequest -Method Post -ContentType 'application/json' -Body $requestBodyEnvironment -ProjectName Microsoft365DscWorkshop -Area distributedtask -Resource environments -Version '7.1-preview.1' | Out-Null
+    } else {
+        Write-Host "Environment '$environmentName' already exists in project '$($azDoData.ProjectName)'."
+    }
 }

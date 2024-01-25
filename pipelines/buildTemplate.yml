@@ -24,6 +24,7 @@ stages:
               displayName: 'Display Environment Variables'
               inputs:
                 targetType: inline
+                pwsh: true
                 script: |
                   dir -Path env: | Format-Table -Property Name, Value -AutoSize | Out-String | Write-Host
 
@@ -32,6 +33,7 @@ stages:
               displayName: 'Clean Program Files Modules'
               inputs:
                 targetType: inline
+                pwsh: true
                 script: |
                   $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
                   $modulesToKeep = 'Microsoft.PowerShell.Operation.Validation', 'PackageManagement', 'Pester', 'PowerShellGet', 'PSReadline'
@@ -46,9 +48,9 @@ stages:
               name: build
               displayName: 'Build DSC Artifacts'
               inputs:
+                pwsh: true
                 filePath: './build.ps1'
                 arguments: '-ResolveDependency -Tasks build -Filter { $_.Environment -eq $env:BuildEnvironment }'
-                pwsh: false
               #env:
               #  ModuleVersion: $(NuGetVersionV2)
 
@@ -56,6 +58,7 @@ stages:
               name: pack
               displayName: 'Pack DSC Artifacts'
               inputs:
+                pwsh: true
                 filePath: './build.ps1'
                 arguments: '-ResolveDependency -Tasks pack -Filter { $_.Environment -eq $env:BuildEnvironment }'
               enabled: false

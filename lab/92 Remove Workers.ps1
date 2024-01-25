@@ -4,8 +4,7 @@ $labs = Get-Lab -List | Where-Object { $_ -Like 'M365DscWorkshopWorker*' }
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 $azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml
 
-foreach ($lab in $labs)
-{
+foreach ($lab in $labs) {
     $lab -match '(?:M365DscWorkshopWorker)(?<Environment>\w+)(?:\d{1,4})' | Out-Null
     $environmentName = $Matches.Environment
     $environment = $azureData.Environments.$environmentName
@@ -42,4 +41,12 @@ catch {
     Write-Host "Project '$($azDoData.ProjectName)' does not exists."
 }
 
-Write-Host "Finished cleanup."
+if ($pool = Get-VSTeamPool | Where-Object Name -EQ $azDoData.AgentPoolName) {
+    Remove-VSTeamPool -Id $pool.Id
+    Write-Host "Agent pool '$($azDoData.AgentPoolName)' has been removed."
+}
+else {
+    Write-Host "Agent pool '$($azDoData.AgentPoolName)' does not exists."
+}
+
+Write-Host 'Finished cleanup.'

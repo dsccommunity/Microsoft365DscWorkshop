@@ -48,7 +48,6 @@ foreach ($lab in $labs) {
     
     Invoke-LabCommand -Activity 'Setup AzDo Build Agent' -ScriptBlock {
 
-        Write-Host $vstsAgenZip.FullName -ForegroundColor Magenta
         Expand-Archive -Path $vstsAgenZip.FullName -DestinationPath C:\Agent -Force
         "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
         C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula

@@ -5,11 +5,12 @@ $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 
 foreach ($lab in $labs)
 {
-    Write-Host "Starting all VMs in $($lab.Name) for environment '$environmentName'" -ForegroundColor Magenta
-
     $lab -match '(?:M365DscWorkshopWorker)(?<Environment>\w+)(?:\d{1,4})' | Out-Null
     $environmentName = $Matches.Environment
     $environment = $azureData.Environments.$environmentName
+
+    Write-Host "Starting all VMs in $($lab.Name) for environment '$environmentName'" -ForegroundColor Magenta
+        
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
 
     $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))

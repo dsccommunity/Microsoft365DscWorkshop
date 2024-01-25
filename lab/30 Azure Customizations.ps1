@@ -26,7 +26,7 @@ foreach ($lab in $labs)
     }
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
-    Write-Host "Working in lab $($lab.Name) with environment '$environmentName'"
+    Write-Host "Working in lab '$($lab.Name)' with environment '$environmentName'"
     
     if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue))
     {
