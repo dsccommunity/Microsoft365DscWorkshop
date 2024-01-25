@@ -2,15 +2,15 @@ $here = $PSScriptRoot
 $azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml
 
 Set-VSTeamAccount -Account "https://dev.azure.com/$($azDoData.OrganizationName)/" -PersonalAccessToken $azDoData.PersonalAccessToken
-Write-Host "Connected to Azure DevOps organization $($azDoData.OrganizationName) with PAT."
+Write-Host "Connected to Azure DevOps organization '$($azDoData.OrganizationName)' with PAT."
 
 try {
     Get-VSTeamProject -Name $azDoData.ProjectName | Out-Null
-    Write-Host "Project $($azDoData.ProjectName) already exists."
+    Write-Host "Project '$($azDoData.ProjectName)' already exists."
 }
 catch {
     $project = Add-VSTeamProject -ProjectName $azDoData.ProjectName -Description 'Microsoft365DSCWorkshop Demo Project' -Visibility public -ProcessTemplate Agile
-    Write-Host "Project $($azDoData.ProjectName) created."
+    Write-Host "Project '$($azDoData.ProjectName)' created."
 }
 
 $uri = "https://dev.azure.com/$($azDoData.OrganizationName)/$($azDoData.ProjectName)/_apis/distributedtask/queues/?api-version=5.1"
