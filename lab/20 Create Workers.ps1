@@ -1,10 +1,10 @@
 $here = $PSScriptRoot
-
+Import-Module -Name $here\AzHelpers.psm1 -Force
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
+$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
 $environments = $azureData.Environments.Keys
 
-if (-not (Test-LabAzureModuleAvailability))
-{
+if (-not (Test-LabAzureModuleAvailability)) {
     Install-LabAzureRequiredModule -Scope AllUsers
 }
 
@@ -12,15 +12,13 @@ foreach ($environmentName in $environments) {
     $environment = $azureData.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
     
-    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
-    try {
-        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
-        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
+    $param = @{
+        TenantId               = $environment.AzTenantId
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $environment.AzApplicationId
+        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-    catch {
-        Write-Host "Failed to connect to environment '$environmentName' with error '$($_.Exception.Message)'" -ForegroundColor Red
-        continue
-    }
+    Connect-Azure @param -ErrorAction Stop
 }
 
 foreach ($environmentName in $environments) {
@@ -35,7 +33,7 @@ foreach ($environmentName in $environments) {
     Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
 
     Write-Host "Creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
-    New-LabDefinition -Name "M365DscWorkshopWorker$($environmentName)$($azureData.LabNumber)" -DefaultVirtualizationEngine Azure -Notes $notes
+    New-LabDefinition -Name "$($projectSettings.Name)$($environmentName)" -DefaultVirtualizationEngine Azure -Notes $notes
 
     Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation 'UK South'
 

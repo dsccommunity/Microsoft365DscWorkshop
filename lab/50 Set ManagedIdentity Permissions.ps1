@@ -1,6 +1,5 @@
 $here = $PSScriptRoot
 Import-Module -Name $here\AzHelpers.psm1
-
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 $environments = $azureData.Environments.Keys
 
@@ -8,18 +7,13 @@ foreach ($environmentName in $environments) {
     $environment = $azureData.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
     
-    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
-    try {
-        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
-        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
-
-        Connect-MgGraph -TenantId $environment.AzTenantId -Scopes RoleManagement.ReadWrite.Directory, Directory.ReadWrite.All -NoWelcome -ErrorAction Stop
-        Write-Host "Connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' and Microsoft Graph with account '$($subscription.Account.Id)'"
+    $param = @{
+        TenantId               = $environment.AzTenantId
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $environment.AzApplicationId
+        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-    catch {
-        Write-Host "Failed to connect to environment '$environmentName' with error '$($_.Exception.Message)'" -ForegroundColor Red
-        continue
-    }
+    Connect-Azure @param -ErrorAction Stop
 
     Write-Host "Checking permissions for environment '$environmentName' (TenantId $($environment.AzTenantId), SubscriptionId $($environment.AzSubscriptionId))"
 

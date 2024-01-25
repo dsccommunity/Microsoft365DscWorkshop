@@ -1,4 +1,5 @@
 $here = $PSScriptRoot
+Import-Module -Name $here\AzHelpers.psm1 -Force
 $azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 

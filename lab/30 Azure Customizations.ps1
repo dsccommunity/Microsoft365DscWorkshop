@@ -1,29 +1,24 @@
 $here = $PSScriptRoot
 Import-Module -Name $here\AzHelpers.psm1 -Force
-$labs = Get-Lab -List | Where-Object { $_ -Like 'M365DscWorkshopWorker*' }
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
+$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
+$labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.Name)*" }
 
 foreach ($lab in $labs)
 {
-    $lab -match '(?:M365DscWorkshopWorker)(?<Environment>\w+)(?:\d{1,4})' | Out-Null
+    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)(?:\d{1,4})" | Out-Null
     $environmentName = $Matches.Environment
 
     $environment = $azureData.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
     
-    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
-    try {
-        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
-        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
-
-        Connect-MgGraph -TenantId $environment.AzTenantId -Scopes RoleManagement.ReadWrite.Directory, Directory.ReadWrite.All -NoWelcome -ErrorAction Stop
-        $graphContext = Get-MgContext
-        Write-Host "Connected to Graph API '$($graphContext.TenantId)' with account '$($graphContext.ClientId)'"
+    $param = @{
+        TenantId               = $environment.AzTenantId
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $environment.AzApplicationId
+        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-    catch {
-        Write-Host "Failed to connect to environment '$environmentName' with error '$($_.Exception.Message)'" -ForegroundColor Red
-        continue
-    }
+    Connect-Azure @param -ErrorAction Stop
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
     Write-Host "Working in lab '$($lab.Name)' with environment '$environmentName'"

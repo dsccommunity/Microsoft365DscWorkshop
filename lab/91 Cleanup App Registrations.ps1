@@ -1,35 +1,33 @@
 $here = $PSScriptRoot
-
+Import-Module -Name $here\AzHelpers.psm1 -Force
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
+$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
 $environments = $azureData.Environments.Keys
-$applicationName = 'Microsoft365DscWorkshop'
 
 foreach ($environmentName in $environments) {
     $environment = $azureData.Environments.$environmentName
     Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
     Write-Host "Connecting to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'"
 
-    $subscription = Set-AzContext -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction SilentlyContinue
-    if (-not $subscription) {
-        $null = Connect-AzAccount -Tenant $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction Stop
-        $subscription = Get-AzContext
+    $param = @{
+        TenantId               = $environment.AzTenantId
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $environment.AzApplicationId
+        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-
-    Connect-MgGraph -TenantId $environment.AzTenantId -Scopes RoleManagement.ReadWrite.Directory, Directory.ReadWrite.All -NoWelcome -ErrorAction Stop
-
-    Write-Host "Connected to Azure subscription '$($subscription.Name)' and Microsoft Graph with account '$($subscription.Account.Id)'"
+    Connect-Azure @param -ErrorAction Stop
     
-    if ($appPrincipal = Get-MgServicePrincipal -Filter "displayName eq '$applicationName'" -ErrorAction SilentlyContinue) {
+    if ($appPrincipal = Get-MgServicePrincipal -Filter "displayName eq '$($projectSettings.Name)'" -ErrorAction SilentlyContinue) {
         
-        Write-Host "Removing the service principal '$applicationName' from the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+        Write-Host "Removing the service principal '$($projectSettings.Name)' from the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         Remove-AzRoleAssignment -ObjectId $appPrincipal.Id -RoleDefinitionName Owner | Out-Null
         
-        Write-Host "Removing the service principal for application '$applicationName' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+        Write-Host "Removing the service principal for application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         Remove-MgServicePrincipal -ServicePrincipalId $appPrincipal.Id
     }
 
-    if ($appRegistration = Get-MgApplication -Filter "displayName eq '$applicationName'" -ErrorAction SilentlyContinue) {        
-        Write-Host "Removing the application '$applicationName' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+    if ($appRegistration = Get-MgApplication -Filter "displayName eq '$($projectSettings.Name)'" -ErrorAction SilentlyContinue) {        
+        Write-Host "Removing the application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         Remove-MgApplication -ApplicationId $appRegistration.Id
     }
 
