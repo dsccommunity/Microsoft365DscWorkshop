@@ -22,7 +22,7 @@
     'DscResource.AnalyzerRules'                            = 'latest'
     DscBuildHelpers                                        = 'latest'
     Datum                                                  = 'latest'
-    ProtectedData                                          = 'latest'
+    #ProtectedData                                          = 'latest'
     'Datum.ProtectedData'                                  = 'latest'
     'Datum.InvokeCommand'                                  = 'latest'
     Configuration                                          = 'latest'
@@ -79,6 +79,7 @@
     'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.178'
     'MicrosoftTeams'                                       = '5.8.0'
     'MSCloudLoginAssistant'                                = '1.1.7'
+    'PnP.PowerShell'                                       = '1.12.0'
     'ReverseDSC'                                           = '2.0.0.18'
 
 }
