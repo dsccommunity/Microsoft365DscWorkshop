@@ -1,4 +1,5 @@
 $here = $PSScriptRoot
+Import-Module -Name $here\AzHelpers.psm1 -Force
 $azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 $projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
 $environments = $azureData.Environments.Keys
@@ -22,7 +23,7 @@ foreach ($environmentName in $environments) {
         Write-Host "Creating application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         $appRegistration = New-MgApplication -DisplayName $projectSettings.Name
         Write-Host "Creating service principal for application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
-        $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId
+        $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId -SignInAudience AzureADMyOrg
     
         $passwordCred = @{
             displayName = 'Secret'
@@ -48,6 +49,9 @@ foreach ($environmentName in $environments) {
     Write-Host "Adding Graph permissions to service principal '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
 
     $requiredPermissions = Get-M365DSCCompiledPermissionList2
+    $requiredPermissions += 'AppRoleAssignment.ReadWrite.All'
+    $requiredPermissions += 'AppRoleAssignment.ReadWrite.All'
+    $requiredPermissions += 'AppRoleAssignment.ReadWrite.All'
     $permissions = @(Get-ServicePrincipalAppPermissions -DisplayName $projectSettings.Name)
 
     $permissionDifference = (Compare-Object -ReferenceObject $requiredPermissions -DifferenceObject $permissions).InputObject

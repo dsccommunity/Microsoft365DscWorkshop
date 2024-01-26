@@ -166,7 +166,10 @@ function Connect-Azure
         [Parameter()]
         [string[]]$Scopes = ('RoleManagement.ReadWrite.Directory',
             'Directory.ReadWrite.All',
-            'Application.ReadWrite.All'
+            'Application.ReadWrite.All',
+            'Group.ReadWrite.All',
+            'GroupMember.ReadWrite.All',
+            'User.ReadWrite.All'
         )
     )
 
