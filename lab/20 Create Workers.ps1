@@ -44,9 +44,9 @@ foreach ($environmentName in $environments) {
         'Add-LabMachineDefinition:OperatingSystem' = 'Windows Server 2022 Datacenter (Desktop Experience)'
     }
 
-    Add-LabDiskDefinition -Name "Lcm$($environmentName)Data1" -DiskSizeInGb 1000 -Label Data
+    Add-LabDiskDefinition -Name "Lcm$($projectSettings.Name)$($environmentName)Data1" -DiskSizeInGb 1000 -Label Data
 
-    Add-LabMachineDefinition -Name "Lcm$($environmentName)" -AzureRoleSize Standard_D8lds_v5 -DiskName "Lcm$($environmentName)Data1"
+    Add-LabMachineDefinition -Name "Lcm$($projectSettings.Name)$($environmentName)" -AzureRoleSize Standard_D8lds_v5 -DiskName "Lcm$($projectSettings.Name)$($environmentName)Data1"
 
     Install-Lab
 

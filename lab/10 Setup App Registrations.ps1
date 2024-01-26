@@ -41,9 +41,26 @@ foreach ($environmentName in $environments) {
         Write-Host "Assigning the application '$($projectSettings.Name)' to the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         New-AzRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionName Owner | Out-Null
     }
+    else {
+        Write-Host "Application '$($projectSettings.Name)' already exists in environment '$environmentName' in the subscription '$($subscription.Name)'"
+    }
+
+    Write-Host "Adding Graph permissions to service principal '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+
+    $requiredPermissions = Get-M365DSCCompiledPermissionList2
+    $permissions = @(Get-ServicePrincipalAppPermissions -DisplayName $projectSettings.Name)
+
+    $permissionDifference = (Compare-Object -ReferenceObject $requiredPermissions -DifferenceObject $permissions).InputObject
+
+    if ($permissionDifference) {
+        Write-Host "Updating permissions for managed identity '$($projectSettings.Name)'"
+        Set-ServicePrincipalAppPermissions -DisplayName $projectSettings.Name -Permissions $requiredPermissions
+    }
+    else {
+        Write-Host "Permissions for managed identity '$($projectSettings.Name)' are up to date" -ForegroundColor Green
+    }
 
     Write-Host "Finished working in environment '$environmentName' in the subscription '$($subscription.Name)'"
-
 }
 
 Write-Host 'Finished working in all environments'

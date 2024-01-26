@@ -17,7 +17,7 @@ foreach ($environmentName in $environments) {
 
     Write-Host "Checking permissions for environment '$environmentName' (TenantId $($environment.AzTenantId), SubscriptionId $($environment.AzSubscriptionId))"
 
-    $managedIdentityName = "Lcm$($environmentName)"
+    $managedIdentityName = "Lcm$($projectSettings.Name)$($environmentName)"
 
     $requiredPermissions = Get-M365DSCCompiledPermissionList2
     $permissions = Get-ServicePrincipalAppPermissions -DisplayName $managedIdentityName
