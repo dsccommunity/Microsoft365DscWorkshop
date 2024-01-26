@@ -22,8 +22,9 @@ foreach ($environmentName in $environments) {
         Write-Host "Did not find application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'."
         Write-Host "Creating application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         $appRegistration = New-MgApplication -DisplayName $projectSettings.Name
+        Update-MgApplication -ApplicationId $appRegistration.Id -SignInAudience AzureADMyOrg
         Write-Host "Creating service principal for application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
-        $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId -SignInAudience AzureADMyOrg
+        $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId
     
         $passwordCred = @{
             displayName = 'Secret'
@@ -49,8 +50,6 @@ foreach ($environmentName in $environments) {
     Write-Host "Adding Graph permissions to service principal '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
 
     $requiredPermissions = Get-M365DSCCompiledPermissionList2
-    $requiredPermissions += 'AppRoleAssignment.ReadWrite.All'
-    $requiredPermissions += 'AppRoleAssignment.ReadWrite.All'
     $requiredPermissions += 'AppRoleAssignment.ReadWrite.All'
     $permissions = @(Get-ServicePrincipalAppPermissions -DisplayName $projectSettings.Name)
 

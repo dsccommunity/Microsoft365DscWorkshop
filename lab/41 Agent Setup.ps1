@@ -17,7 +17,7 @@ $notepadPlusPlusDownloadUrl = 'https://github.com/notepad-plus-plus/notepad-plus
 $vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/3.232.3/vsts-agent-win-x64-3.232.3.zip'
 
 foreach ($lab in $labs) {
-    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)(?:\d{1,4})" | Out-Null
+    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)" | Out-Null
     $environmentName = $Matches.Environment
     $environment = $azureData.Environments.$environmentName
     Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta

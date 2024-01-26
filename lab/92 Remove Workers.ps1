@@ -6,7 +6,7 @@ $projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | Conv
 $labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.Name)*" }
 
 foreach ($lab in $labs) {
-    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)(?:\d{1,4})" | Out-Null
+    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)" | Out-Null
     $environmentName = $Matches.Environment
     $environment = $azureData.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
