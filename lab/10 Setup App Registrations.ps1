@@ -50,7 +50,7 @@ foreach ($environmentName in $environments) {
     Write-Host "Adding Graph permissions to service principal '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
 
     $requiredPermissions = Get-M365DSCCompiledPermissionList2
-    $requiredPermissions += 'AppRoleAssignment.ReadWrite.All'
+    $requiredPermissions += Get-GraphPermission -PermissionName AppRoleAssignment.ReadWrite.All
     $permissions = @(Get-ServicePrincipalAppPermissions -DisplayName $projectSettings.Name)
 
     $permissionDifference = (Compare-Object -ReferenceObject $requiredPermissions -DifferenceObject $permissions).InputObject

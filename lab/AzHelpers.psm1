@@ -147,6 +147,37 @@ function Get-M365DSCCompiledPermissionList2
     }
 }
 
+function Get-GraphPermission
+{
+    param (
+        [Parameter(Mandatory = $true)]
+        [string[]]$PermissionName
+    )
+
+    $servicePrincipal = Get-MgServicePrincipal -Filter "AppId eq '00000003-0000-0000-c000-000000000000'"
+    $appRoles = $servicePrincipal.AppRoles | Where-Object { $_.Permission.Type -ne 'Delegated' }
+
+    foreach ($Permission in $PermissionName)
+    {
+        $appRole = $appRoles | Where-Object Value -EQ $Permission
+
+        if (-not $appRole)
+        {
+            Write-Warning "Permission '$Permission' not found"
+            continue
+        }
+        
+        [pscustomobject][ordered]@{
+            ApiAppId          = $servicePrincipal.AppId
+            ApiId             = $servicePrincipal.Id
+            ApiRoleId         = $appRole.Id
+            ApiDisplayName    = $servicePrincipal.DisplayName
+            ApiPermissionName = $appRole.Value
+            PermissionType    = $appRole.AllowedMemberTypes[0]
+        }
+    }
+}
+
 function Connect-Azure
 {
     [CmdletBinding()]
