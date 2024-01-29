@@ -1,4 +1,4 @@
-NodeName: '[x={ $Node.Name }=]'
+NodeName: '[x={ "$($Node.Name.Substring(0,3))$($datum.Global.ProjectSettings.Name)$($Node.Name.Substring(3))" }=]'
 Environment: Test #'[x={ $File.Directory.BaseName } =]'
 Description: '[x= "$($Node.Role) in $($Node.Environment)" =]'
 Role: AzureAdLcm
