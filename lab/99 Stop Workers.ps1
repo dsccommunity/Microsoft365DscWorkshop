@@ -18,7 +18,7 @@ foreach ($lab in $labs)
     }
     Connect-Azure @param -ErrorAction Stop
     
-    Write-Host "Starting all VMs in $($lab.Name) for environment '$environmentName'" -ForegroundColor Magenta
+    Write-Host "Stopping all VMs in $($lab.Name) for environment '$environmentName'" -ForegroundColor Magenta
         
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
 
