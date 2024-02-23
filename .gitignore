@@ -6,3 +6,4 @@ output/*
 output/RequiredModules/*
 
 !output/RequiredModules/ProtectedData
+!output/RequiredModules/Sampler.DscPipeline
