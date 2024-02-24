@@ -1,9 +1,12 @@
 $here = $PSScriptRoot
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
+
 Import-Module -Name $here\AzHelpers.psm1 -Force
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml -ErrorAction Stop
-$azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml -ErrorAction Stop
-$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
-$labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.Name)*" }
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+$labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
 
 if (-not (Test-LabAzureModuleAvailability -ErrorAction SilentlyContinue)) {
     Write-Error "PowerShell modules for AutomateLab Azure integration not found or could not be loaded. Please run 'Install-LabAzureRequiredModule' to install them. If this fails, please restart the PowerShell session and try again."
@@ -17,9 +20,9 @@ $notepadPlusPlusDownloadUrl = 'https://github.com/notepad-plus-plus/notepad-plus
 $vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/3.232.3/vsts-agent-win-x64-3.232.3.zip'
 
 foreach ($lab in $labs) {
-    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)" | Out-Null
+    $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
     $environmentName = $Matches.Environment
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
 
     $param = @{
@@ -59,8 +62,8 @@ foreach ($lab in $labs) {
     Invoke-LabCommand -Activity 'Setup AzDo Build Agent' -ScriptBlock {
 
         Expand-Archive -Path $vstsAgenZip.FullName -DestinationPath C:\Agent -Force
-        "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
-        C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($azDoData.OrganizationName) --auth pat --token $($azDoData.PersonalAccessToken) --pool $($azDoData.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
+        "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName) --auth pat --token $($datum.Global.AzureDevOps.PersonalAccessToken) --pool $($datum.Global.AzureDevOps.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
+        C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName) --auth pat --token $($datum.Global.AzureDevOps.PersonalAccessToken) --pool $($datum.Global.AzureDevOps.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
 
     } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, azDoData)
 

@@ -1,11 +1,14 @@
 $here = $PSScriptRoot
-Import-Module -Name $here\AzHelpers.psm1 -Force
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
-$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
-$environments = $azureData.Environments.Keys
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
+
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+$environments = $datum.Global.Azure.Environments.Keys
 
 foreach ($environmentName in $environments) {
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
     Write-Host "Connecting to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'"
 
@@ -22,17 +25,17 @@ foreach ($environmentName in $environments) {
         continue
     }
     
-    if ($appPrincipal = Get-MgServicePrincipal -Filter "displayName eq '$($projectSettings.Name)'" -ErrorAction SilentlyContinue) {
+    if ($appPrincipal = Get-MgServicePrincipal -Filter "displayName eq '$($datum.Global.ProjectSettings.Name)'" -ErrorAction SilentlyContinue) {
         
-        Write-Host "Removing the service principal '$($projectSettings.Name)' from the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+        Write-Host "Removing the service principal '$($datum.Global.ProjectSettings.Name)' from the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         Remove-AzRoleAssignment -ObjectId $appPrincipal.Id -RoleDefinitionName Owner -ErrorAction SilentlyContinue | Out-Null
         
-        Write-Host "Removing the service principal for application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+        Write-Host "Removing the service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         Remove-MgServicePrincipal -ServicePrincipalId $appPrincipal.Id
     }
 
-    if ($appRegistration = Get-MgApplication -Filter "displayName eq '$($projectSettings.Name)'" -ErrorAction SilentlyContinue) {        
-        Write-Host "Removing the application '$($projectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
+    if ($appRegistration = Get-MgApplication -Filter "displayName eq '$($datum.Global.ProjectSettings.Name)'" -ErrorAction SilentlyContinue) {        
+        Write-Host "Removing the application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
         Remove-MgApplication -ApplicationId $appRegistration.Id
     }
 

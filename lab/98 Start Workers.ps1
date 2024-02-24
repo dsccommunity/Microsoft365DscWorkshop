@@ -1,14 +1,19 @@
 $here = $PSScriptRoot
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
+
 Import-Module -Name $here\AzHelpers.psm1 -Force
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 $projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
 $labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.Name)*" }
 
 foreach ($lab in $labs)
 {
     $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)" | Out-Null
     $environmentName = $Matches.Environment
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
 
     $param = @{
         TenantId               = $environment.AzTenantId
@@ -16,6 +21,7 @@ foreach ($lab in $labs)
         ServicePrincipalId     = $environment.AzApplicationId
         ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
+    Write-Host "Connecting to Azure with service principal '$($environment.AzApplicationId)' for environment '$environmentName'" -ForegroundColor Magenta
     Connect-Azure @param -ErrorAction Stop
 
     Write-Host "Starting all VMs in $($lab.Name) for environment '$environmentName'" -ForegroundColor Magenta

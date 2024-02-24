@@ -1,15 +1,19 @@
 $here = $PSScriptRoot
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
+
 Import-Module -Name $here\AzHelpers.psm1 -Force
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
-$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
-$environments = $azureData.Environments.Keys
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+$environments = $datum.Global.Azure.Environments.Keys
 
 if (-not (Test-LabAzureModuleAvailability)) {
     Install-LabAzureRequiredModule -Scope AllUsers
 }
 
 foreach ($environmentName in $environments) {
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
     
     $param = @{
@@ -22,7 +26,7 @@ foreach ($environmentName in $environments) {
 }
 
 foreach ($environmentName in $environments) {
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
     $notes = @{
         Environment = $environmentName
@@ -33,7 +37,7 @@ foreach ($environmentName in $environments) {
     Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
 
     Write-Host "Creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
-    New-LabDefinition -Name "$($projectSettings.Name)$($environmentName)" -DefaultVirtualizationEngine Azure -Notes $notes
+    New-LabDefinition -Name "$($datum.Global.ProjectSettings.Name)$($environmentName)" -DefaultVirtualizationEngine Azure -Notes $notes
 
     Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation 'UK South'
 
@@ -44,9 +48,9 @@ foreach ($environmentName in $environments) {
         'Add-LabMachineDefinition:OperatingSystem' = 'Windows Server 2022 Datacenter (Desktop Experience)'
     }
 
-    Add-LabDiskDefinition -Name "Lcm$($projectSettings.Name)$($environmentName)Data1" -DiskSizeInGb 1000 -Label Data
+    Add-LabDiskDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)Data1" -DiskSizeInGb 1000 -Label Data
 
-    Add-LabMachineDefinition -Name "Lcm$($projectSettings.Name)$($environmentName)" -AzureRoleSize Standard_D8lds_v5 -DiskName "Lcm$($projectSettings.Name)$($environmentName)Data1"
+    Add-LabMachineDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)" -AzureRoleSize Standard_D8lds_v5 -DiskName "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)Data1"
 
     Install-Lab
 

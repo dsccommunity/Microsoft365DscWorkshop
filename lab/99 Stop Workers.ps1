@@ -1,14 +1,19 @@
 $here = $PSScriptRoot
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
+
 Import-Module -Name $here\AzHelpers.psm1 -Force
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
 $projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
 $labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.Name)*" }
 
 foreach ($lab in $labs)
 {
     $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)" | Out-Null
     $environmentName = $Matches.Environment
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
 
     $param = @{
         TenantId               = $environment.AzTenantId

@@ -1,14 +1,17 @@
 $here = $PSScriptRoot
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
+
 Import-Module -Name $here\AzHelpers.psm1 -Force
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml -ErrorAction Stop
-$azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml -ErrorAction Stop
-$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
-$labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.Name)*" }
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+$labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
 
 foreach ($lab in $labs) {
-    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)" | Out-Null
+    $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
     $environmentName = $Matches.Environment
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
     
     $param = @{
@@ -17,6 +20,7 @@ foreach ($lab in $labs) {
         ServicePrincipalId     = $environment.AzApplicationId
         ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
+    Write-Host "Connecting to Azure with service principal '$($environment.AzApplicationId)' for environment '$environmentName'" -ForegroundColor Magenta
     Connect-Azure @param -ErrorAction Stop
 
     Write-Host "Removing lab '$lab' for environment '$environmentName'" -ForegroundColor Magenta
@@ -28,24 +32,24 @@ foreach ($lab in $labs) {
     Write-Host "Successfully removed lab '$($lab.Name)'."
 }
 
-Set-VSTeamAccount -Account "https://dev.azure.com/$($azDoData.OrganizationName)/" -PersonalAccessToken $azDoData.PersonalAccessToken
-Write-Host "Connected to Azure DevOps organization '$($azDoData.OrganizationName)' with PAT."
+Set-VSTeamAccount -Account "https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName)/" -PersonalAccessToken $datum.Global.AzureDevOps.PersonalAccessToken
+Write-Host "Connected to Azure DevOps organization '$($datum.Global.AzureDevOps.OrganizationName)' with PAT."
 
 try {
-    Get-VSTeamProject -Name $azDoData.ProjectName | Out-Null
-    Remove-VSTeamProject -Name $azDoData.ProjectName -Force -ErrorAction Stop
-    Write-Host "Project '$($azDoData.ProjectName)' has been removed."
+    Get-VSTeamProject -Name $datum.Global.AzureDevOps.ProjectName | Out-Null
+    Remove-VSTeamProject -Name $datum.Global.AzureDevOps.ProjectName -Force -ErrorAction Stop
+    Write-Host "Project '$($datum.Global.AzureDevOps.ProjectName)' has been removed."
 }
 catch {
-    Write-Host "Project '$($azDoData.ProjectName)' does not exists."
+    Write-Host "Project '$($datum.Global.AzureDevOps.ProjectName)' does not exists."
 }
 
-if ($pool = Get-VSTeamPool | Where-Object Name -EQ $azDoData.AgentPoolName) {
+if ($pool = Get-VSTeamPool | Where-Object Name -EQ $datum.Global.AzureDevOps.AgentPoolName) {
     Remove-VSTeamPool -Id $pool.Id
-    Write-Host "Agent pool '$($azDoData.AgentPoolName)' has been removed."
+    Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' has been removed."
 }
 else {
-    Write-Host "Agent pool '$($azDoData.AgentPoolName)' does not exists."
+    Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' does not exists."
 }
 
 Write-Host 'Finished cleanup.'

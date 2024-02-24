@@ -1,11 +1,14 @@
 $here = $PSScriptRoot
-Import-Module -Name $here\AzHelpers.psm1
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml -ErrorAction Stop
-$projectSettings = Get-Content $here\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
-$environments = $azureData.Environments.Keys
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
+
+Import-Module -Name $here\AzHelpers.psm1 -Force
+$environments = $datum.Global.Azure.Environments.Keys
 
 foreach ($environmentName in $environments) {
-    $environment = $azureData.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
     
     $param = @{
@@ -18,7 +21,7 @@ foreach ($environmentName in $environments) {
 
     Write-Host "Checking permissions for environment '$environmentName' (TenantId $($environment.AzTenantId), SubscriptionId $($environment.AzSubscriptionId))"
 
-    $managedIdentityName = "Lcm$($projectSettings.Name)$($environmentName)"
+    $managedIdentityName = "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)"
 
     $requiredPermissions = Get-M365DSCCompiledPermissionList2
     $permissions = Get-ServicePrincipalAppPermissions -DisplayName $managedIdentityName

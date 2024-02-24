@@ -1,35 +1,39 @@
 $here = $PSScriptRoot
-Import-Module -Name $here\AzHelpers.psm1 -Force
-$azDoData = Get-Content $here\..\source\Global\AzureDevOps.yml | ConvertFrom-Yaml
-$azureData = Get-Content $here\..\source\Global\Azure.yml | ConvertFrom-Yaml
+$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+    $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
+}
 
-Set-VSTeamAccount -Account "https://dev.azure.com/$($azDoData.OrganizationName)/" -PersonalAccessToken $azDoData.PersonalAccessToken
-Write-Host "Connected to Azure DevOps organization '$($azDoData.OrganizationName)' with PAT."
+Import-Module -Name $here\AzHelpers.psm1 -Force
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+
+Set-VSTeamAccount -Account "https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName)/" -PersonalAccessToken $datum.Global.AzureDevOps.PersonalAccessToken
+Write-Host "Connected to Azure DevOps organization '$($datum.Global.AzureDevOps.OrganizationName)' with PAT."
 
 if (-not (Get-VSTeamPool))
 {
-    Write-Error "No data returned from Azure DevOps organization '$($azDoData.OrganizationName)'. The authentication might have failed, please check the PAT."
+    Write-Error "No data returned from Azure DevOps organization '$($datum.Global.AzureDevOps.OrganizationName)'. The authentication might have failed, please check the PAT."
     return
 }
 
 try
 {
-    Get-VSTeamProject -Name $azDoData.ProjectName | Out-Null
-    Write-Host "Project '$($azDoData.ProjectName)' already exists."
+    Get-VSTeamProject -Name $datum.Global.AzureDevOps.ProjectName | Out-Null
+    Write-Host "Project '$($datum.Global.AzureDevOps.ProjectName)' already exists."
 }
 catch
 {
-    $project = Add-VSTeamProject -ProjectName $azDoData.ProjectName -Description 'Microsoft365DSCWorkshop Demo Project' -Visibility public -ProcessTemplate Agile
-    Write-Host "Project '$($azDoData.ProjectName)' created."
+    $project = Add-VSTeamProject -ProjectName $datum.Global.AzureDevOps.ProjectName -Description 'Microsoft365DSCWorkshop Demo Project' -Visibility public -ProcessTemplate Agile
+    Write-Host "Project '$($datum.Global.AzureDevOps.ProjectName)' created."
 }
 
-$uri = "https://dev.azure.com/$($azDoData.OrganizationName)/$($azDoData.ProjectName)/_apis/distributedtask/queues/?api-version=5.1"
+$uri = "https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName)/$($datum.Global.AzureDevOps.ProjectName)/_apis/distributedtask/queues/?api-version=5.1"
 $queues = Invoke-VSTeamRequest -Url $uri
 
-if (-not ($queues.value.name -eq $azDoData.AgentPoolName))
+if (-not ($queues.value.name -eq $datum.Global.AzureDevOps.AgentPoolName))
 {
     $requestBodyAgentPool = @{
-        name          = $azDoData.AgentPoolName
+        name          = $datum.Global.AzureDevOps.AgentPoolName
         autoProvision = $true
         autoUpdate    = $true
         autoSize      = $true
@@ -38,16 +42,16 @@ if (-not ($queues.value.name -eq $azDoData.AgentPoolName))
     } | ConvertTo-Json
 
     Invoke-VSTeamRequest -Url $uri -Method POST -ContentType 'application/json' -Body $requestBodyAgentPool | Out-Null
-    Write-Host "Agent pool '$($azDoData.AgentPoolName)' created."
+    Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' created."
 }
 else
 {
-    Write-Host "Agent pool '$($azDoData.AgentPoolName)' already exists."
+    Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' already exists."
 }
 
 Write-Host ''
-Write-Host "Disabling features in project '$($azDoData.ProjectName)'."
-$project = Get-VSTeamProject -Name $azDoData.ProjectName
+Write-Host "Disabling features in project '$($datum.Global.AzureDevOps.ProjectName)'."
+$project = Get-VSTeamProject -Name $datum.Global.AzureDevOps.ProjectName
 
 $featuresToDisable = 'ms.feed.feed', #Artifacts
 'ms.vss-work.agile', #Boards
@@ -61,21 +65,21 @@ foreach ($featureToDisable in $featuresToDisable)
     $buildFeature.state = 'disabled'
     $buildFeature = $buildFeature | ConvertTo-Json
 
-    Write-Host "Disabling feature '$featureToDisable' in project '$($azDoData.ProjectName)'."
+    Write-Host "Disabling feature '$featureToDisable' in project '$($datum.Global.AzureDevOps.ProjectName)'."
     Invoke-VSTeamRequest -Method Patch -ContentType 'application/json' -Body $buildFeature -Area FeatureManagement -Resource FeatureStates -Id $id -Version '7.1-preview.1' | Out-Null
 }
 
 Write-Host ''
-Write-Host "Creating environments in project '$($azDoData.ProjectName)'."
+Write-Host "Creating environments in project '$($datum.Global.AzureDevOps.ProjectName)'."
 
-$environments = $azureData.Environments.Keys
-$existingEnvironments = Invoke-VSTeamRequest -Method Get -Area distributedtask -Resource environments -Version '7.1-preview.1' -ProjectName $azDoData.ProjectName
+$environments = $datum.Global.Azure.Environments.Keys
+$existingEnvironments = Invoke-VSTeamRequest -Method Get -Area distributedtask -Resource environments -Version '7.1-preview.1' -ProjectName $datum.Global.AzureDevOps.ProjectName
 
 foreach ($environmentName in $environments)
 {
     if (-not ($existingEnvironments.value | Where-Object { $_.name -eq $environmentName }))
     {
-        Write-Host "Creating environment '$environmentName' in project '$($azDoData.ProjectName)'."
+        Write-Host "Creating environment '$environmentName' in project '$($datum.Global.AzureDevOps.ProjectName)'."
         $requestBodyEnvironment = @{
             name = $environmentName
         } | ConvertTo-Json
@@ -84,6 +88,6 @@ foreach ($environmentName in $environments)
     }
     else
     {
-        Write-Host "Environment '$environmentName' already exists in project '$($azDoData.ProjectName)'."
+        Write-Host "Environment '$environmentName' already exists in project '$($datum.Global.AzureDevOps.ProjectName)'."
     }
 }
