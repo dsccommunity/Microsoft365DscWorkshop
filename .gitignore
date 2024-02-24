@@ -6,4 +6,11 @@ output/*
 output/RequiredModules/*
 
 !output/RequiredModules/ProtectedData
+output/RequiredModules/ProtectedData/*
+!output/RequiredModules/ProtectedData/4.2.0
+
+!output/RequiredModules/DscConfig.M365
+output/RequiredModules/DscConfig.M365/*
+!output/RequiredModules/DscConfig.M365/1.0.0
+
 !output/RequiredModules/Sampler.DscPipeline
