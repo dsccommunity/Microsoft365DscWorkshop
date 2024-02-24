@@ -704,12 +704,14 @@ function Initialize-DscResourceMetaInfo
         }
         else
         {
-            Get-DscResourceProperty -ModuleInfo ($modulesWithDscResources |
-                    Where-Object Name -EQ $dscResource.ModuleName) -ResourceName $dscResource.Name |
-                    Where-Object {
-                        $_.TypeConstraint -match '(DSC|MSFT)_.+' -and
-                        $_.TypeConstraint -notin 'MSFT_Credential', 'MSFT_KeyValuePair', 'MSFT_KeyValuePair[]'
-                    }
+            $moduleInfo = $modulesWithDscResources |
+                Where-Object { $_.Name -EQ $dscResource.ModuleName -and $_.Version -eq $dscResource.Version }
+
+            Get-DscResourceProperty -ModuleInfo $moduleInfo -ResourceName $dscResource.Name |
+                Where-Object {
+                    $_.TypeConstraint -match '(DSC|MSFT)_.+' -and
+                    $_.TypeConstraint -notin 'MSFT_Credential', 'MSFT_KeyValuePair', 'MSFT_KeyValuePair[]'
+                }
         }
 
         foreach ($cimProperty in $cimProperties)
@@ -734,7 +736,7 @@ function Initialize-DscResourceMetaInfo
         $script:allDscResourcePropertiesTable
     }
 }
-#EndRegion '.\Public\Initialize-DscResourceMetaInfo.ps1' 78
+#EndRegion '.\Public\Initialize-DscResourceMetaInfo.ps1' 80
 #Region '.\Public\Publish-DscConfiguration.ps1' -1
 
 function Publish-DscConfiguration {
