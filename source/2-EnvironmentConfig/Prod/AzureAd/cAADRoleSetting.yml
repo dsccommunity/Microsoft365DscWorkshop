@@ -1,5 +1,5 @@
 Items:
-  - Displayname: Application Administrator
+  - DisplayName: Application Administrator
     #ActivateApprover                                          : @()
     ActivationMaxDuration: PT8H
     ActivationReqJustification: true
