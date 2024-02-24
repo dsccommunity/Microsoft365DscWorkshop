@@ -18,3 +18,5 @@ output/RequiredModules/DscBuildHelpers/*
 !output/RequiredModules/DscBuildHelpers/0.3.0
 
 !output/RequiredModules/Sampler.DscPipeline
+output/RequiredModules/Sampler.DscPipeline/*
+!output/RequiredModules/Sampler.DscPipeline/0.8.0
