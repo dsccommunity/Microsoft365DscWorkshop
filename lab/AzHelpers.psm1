@@ -228,3 +228,42 @@ function Connect-Azure
         return
     }
 }
+
+function Connect-EXO
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TenantName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ServicePrincipalId,
+
+        [Parameter(Mandatory = $true)]
+        [securestring]$ServicePrincipalSecret
+    )
+
+    $cred = New-Object pscredential($ServicePrincipalId, $ServicePrincipalSecret)
+    try
+    {
+        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop
+        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
+    }
+    catch
+    {
+        Write-Error "Failed to connect to Azure tenant '$TenantId' / subscription '$SubscriptionId' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
+        return
+    }
+
+    try
+    {
+        Connect-MgGraph -ClientSecretCredential $cred -TenantId $TenantId -NoWelcome
+        $graphContext = Get-MgContext
+        Write-Host "Connected to Graph API '$($graphContext.TenantId)' with account '$($graphContext.ClientId)'"
+    }
+    catch
+    {
+        Write-Error "Failed to connect to Graph API of tenant '$TenantId' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
+        return
+    }
+}
