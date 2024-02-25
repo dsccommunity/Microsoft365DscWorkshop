@@ -39,7 +39,6 @@ BuildWorkflow:
   rsop:
     - Init7
     - Clean
-    - FixMSCloudLoginAssistant
     - LoadDatumConfigData
     - AzureInit
     - TestConfigData
