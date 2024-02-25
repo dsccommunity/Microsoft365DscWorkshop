@@ -26,6 +26,7 @@ BuildWorkflow:
   build:
     - Init7
     - Clean
+    - ModuleCleanupBeforeBuild
     - Build_Module_ModuleBuilder
     - AzureInit
     - LoadDatumConfigData
