@@ -5,6 +5,7 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
 }
 
 Import-Module -Name $here\AzHelpers.psm1 -Force
+$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
 foreach ($environmentName in $environments) {
