@@ -10,8 +10,6 @@ Items:
     ManagedIdentity: true
   - DisplayName: Allowed Countries
     CountriesAndRegions:
-      - GH
-      - AX
       - DZ
       - AI
       - AM
