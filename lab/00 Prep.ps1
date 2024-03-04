@@ -1,6 +1,7 @@
 $requiredModules = 'Az.ManagedServiceIdentity',
 'Microsoft.Graph.Applications',
 'Microsoft.Graph.Authentication',
+'Microsoft.Graph.Identity.Governance'
 'Az.Resources',
 'Microsoft365DSC',
 'powershell-yaml',
