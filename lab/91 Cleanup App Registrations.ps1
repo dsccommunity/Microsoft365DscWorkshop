@@ -30,7 +30,7 @@ foreach ($environmentName in $environments) {
     $servicePrincipal = Get-ServicePrincipal -Identity $environment.AzApplicationId -ErrorAction SilentlyContinue
     if ($servicePrincipal) {
         Write-Host "Removing the EXO service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
-        Remove-ServicePrincipal -Identity $servicePrincipal.AppId
+        Remove-ServicePrincipal -Identity $servicePrincipal.AppId -Confirm:$false
     }
     else {
         Write-Host "Did not find EXO service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
@@ -38,10 +38,10 @@ foreach ($environmentName in $environments) {
 
     if ($appPrincipal = Get-MgServicePrincipal -Filter "displayName eq '$($datum.Global.ProjectSettings.Name)'" -ErrorAction SilentlyContinue) {
         
-        Write-Host "Removing the service principal '$($datum.Global.ProjectSettings.Name)' from the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+        Write-Host "Removing the service principal '$($datum.Global.ProjectSettings.Name)' from the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
         Remove-AzRoleAssignment -ObjectId $appPrincipal.Id -RoleDefinitionName Owner -ErrorAction SilentlyContinue | Out-Null
         
-        Write-Host "Removing the service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
+        Write-Host "Removing the service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
         Remove-MgServicePrincipal -ServicePrincipalId $appPrincipal.Id
     }
 
@@ -50,7 +50,7 @@ foreach ($environmentName in $environments) {
         Remove-MgApplication -ApplicationId $appRegistration.Id
     }
 
-    Write-Host "Finished working in environment '$environmentName' in the subscription '$($subscription.Name)'"
+    Write-Host "Finished working in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
 
 }
 
