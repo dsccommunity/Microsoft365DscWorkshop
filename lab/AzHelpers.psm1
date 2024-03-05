@@ -205,16 +205,6 @@ function Connect-Azure
     )
 
     $cred = New-Object pscredential($ServicePrincipalId, $ServicePrincipalSecret)
-    try
-    {
-        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop
-        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
-    }
-    catch
-    {
-        Write-Error "Failed to connect to Azure tenant '$TenantId' / subscription '$SubscriptionId' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
-        return
-    }
 
     try
     {
@@ -225,6 +215,17 @@ function Connect-Azure
     catch
     {
         Write-Error "Failed to connect to Graph API of tenant '$TenantId' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
+        return
+    }
+
+    try
+    {
+        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop
+        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
+    }
+    catch
+    {
+        Write-Error "Failed to connect to Azure tenant '$TenantId' / subscription '$SubscriptionId' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
         return
     }
 }
@@ -252,8 +253,20 @@ function Connect-EXO
 
     try
     {
-        $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$($environment.AzTenantId)/oauth2/v2.0/token" -Method POST -Body $tokenBody 
-        Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName -ShowBanner:$false
+        $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$($environment.AzTenantId)/oauth2/v2.0/token" -Method POST -Body $tokenBody
+
+        try {
+            Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName #-ShowBanner:$false
+        }
+        catch {
+            try {
+                Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName #-ShowBanner:$false
+            }
+            catch {
+                Write-Error "Failed to connect to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
+            }
+        }
+
         Write-Host "Successfully connected to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'"
     }
     catch
