@@ -1,6 +1,9 @@
 param (
     [Parameter()]
-    [string]$EnvironmentName
+    [string]$EnvironmentName,
+
+    [Parameter()]
+    [switch]$DoNotDisconnect
 )
 
 $here = $PSScriptRoot
@@ -36,5 +39,9 @@ foreach ($environmentName in $environments) {
     }
 
     Connect-EXO @param -ErrorAction Stop
-    Disconnect-ExchangeOnline -Confirm:$false
+    if (-not $DoNotDisconnect)
+    {
+        Disconnect-MgGraph | Out-Null
+        Disconnect-ExchangeOnline -Confirm:$false
+    }
 }
