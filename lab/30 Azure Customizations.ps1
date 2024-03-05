@@ -16,13 +16,20 @@ foreach ($lab in $labs)
     $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
     
-    $param = @{
+    $azureParams = @{
         TenantId               = $environment.AzTenantId
         SubscriptionId         = $environment.AzSubscriptionId
         ServicePrincipalId     = $environment.AzApplicationId
         ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-    Connect-Azure @param -ErrorAction Stop
+    Connect-Azure @azureParams -ErrorAction Stop
+
+    $exoParams = @{
+        TenantName             = $environment.AzTenantId
+        ServicePrincipalId     = $environment.AzApplicationId
+        ServicePrincipalSecret = $environment.AzApplicationSecret
+    }
+    Connect-EXO @exoParams -ErrorAction Stop
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
     Write-Host "Working in lab '$($lab.Name)' with environment '$environmentName'"
@@ -46,31 +53,19 @@ foreach ($lab in $labs)
 
     $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)")'"
     $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Global Reader'"
-    New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
+    if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
+    {
+        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
+    }
 
     Write-Host 'Getting required permissions for all Microsoft365DSC workloads...' -NoNewline
-    #$permissions = Get-M365DSCCompiledPermissionList2
+    $permissions = Get-M365DSCCompiledPermissionList2
     Write-Host "found $($permissions.Count) permissions"
 
     Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)' in environment '$environmentName'"
-    #Set-ServicePrincipalAppPermissions -DisplayName "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -Permissions $permissions
-    
-    Disconnect-MgGraph | Out-Null
+    Set-ServicePrincipalAppPermissions -DisplayName "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -Permissions $permissions
 
     #------------------------------------ EXO ----------------------------------------------------
-
-    Connect-Azure @param -ErrorAction Stop
-
-    $tokenBody = @{     
-        Grant_Type    = "client_credentials" 
-        Scope         = "https://outlook.office365.com/.default"
-        Client_Id     = $environment.AzApplicationId 
-        Client_Secret = $environment.AzApplicationSecret
-    }  
-
-    $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$($environment.AzTenantId)/oauth2/v2.0/token" -Method POST -Body $tokenBody 
-    
-    Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $environment.AzTenantName -ShowBanner:$false
 
     if ($servicePrincipal = Get-MgServicePrincipal -Filter "displayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)")'" -ErrorAction SilentlyContinue)
     {
@@ -97,4 +92,5 @@ foreach ($lab in $labs)
     }
 
     Disconnect-ExchangeOnline -Confirm:$false
+    Disconnect-MgGraph | Out-Null
 }

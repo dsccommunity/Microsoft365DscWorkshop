@@ -240,30 +240,25 @@ function Connect-EXO
         [string]$ServicePrincipalId,
 
         [Parameter(Mandatory = $true)]
-        [securestring]$ServicePrincipalSecret
+        [string]$ServicePrincipalSecret
     )
 
-    $cred = New-Object pscredential($ServicePrincipalId, $ServicePrincipalSecret)
-    try
-    {
-        $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop
-        Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
-    }
-    catch
-    {
-        Write-Error "Failed to connect to Azure tenant '$TenantId' / subscription '$SubscriptionId' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
-        return
-    }
+    $tokenBody = @{     
+        Grant_Type    = "client_credentials" 
+        Scope         = "https://outlook.office365.com/.default"
+        Client_Id     = $ServicePrincipalId
+        Client_Secret = $ServicePrincipalSecret
+    }  
 
     try
     {
-        Connect-MgGraph -ClientSecretCredential $cred -TenantId $TenantId -NoWelcome
-        $graphContext = Get-MgContext
-        Write-Host "Connected to Graph API '$($graphContext.TenantId)' with account '$($graphContext.ClientId)'"
+        $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$($environment.AzTenantId)/oauth2/v2.0/token" -Method POST -Body $tokenBody 
+        Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName -ShowBanner:$false
+        Write-Host "Successfully connected to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'"
     }
     catch
     {
-        Write-Error "Failed to connect to Graph API of tenant '$TenantId' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
+        Write-Error "Failed to connect to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
         return
     }
 }

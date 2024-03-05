@@ -13,8 +13,7 @@ Import-Module -Name $here\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
-if ($EnvironmentName)
-{
+if ($EnvironmentName) {
     $environments = $environments | Where-Object { $_ -eq $EnvironmentName }
 }
 
@@ -29,4 +28,13 @@ foreach ($environmentName in $environments) {
         ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
     Connect-Azure @param -ErrorAction Stop
+
+    $param = @{
+        TenantName             = $environment.AzTenantId
+        ServicePrincipalId     = $environment.AzApplicationId
+        ServicePrincipalSecret = $environment.AzApplicationSecret
+    }
+
+    Connect-EXO @param -ErrorAction Stop
+    Disconnect-ExchangeOnline -Confirm:$false
 }
