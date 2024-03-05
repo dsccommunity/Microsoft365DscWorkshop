@@ -255,17 +255,7 @@ function Connect-EXO
     {
         $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$($environment.AzTenantId)/oauth2/v2.0/token" -Method POST -Body $tokenBody
 
-        try {
-            Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName #-ShowBanner:$false
-        }
-        catch {
-            try {
-                Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName #-ShowBanner:$false
-            }
-            catch {
-                Write-Error "Failed to connect to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'. The error was: $($_.Exception.Message)"
-            }
-        }
+        Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName #-ShowBanner:$false
 
         Write-Host "Successfully connected to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'"
     }
