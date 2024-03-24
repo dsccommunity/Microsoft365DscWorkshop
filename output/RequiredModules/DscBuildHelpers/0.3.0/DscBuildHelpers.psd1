@@ -38,7 +38,7 @@
             IconUri      = 'https://dsccommunity.org/images/DSC_Logo_300p.png'
 
             # ReleaseNotes of this module
-            ReleaseNotes = '## [0.2.0-fix0001] - 2024-02-24
+            ReleaseNotes = '## [0.2.0-fix0001] - 2024-03-24
 
 ### Added
 

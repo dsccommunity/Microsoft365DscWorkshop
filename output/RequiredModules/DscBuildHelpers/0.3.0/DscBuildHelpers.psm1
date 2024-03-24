@@ -96,6 +96,63 @@ function Get-RequiredModulesFromMOF {
     } #end process
 } #end function Get-RequiredModulesFromMOF
 #EndRegion '.\Private\Get-RequiredModulesFromMOF.ps1' 56
+#Region '.\Private\Get-StandardCimType.ps1' -1
+
+function Get-StandardCimType
+{
+    $types = @{
+        Boolean               = 'System.Boolean'
+        UInt8                 = 'System.Byte'
+        SInt8                 = 'System.SByte'
+        UInt16                = 'System.UInt16'
+        SInt16                = 'System.Int16'
+        UInt32                = 'System.UInt32'
+        SInt32                = 'System.Int32'
+        UInt64                = 'System.UInt64'
+        SInt64                = 'System.Int64'
+        Real32                = 'System.Single'
+        Real64                = 'System.Double'
+        Char16                = 'System.Char'
+        DateTime              = 'System.DateTime'
+        String                = 'System.String'
+        Reference             = 'Microsoft.Management.Infrastructure.CimInstance'
+        Instance              = 'Microsoft.Management.Infrastructure.CimInstance'
+        BooleanArray          = 'System.Boolean[]'
+        UInt8Array            = 'System.Byte[]'
+        SInt8Array            = 'System.SByte[]'
+        UInt16Array           = 'System.UInt16[]'
+        SInt16Array           = 'System.Int16[]'
+        UInt32Array           = 'System.UInt32[]'
+        SInt32Array           = 'System.Int32[]'
+        UInt64Array           = 'System.UInt64[]'
+        SInt64Array           = 'System.Int64[]'
+        Real32Array           = 'System.Single[]'
+        Real64Array           = 'System.Double[]'
+        Char16Array           = 'System.Char[]'
+        DateTimeArray         = 'System.DateTime[]'
+        StringArray           = 'System.String[]'
+
+        MSFT_Credential       = 'System.Management.Automation.PSCredential'
+        'MSFT_KeyValuePair[]' = 'System.Collections.Hashtable'
+        MSFT_KeyValuePair     = 'System.Collections.Hashtable'
+    }
+
+    try
+    {
+        $types.GetEnumerator() | ForEach-Object {
+            $null = Invoke-Expression -Command "[$($_.Value)]" -ErrorAction Stop
+            [PSCustomObject]@{
+                CimType    = $_.Key
+                DotNetType = $_.Value
+            }
+        }
+    }
+    catch
+    {
+        Write-Error -Message "Failed to load CIM Types. The error was: $($_.Exception.Message)"
+    }
+}
+#EndRegion '.\Private\Get-StandardCimType.ps1' 55
 #Region '.\Private\Resolve-ModuleMetadataFile.ps1' -1
 
 
@@ -411,17 +468,31 @@ function Get-DscResourceFromModuleInFolder
 #EndRegion '.\Public\Get-DscResourceFromModuleInFolder.ps1' 60
 #Region '.\Public\Get-DscResourceProperty.ps1' -1
 
-function Get-DscResourceProperty {
+function Get-DscResourceProperty
+{
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName = 'ModuleInfo')]
         [System.Management.Automation.PSModuleInfo]
         $ModuleInfo,
+
+        [Parameter(Mandatory, ParameterSetName = 'ModuleName')]
+        [string]
+        $ModuleName,
 
         [Parameter(Mandatory)]
         [string]
         $ResourceName
     )
+
+    $ModuleInfo = if ($ModuleName)
+    {
+        Import-Module -Name $ModuleName -PassThru -Force
+    }
+    else
+    {
+        Import-Module -Name $ModuleInfo.Name -PassThru -Force
+    }
 
     [Microsoft.PowerShell.DesiredStateConfiguration.Internal.DscClassCache]::ClearCache()
     $functionsToDefine = New-Object -TypeName 'System.Collections.Generic.Dictionary[string,ScriptBlock]'([System.StringComparer]::OrdinalIgnoreCase)
@@ -429,24 +500,71 @@ function Get-DscResourceProperty {
 
     $schemaFilePath = $null
     $keywordErrors = New-Object -TypeName 'System.Collections.ObjectModel.Collection[System.Exception]'
+
     $foundCimSchema = [Microsoft.PowerShell.DesiredStateConfiguration.Internal.DscClassCache]::ImportCimKeywordsFromModule($ModuleInfo, $ResourceName, [ref] $SchemaFilePath, $functionsToDefine, $keywordErrors)
-    $foundScriptSchema = [Microsoft.PowerShell.DesiredStateConfiguration.Internal.DscClassCache]::ImportScriptKeywordsFromModule($ModuleInfo, $ResourceName, [ref] $SchemaFilePath, $functionsToDefine)
+    if ($foundCimSchema)
+    {
+        $foundScriptSchema = [Microsoft.PowerShell.DesiredStateConfiguration.Internal.DscClassCache]::ImportScriptKeywordsFromModule($ModuleInfo, $ResourceName, [ref] $SchemaFilePath, $functionsToDefine)
+    }
+    else
+    {
+        [System.Collections.Generic.List[string]]$resourceNameAsList = $ResourceName
+        [void][Microsoft.PowerShell.DesiredStateConfiguration.Internal.DscClassCache]::ImportClassResourcesFromModule($ModuleInfo, $resourceNameAsList, $functionsToDefine)
+    }
+
     $resourceProperties = ([System.Management.Automation.Language.DynamicKeyword]::GetKeyword($ResourceName)).Properties
 
-    foreach ($key in $resourceProperties.Keys) {
+    foreach ($key in $resourceProperties.Keys)
+    {
+
+        $resourceProperty = $resourceProperties.$key
+
+        $dscClassParameterInfo = & $ModuleInfo {
+
+            param (
+                [Parameter(Mandatory = $true)]
+                [string]$TypeName
+            )
+
+            $result = @{
+                ElementType         = $null
+                Type                = $null
+            }
+
+            try
+            {
+                $result.Type = Invoke-Expression "[$($TypeName)]"
+
+                if ($result.Type.IsArray)
+                {
+                    $result.ElementType = $result.Type.GetElementType().FullName
+                }
+            }
+            catch
+            {
+            }
+
+            return $result
+
+        } $resourceProperty.TypeConstraint
+
         [PSCustomObject]@{
-            Name           = $resourceProperties.$key.Name
-            TypeConstraint = $resourceProperties.$key.TypeConstraint
-            Attributes     = $resourceProperties.$key.Attributes
-            Values         = $resourceProperties.$key.Values
-            ValueMap       = $resourceProperties.$key.ValueMap
-            Mandatory      = $resourceProperties.$key.Mandatory
-            IsKey          = $resourceProperties.$key.IsKey
-            Range          = $resourceProperties.$key.Range
+            Name                = $resourceProperty.Name
+            ModuleName          = $ModuleInfo.Name
+            ResourceName        = $ResourceName
+            TypeConstraint      = $resourceProperty.TypeConstraint
+            Attributes          = $resourceProperty.Attributes
+            Values              = $resourceProperty.Values
+            ValueMap            = $resourceProperty.ValueMap
+            Mandatory           = $resourceProperty.Mandatory
+            IsKey               = $resourceProperty.IsKey
+            Range               = $resourceProperty.Range
+            ElementType         = $dscClassParameterInfo.ElementType
+            Type                = $dscClassParameterInfo.Type
         }
     }
 }
-#EndRegion '.\Public\Get-DscResourceProperty.ps1' 36
+#EndRegion '.\Public\Get-DscResourceProperty.ps1' 97
 #Region '.\Public\Get-DscResourceWmiClass.ps1' -1
 
 function Get-DscResourceWmiClass {
@@ -503,6 +621,8 @@ function Get-DscSplattedResource
         $script:allDscResourcePropertiesTableWarningShown = $true
     }
 
+    $standardCimTypes = Get-StandardCimType
+
     # Remove Case Sensitivity of ordered Dictionary or Hashtables
     $Properties = @{} + $Properties
 
@@ -542,7 +662,40 @@ function Get-DscSplattedResource
 
                     foreach ($cimSubProperty in $cimPropertyValue.GetEnumerator())
                     {
-                        $null = $stringBuilder.AppendLine("$($cimSubProperty.Name) = `$Parameters['$PropertyName'][$($i)]['$($cimSubProperty.Name)']")
+                        if ($cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.IsArray)
+                        {
+                            $null = $stringBuilder.AppendLine("$($cimSubProperty.Name) = @(")
+                            $arrayItemTypeName = $cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.GetElementType().Name
+
+                            $j = 0
+
+                            $isCimSubArray = $cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.GetElementType().FullName -notin $standardCimTypes.DotNetType
+
+                            foreach ($arrayItem in $cimSubProperty.Value)
+                            {
+                                if ($isCimSubArray)
+                                {
+                                    $null = $stringBuilder.AppendLine("$arrayItemTypeName {")
+
+                                    foreach ($arrayItemKey in $arrayItem.Keys)
+                                    {
+                                        $null = $stringBuilder.AppendLine("$arrayItemKey = `$Parameters['$PropertyName'][$($i)]['$($cimSubProperty.Name)'][$($j)]['$($arrayItemKey)']")
+                                    }
+
+                                    $null = $stringBuilder.AppendLine('}')
+                                }
+                                else
+                                {
+                                    $null = $stringBuilder.AppendLine("@(`$Parameters['$PropertyName'][$($i)]['$($cimSubProperty.Name)'])[$($j)]")
+                                }
+                                $j++
+                            }
+                            $null = $stringBuilder.AppendLine(')')
+                        }
+                        else
+                        {
+                            $null = $stringBuilder.AppendLine("$($cimSubProperty.Name) = `$Parameters['$PropertyName'][$($i)]['$($cimSubProperty.Name)']")
+                        }
                     }
 
                     $null = $stringBuilder.AppendLine("}")
@@ -587,74 +740,79 @@ function Get-DscSplattedResource
 }
 
 Set-Alias -Name x -Value Get-DscSplattedResource -Scope Global
-#EndRegion '.\Public\Get-DscSplattedResource.ps1' 111
+#EndRegion '.\Public\Get-DscSplattedResource.ps1' 146
 #Region '.\Public\Get-ModuleFromFolder.ps1' -1
 
-function Get-ModuleFromFolder {
+function Get-ModuleFromFolder
+{
     [CmdletBinding()]
-    [OutputType('System.Management.Automation.PSModuleInfo[]')]
+    [OutputType([System.Management.Automation.PSModuleInfo[]])]
     param (
-        [Parameter(
-            Mandatory,
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName
-        )]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
-        [io.DirectoryInfo[]]
+        [System.IO.DirectoryInfo[]]
         $ModuleFolder,
-        
+
+        [Parameter()]
         [AllowNull()]
         [Microsoft.PowerShell.Commands.ModuleSpecification[]]
-        $ExcludedModules = $null
+        $ExcludedModules
     )
 
-    Begin {
-        $AllModulesInFolder = @()
+    Begin
+    {
+        $allModulesInFolder = @()
     }
 
-    Process {
-        foreach ($Folder in $ModuleFolder) {
+    Process
+    {
+        foreach ($Folder in $ModuleFolder)
+        {
             Write-Debug -Message "Replacing Module path with $Folder"
-            $OldPSModulePath = $env:PSModulePath
+            $oldPSModulePath = $env:PSModulePath
             $env:PSModulePath = $Folder
-            Write-Debug -Message "Discovering modules from folder"
-            $AllModulesInFolder += Get-Module -Refresh -ListAvailable
-            Write-Debug -Message "Reverting PSModulePath"
-            $env:PSModulePath = $OldPSModulePath
+            Write-Debug -Message 'Discovering modules from folder'
+            $allModulesInFolder += Get-Module -Refresh -ListAvailable
+            Write-Debug -Message 'Reverting PSModulePath'
+            $env:PSModulePath = $oldPSModulePath
         }
     }
 
-    End {
+    End
+    {
 
-        $AllModulesInFolder | Where-Object {
+        $allModulesInFolder | Where-Object {
             $source = $_
-            Write-Debug -message "Checking if Module $source is Excluded."
-            $isExcluded = foreach ($ExcludedModule in $ExcludedModules) {
-                Write-Debug "`t Excluded Module $ExcludedModule"
-                if ( ($ExcludedModule.Name -and $ExcludedModule.Name -eq $source.Name) -and 
+            Write-Debug -Message "Checking if module '$source' is sxcluded."
+            $isExcluded = foreach ($excludedModule in $ExcludedModules)
+            {
+                Write-Debug "`t Excluded module '$ExcludedModule'"
+                if (($excludedModule.Name -and $excludedModule.Name -eq $source.Name) -and
                     (
-                        ( !$ExcludedModule.Version -and 
-                            !$ExcludedModule.Guid -and 
-                            !$ExcludedModule.MaximumVersion -and 
-                            !$ExcludedModule.RequiredVersion ) -or
-                        ($ExcludedModule.Version -and $ExcludedModule.Version -eq $source.Version) -or
-                        ($ExcludedModule.Guid -and $ExcludedModule.Guid -ne $source.Guid) -or
-                        ($ExcludedModule.MaximumVersion -and $ExcludedModule.MaximumVersion -ge $source.Version) -or
-                        ($ExcludedModule.RequiredVersion -and $ExcludedModule.RequiredVersion -eq $source.Version)
+                        (-not $excludedModule.Version -and
+                        -not $excludedModule.Guid -and
+                        -not $excludedModule.MaximumVersion -and
+                        -not $excludedModule.RequiredVersion ) -or
+                        ($excludedModule.Version -and $excludedModule.Version -eq $source.Version) -or
+                        ($excludedModule.Guid -and $excludedModule.Guid -ne $source.Guid) -or
+                        ($excludedModule.MaximumVersion -and $excludedModule.MaximumVersion -ge $source.Version) -or
+                        ($excludedModule.RequiredVersion -and $excludedModule.RequiredVersion -eq $source.Version)
                     )
-                ) {
+                )
+                {
                     Write-Debug ('Skipping {0} {1} {2}' -f $source.Name, $source.Version, $source.Guid)
                     return $false
                 }
             }
-            if (!$isExcluded) {
+            if (-not $isExcluded)
+            {
                 return $true
             }
         }
     }
-    
+
 }
-#EndRegion '.\Public\Get-ModuleFromFolder.ps1' 65
+#EndRegion '.\Public\Get-ModuleFromFolder.ps1' 70
 #Region '.\Public\Initialize-DscResourceMetaInfo.ps1' -1
 
 function Initialize-DscResourceMetaInfo
@@ -694,24 +852,23 @@ function Initialize-DscResourceMetaInfo
     $modulesWithDscResources = $allDscResources | Select-Object -ExpandProperty ModuleName -Unique
     $modulesWithDscResources = $allModules | Where-Object Name -In $modulesWithDscResources
 
+    $standardCimTypes = Get-StandardCimType
+
     $script:allDscResourcePropertiesTable = @{}
 
     $script:allDscResourceProperties = foreach ($dscResource in $allDscResources)
     {
+        $moduleInfo = $modulesWithDscResources |
+                Where-Object { $_.Name -EQ $dscResource.ModuleName -and $_.Version -eq $dscResource.Version }
+
         $cimProperties = if ($ReturnAllProperties)
         {
-            Get-DscResourceProperty -ModuleInfo ($modulesWithDscResources | Where-Object Name -EQ $dscResource.ModuleName) -ResourceName $dscResource.Name
+            Get-DscResourceProperty -ModuleInfo $moduleInfo -ResourceName $dscResource.Name
         }
         else
         {
-            $moduleInfo = $modulesWithDscResources |
-                Where-Object { $_.Name -EQ $dscResource.ModuleName -and $_.Version -eq $dscResource.Version }
-
             Get-DscResourceProperty -ModuleInfo $moduleInfo -ResourceName $dscResource.Name |
-                Where-Object {
-                    $_.TypeConstraint -match '(DSC|MSFT)_.+' -and
-                    $_.TypeConstraint -notin 'MSFT_Credential', 'MSFT_KeyValuePair', 'MSFT_KeyValuePair[]'
-                }
+            Where-Object TypeConstraint -NotIn $standardCimTypes.CimType
         }
 
         foreach ($cimProperty in $cimProperties)
@@ -736,7 +893,7 @@ function Initialize-DscResourceMetaInfo
         $script:allDscResourcePropertiesTable
     }
 }
-#EndRegion '.\Public\Initialize-DscResourceMetaInfo.ps1' 80
+#EndRegion '.\Public\Initialize-DscResourceMetaInfo.ps1' 79
 #Region '.\Public\Publish-DscConfiguration.ps1' -1
 
 function Publish-DscConfiguration {
