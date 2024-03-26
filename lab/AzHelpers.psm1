@@ -235,6 +235,9 @@ function Connect-EXO
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
+        [string]$TenantId,
+
+        [Parameter(Mandatory = $true)]
         [string]$TenantName,
 
         [Parameter(Mandatory = $true)]
@@ -253,9 +256,9 @@ function Connect-EXO
 
     try
     {
-        $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$($environment.AzTenantId)/oauth2/v2.0/token" -Method POST -Body $tokenBody
+        $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token" -Method POST -Body $tokenBody
 
-        Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName #-ShowBanner:$false
+        Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName -ShowBanner:$false 
 
         Write-Host "Successfully connected to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'"
     }
