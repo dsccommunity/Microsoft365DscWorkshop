@@ -80,6 +80,10 @@ foreach ($environmentName in $environments) {
     $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Global Reader'"
     New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
 
+    $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$($appRegistration.DisplayName)'"
+    $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Exchange Administrator'"
+    New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
+
     try
     {
         Write-Host "Connecting to Exchange Online in environment '$environmentName'"
@@ -122,6 +126,11 @@ foreach ($environmentName in $environments) {
         }
 
         Add-RoleGroupMember "Organization Management" -Member $servicePrincipal.DisplayName
+
+        $role = Get-RoleGroup -Filter 'Name -eq "Security Administrator"'
+        Add-RoleGroupMember -Identity $role.ExchangeObjectId -Member $servicePrincipal.DisplayName
+        Add-RoleGroupMember -Identity 'Recipient Management' -Member $servicePrincipal.DisplayName
+
         New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "Address Lists" | Out-Null
         New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "E-Mail Address Policies" | Out-Null
         New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "Mail Recipients" | Out-Null

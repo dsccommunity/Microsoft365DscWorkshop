@@ -25,7 +25,8 @@ foreach ($lab in $labs)
     Connect-Azure @azureParams -ErrorAction Stop
 
     $exoParams = @{
-        TenantName             = $environment.AzTenantId
+        TenantId               = $environment.AzTenantId
+        TenantName             = $environment.AzTenantName
         ServicePrincipalId     = $environment.AzApplicationId
         ServicePrincipalSecret = $environment.AzApplicationSecret
     }
@@ -58,6 +59,13 @@ foreach ($lab in $labs)
         New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
     }
 
+    $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)")'"
+    $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Exchange Administrator'"
+    if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
+    {
+        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
+    }
+
     Write-Host 'Getting required permissions for all Microsoft365DSC workloads...' -NoNewline
     $permissions = Get-M365DSCCompiledPermissionList2
     Write-Host "found $($permissions.Count) permissions"
@@ -85,6 +93,11 @@ foreach ($lab in $labs)
     {
         Write-Host "Adding service principal '$($servicePrincipal.DisplayName)' to the role 'Organization Management' in environment '$environmentName' in the subscription '$($subscription.Name)'"
         Add-RoleGroupMember "Organization Management" -Member $servicePrincipal.DisplayName
+
+        $role = Get-RoleGroup -Filter 'Name -eq "Security Administrator"'
+        Add-RoleGroupMember -Identity $role.ExchangeObjectId -Member $servicePrincipal.DisplayName
+        Add-RoleGroupMember -Identity 'Recipient Management' -Member $servicePrincipal.DisplayName
+
         New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "Address Lists"
         New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "E-Mail Address Policies"
         New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "Mail Recipients"
