@@ -33,15 +33,16 @@ foreach ($lab in $labs)
     Connect-EXO @exoParams -ErrorAction Stop
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
+    $resourceGroupName = $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName
     Write-Host "Working in lab '$($lab.Name)' with environment '$environmentName'"
     
-    if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -ErrorAction SilentlyContinue))
+    if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
     {
         Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)'"
         $id = New-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
     }
     
-    $vm = Get-AzVM -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)"
+    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName"
     if ($vm.Identity.UserAssignedIdentities.Keys -eq $id.Id)
     {
         Write-Host "Managed Identity already assigned to VM 'Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)' in environment '$environmentName'"
@@ -52,14 +53,13 @@ foreach ($lab in $labs)
         Update-AzVM -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -VM $vm -IdentityType UserAssigned -IdentityId $id.Id | Out-Null
     }
 
-    $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)")'"
+    $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$environmentName")'"
     $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Global Reader'"
     if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
     {
         New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
     }
 
-    $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)")'"
     $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Exchange Administrator'"
     if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
     {
@@ -71,18 +71,19 @@ foreach ($lab in $labs)
     Write-Host "found $($permissions.Count) permissions"
 
     Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)' in environment '$environmentName'"
-    Set-ServicePrincipalAppPermissions -DisplayName "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -Permissions $permissions
+    Set-ServicePrincipalAppPermissions -DisplayName "Lcm$($datum.Global.ProjectSettings.Name)$environmentName" -Permissions $permissions
 
     #------------------------------------ EXO ----------------------------------------------------
 
-    if ($servicePrincipal = Get-MgServicePrincipal -Filter "displayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)")'" -ErrorAction SilentlyContinue)
+    $lcmServicePrincipalName = "Lcm$($datum.Global.ProjectSettings.Name)$environmentName"
+    if ($servicePrincipal = Get-ServicePrincipal -Identity $appPrincipal.Id -ErrorAction SilentlyContinue)
     {
-        Write-Host "The EXO service principal for application '$($datum.Global.ProjectSettings.Name)' already exists in environment '$environmentName' in the subscription '$($subscription.Name)'"
+        Write-Host "The EXO service principal for application '$lcmServicePrincipalName' already exists in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
     }
     else
     {
-        Write-Host "Creating the EXO service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Name)'"
-        $servicePrincipal = New-ServicePrincipal -AppId $appRegistration.AppId -ObjectId $appRegistration.Id -DisplayName "Service Principal Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)"
+        Write-Host "Creating the EXO service principal for application '$lcmServicePrincipalName' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
+        $servicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $lcmServicePrincipalName
     }
 
     if (Get-RoleGroupMember -Identity "Organization Management" | Where-Object Name -eq $servicePrincipal.ObjectId)
