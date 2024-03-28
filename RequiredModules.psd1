@@ -74,6 +74,8 @@
     'Microsoft.Graph.Planner'                              = '2.15.0'
     'Microsoft.Graph.Users'                                = '2.15.0'
     'Microsoft.Graph.Users.Actions'                        = '2.15.0'
+    'Microsoft.Graph.Applications'                         = '2.15.0'
+    'Microsoft.Graph.Authentication'                       = '2.15.0'
     'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.180'
     'MicrosoftTeams'                                       = '6.0.0'
     'MSCloudLoginAssistant'                                = '1.1.13'
