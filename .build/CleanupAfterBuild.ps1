@@ -7,4 +7,8 @@ task ModuleCleanupBeforeBuild {
         Remove-Item -Path $RequiredModulesDirectory\Microsoft.Graph.Authentication\2.16.0 -Recurse -Force
     }
 
+    $path = "$RequiredModulesDirectory\MSCloudLoginAssistant\*\MSCloudLoginAssistant.psm1"
+    $content = Get-Content -Path $path
+    $content = $content.Replace("`$domain.Id.split('.')[0]", "`$domain.Id")
+    $content | Set-Content -Path $path
 }
