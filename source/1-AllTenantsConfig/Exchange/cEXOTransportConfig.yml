@@ -1,5 +1,5 @@
 IsSingleInstance: Yes
 AddressBookPolicyRoutingEnabled: False
-MaxRecipientEnvelopeLimit: 580
+MaxRecipientEnvelopeLimit: 590
 TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
 ManagedIdentity: true
