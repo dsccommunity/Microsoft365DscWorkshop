@@ -25,8 +25,7 @@ foreach ($environmentName in $environments) {
         continue
     }
     
-    try
-    {
+    try {
         Write-Host "Connecting to Exchange Online in environment '$environmentName'"
         Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop
 
@@ -36,13 +35,12 @@ foreach ($environmentName in $environments) {
             Write-Error "Exchange Online is connected to a different tenant '$($exchangeConnetion.TenantId)', skipping cleanup." -ErrorAction Stop
         }
     }
-    catch
-    {
+    catch {
         Write-Host "Failed to connect to Exchange Online in environment '$environmentName' with error '$($_.Exception.Message)'" -ForegroundColor Red
         continue
     }
 
-    $servicePrincipal = Get-ServicePrincipal -Identity $environment.AzApplicationId -ErrorAction SilentlyContinue
+    $servicePrincipal = Get-ServicePrincipal -Identity $datum.Global.ProjectSettings.Name -ErrorAction SilentlyContinue
     if ($servicePrincipal) {
         Write-Host "Removing the EXO service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
         Remove-ServicePrincipal -Identity $servicePrincipal.AppId -Confirm:$false
@@ -60,8 +58,7 @@ foreach ($environmentName in $environments) {
         Write-Host "Removing the service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
         Remove-MgServicePrincipal -ServicePrincipalId $appPrincipal.Id
     }
-    else
-    {
+    else {
         Write-Host "Did not find service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
     }
 
@@ -69,8 +66,7 @@ foreach ($environmentName in $environments) {
         Write-Host "Removing the application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
         Remove-MgApplication -ApplicationId $appRegistration.Id
     }
-    else
-    {
+    else {
         Write-Host "Did not find application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
     }
 
