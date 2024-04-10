@@ -39,7 +39,7 @@ foreach ($environmentName in $environments) {
     Write-Host "Creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
     New-LabDefinition -Name "$($datum.Global.ProjectSettings.Name)$($environmentName)" -DefaultVirtualizationEngine Azure -Notes $notes
 
-    Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation 'UK South'
+    Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation $datum.Global.AzureDevOps.AgentAzureLocation
 
     Set-LabInstallationCredential -Username Install -Password Somepass1
 
