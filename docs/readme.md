@@ -25,8 +25,8 @@ For all other dependencies, please refer to the file [RequiredModules.psd1](/Req
 This walk through this guide and adapt the project, you need:
 
 - One or more Azure Tenant(s) to manage.
-- A Azure DevOps organization hosting this code.
-- A virtual machine for each tenant you want to manage. This virtual machine read the configuration and applies it to the specified tenant.
+- An Azure DevOps organization hosting this code.
+- A virtual machine running on Azure for each tenant you want to manage. This virtual machine read the configuration and applies it to the specified tenant.
 
 ## 1.4. Getting started
 
@@ -34,11 +34,10 @@ This walk through this guide and adapt the project, you need:
 
 To get started, you just need an Azure tenant and your personal computer. The steps in short are:
 
-1. Prepare the Azure tenant by registering required Apps.
-2. Create an Azure key vault.
-3. Clone the project and set the Azure tenant details in the configuration data.  
-4. Build the Artifacts
-5. Create a virtual machine that hosts the configuration engine (LCM) and install the required dependencies.
-6. Push and enact the configuration.
+1. Fork the project or put it into your own code management solution.
+2. Clone your project to your development machine.
+3. Set the Azure tenant details in the configuration data.  
+4. Build the Artifacts.
+5. Run the deployment scripts in the [lab](../lab/) folder.
 
 Please go to the [detailed guide](GettingStarted.md) to get started.

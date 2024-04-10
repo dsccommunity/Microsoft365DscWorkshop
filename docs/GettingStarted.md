@@ -1,0 +1,209 @@
+# 1. Getting started
+
+### :warning: You must be a local administrator one the machine you run the setup scripts on. 
+
+## 1.1. Forking the Project
+
+For this project to work it is required to change the content of some files. Hence, it is required to create yourself a
+writable copy of the project. Either you do a fork on GitHub or you import the content of this project into a project
+you host on a developer platform or code management solution of your choice.
+
+This guide expects you have created a fork on GitHub.
+
+## 1.2 Cloning the Project
+
+> :warning: Do not download the project as a Zip file. The build process will not work if you don't clone the project.
+
+Clone the project in Visual Studio Code Source Control Activity Bar or use the command `git.exe`. With the following command you clone the Git repository to your local machine. Please change the link according to your fork / project on your code management solution.
+
+```powershell
+git clone https://github.com/raandree/Microsoft365DscWorkshop.git C:\Git
+```
+
+## 1.3. Test the Build and Download Dependencies
+
+After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the `build.ps1` script. This build process takes 7 to 10 minutes to complete. Most of the time is used to download the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1).
+
+Please verify the artifacts created by the build pipeline, for example the MOF files in the [MOF](../output/MOF/).
+
+> :information_source: The [MOF](../output/MOF/) folder is not part of the project. It is created by the build process. If your don't find it after having run the build, something went wrong and you probably see errors in the console output of the build process.
+
+## 1.4. Set your Azure Tenant Details
+
+This solution can configure as many Azure tenants as you want. You configure the tenants your want to control in the [Azure.yml](../source//Global/Azure.yml) file. The file contains a usual setup, a dev, test and prod tenant.
+
+For each environment / tenant, please update the settings `AzTenantId`, `AzTenantName` and `AzSubscriptionId`. The `AzApplicationId` and `AzApplicationSecret` will be handled by the setup scripts called very soon. Remove the environments you do not need.
+
+## 1.5. Run the Lab Setup Scripts
+
+### 1.5.1 `00 Prep.ps1`
+
+> :warning: Please do not reuse the session you ran the build script in. Please kill the old PowerShell session and start a new one. Otherwise you may get weird errors because of conflicts like `The 'Connect-AzAccount' command was found in the module 'Az.Accounts', but the module could not be loaded due to the following error: [Assembly with same name is already loaded] For more information, run 'Import-Module Az.Accounts'.`.
+
+All the script to setup the environment are in the folder [lab](../lab/).
+
+Call the script [00 Prep.ps1](../lab//00%20Prep.ps1). It installs required modules on your machine.
+
+### 1.5.2 `10 Setup App Registrations.ps1`
+
+The script `10 Setup App Registrations.ps1` creates an app in each tenant defined in the `Azure.yml` file. Then it assigns these apps very high privileges as they are used to setup the required VMs (Azure DevOps build agents) and the managed identities with the required permissions for Microsoft365DSC. For each app, a service principal is created in Exchange Online.
+
+> :information_source: After the project setup is completed, the apps can be deleted. The script [91 Cleanup App Registrations.ps1](../lab//91%20Cleanup%20App%20Registrations.ps1) helps with that.
+
+The App ID and the encrypted secrets are written to the `Azure.yml` file. The file is then committed and pushed to the code repository.
+
+> :warning: For password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
+
+### 1.5.2 `20 Create Agent VMs.ps1`
+
+The script [20 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
+
+For creating the VMs, we use [AutomatedLab](https://automatedlab.org/en/latest/). All the complexity of that task is handled by that AutomatedLab. The script should run 20 to 30 minutes.
+
+### 1.1.3. Create a Key Vault in the Azure Tenant
+
+:ballot_box_with_check: Create a key vault in the tenant with the name `M365Demo1` in the resource group named also `M365Demo1`.
+
+> :warning: You can name the vault as you wish if the name is already in use. In this guide we except the vault is names `M365Demo1`.
+
+:ballot_box_with_check: Then go to 'access policies' and create a new access policy granting the app `DscKeyVaultReaderDev` the 'Secret permissions' -> 'Secret Management Operations' 'Get' and 'List'.
+
+:ballot_box_with_check: Then please go to 'Certificates' within the Key Vault and import the certificate [DscWorkerDev.pfx](/assets//certificates/DscWorkerDev.pfx) and assign the name `DscWorkerDev`. The password for the certificates of this demo is `x`. Whoever can read that certificate and has the password to decrypt it, has administrative access to the tenant.
+
+> :information_source: When you use this project template for production, of course you create your own certificates from your trusted certificate authority.
+
+### 1.1.4. Register an App for managing the tenant
+
+:ballot_box_with_check: Register another App named `DscWorkerDev`.
+
+:ballot_box_with_check: Then upload the certificate [DscWorkerDev.cer](/assets//certificates/DscWorkerDev.cer) to the newly created App.
+
+:ballot_box_with_check: Please give this App the following 'API permissions':
+
+- Application.Read.All
+- Application.ReadWrite.All
+- Directory.Read.All
+- Directory.ReadWrite.All
+- Group.Create
+- Group.Read.All
+- Group.ReadWrite.All
+- Organization.Read.All
+- Organization.ReadWrite.All
+- Policy.Read.All
+- Policy.ReadWrite.ApplicationConfiguration
+- Policy.ReadWrite.ConditionalAccess
+- RoleManagement.Read.All
+- RoleManagement.ReadWrite.Directory
+
+TODO: Check if required.
+
+:ballot_box_with_check: Then go to 'Roles and administrators' in Azure Active Directory and add the `DscWorkerDev` to the 'Global Administrator' group.
+
+> :warning: Don't forget to 'Grant admin consent' after assigning the permissions.
+>
+> :pencil2: Please make a note of the App ID as well.
+
+### 1.1.5. Create a VM for the DSC Local Configuration Manager (LCM)
+
+Each environment (tenant) will have its own LCM. The LCM is the engine that will enact the configuration and makes sure, that the tenant is in the desired state. For more information, refer to [Configuring the Local Configuration Manager](https://learn.microsoft.com/en-us/powershell/dsc/managing-nodes/metaconfig?view=dsc-1.1).
+
+:ballot_box_with_check: Create a virtual machine in the tenant named `LcmDev`. The role size does not have to be huge, 2 cores and 8GB of RAM is fine.
+
+> :information_source: The machine should be named `LcmDev` as this is the name of the node in the configuration data (see [LcmDev.yml](/source/AllNodes/Dev/LcmDev.yml))
+
+## 1.2. Building the Artifacts
+
+What are the artifacts created in this project? DSC is a part of PowerShell but the DSC engine, the component which applies the configuration, does not understand native PowerShell instructions. The instructions must be translated into [MOF Files](https://learn.microsoft.com/en-us/windows/win32/wmisdk/managed-object-format--mof-). The build pipeline provided in this project creates all required artifacts.
+
+### 1.2.1. Set environment details in the DSC Configuration Data
+
+The file [\source\Global\Azure.yml](/source//Global/Azure.yml) contains the data about all the Azure tenants you want to configure. It also assigns the tenant to an environment. In this sample, we are configuring only one tenant which represents the dev environment.
+
+:ballot_box_with_check: Before we can start the build process, we need to add information about the Azure tenant(s) to the solution. Please change these values in the file [\source\Global\Azure.yml](/source//Global/Azure.yml):
+
+- AzKeyVaultName
+- AzKeyVaultTenantId
+- AzKeyVaultServicePrincipalApplicationId
+- AzWorkerServicePrincipalApplicationId
+
+> :information_source: The passwords for the certificates need to changed only if you don't use the certificates provided with the repository.
+
+### 1.2.2. Starting the Build process
+
+The build process / build pipeline is layed out in multiple tasks that are provided by the [Sampler](https://github.com/gaelcolas/Sampler/), [Sampler.DscPipeline](https://github.com/SynEdgy/Sampler.DscPipeline/) and some custom tasks that are in the folder [.build](/.build). The complexity is wrapped by the script `build.ps1` and this build script is the single trigger we need to know for the beginning.
+
+By starting the build script, this sequence of steps defined in the [build.yaml](/build.yaml) is invoked:
+
+Name | description
+--- | ---
+Init | Prepare the current PowerShell session for the build.
+Clean | Remove previously created artifacts and temporary files form the [output](/output/) folder.
+AzureInit | Retrieves the DSC Worker certificate from the key vault.
+LoadDatumConfigData | Load the configuration data from [source](/source/).
+TestConfigData | Invoke the tests defined in the folder [tests](/tests/).
+CompileDatumRsop | Merge the configuration data into one large hash table.
+TestDscResources | Make sure all DSC dependencies are met.
+CompileRootConfiguration | Create the MOF file (the instruction file to configure the Azure tenant).
+CompileRootMetaMof | Create the Meta MOF files which connect the worker machines to the Azure Automation account.
+
+:ballot_box_with_check: Please open the cloned project in Visual Studio Code and run the build script. The first run will take a few minutes as the required modules must be downloaded first.
+
+:ballot_box_with_check: If the script succeeded, you will find the created artifacts in the [output folder](/output/). You may want to inspect these folders:
+
+- [CompressedModules](/output/CompressedModules/)
+- [MOF](/output/MOF/)
+- [MetaMOF](/output/MetaMOF//)
+- [RSOP](/output/RSOP/)
+- [RsopWithSource](/output/RsopWithSource/)
+
+## 1.3. Prepare the LCM Virtual Machine for the first DSC job
+
+The LCM running on this machine runs in the local system context. This context needs to have administrative permissions on the Azure tenant. Previously we have registered the App `DscWorkerDev` which has global admin permissions. We have then assigned the public part of the certificate [DscWorkerDev](/assets/certificates/DscWorkerDev.cer) to this account. In oder to use it, we need to import the certificate including the private key to the VM running the DSC LCM.
+
+### 1.3.1. Importing the `DscWorker` certificate mapped to the `DscWorker` app
+
+:ballot_box_with_check: Copy the file PFX certificate [DscWorkerDev](/assets/certificates/DscWorkerDev.pfx) to `C:\` of the virtual machine `DscLcm`. Then call the following command to import the certificate to the local machine:
+
+```powershell
+$password = 'x' | ConvertTo-SecureString -AsPlainText -Force
+Import-PfxCertificate -FilePath C:\DscWorkerDev.pfx -Password $password -CertStoreLocation Cert:\LocalMachine\My
+```
+
+### 1.3.2. Installing requirements
+
+:ballot_box_with_check: For running the DSC configuration, you need to install the required modules to the virtual machine that runs the LCM. The following scripts does the job.
+
+> :warning: Please change the version of the `Microsoft365DSC` module according to what is defined in [RequiredModules.psd1](/RequiredModules.psd1).
+
+```powershell
+Install-Module -Name Microsoft365DSC -RequiredVersion 1.23.315.1 -Force
+Install-Module -Name xPSDesiredStateConfiguration -Force
+
+Import-Module -Name Microsoft365DSC -RequiredVersion 1.23.315.1
+
+Update-M365DSCDependencies -Force
+```
+
+## 1.4. Pushing the configuration
+
+In this easy lab scenario, we use DSC in push mode to keep things simple. Hence, no Azure Automation Account is required. After everything works, you should move forward and try DSC in pull mode using the Azure Automation State Configuration service.
+
+> :information_source: For more information about the push and pull mode, see [Enacting configurations](https://learn.microsoft.com/en-us/powershell/dsc/pull-server/enactingconfigurations?view=dsc-1.1)
+
+:ballot_box_with_check: Copy the MOF file that you have previously build by calling the [build.ps1](/build.ps1) script to the virtual machine (`C:\DSC`). You find the MOF files in folder [MOF](/output/MOF/).
+
+> :warning: Make sure the MOF file has the same name as the machine or is named `localhost.mof`.
+
+:ballot_box_with_check: Then please push the configuration by calling this command:
+
+```powershell
+Start-DscConfiguration -Path C:\DSC -Wait -Force -Verbose
+```
+
+:ballot_box_with_check: If no error appeared in the terminal, please check the Azure AD of the tenant that DSC should have configured. There are two test groups defined in the file [LcmDev.yml](/source/AllNodes//Dev/LcmDev.yml). These groups should have been created in your Azure AD.
+
+## 1.5. Next steps
+
+If everything worked, you have successfully applied the configuration layed out in the Yaml files to your tenant(s). You have implemented an Infrastructure as Code model but not yet with a DevOps approach. For DevOps, you want to add continues integration (CI) and continues deployment (CD) in a release pipeline.
+
+The next steps are described in [Release Pipeline](./ReleasePipeline.md).

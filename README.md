@@ -21,3 +21,7 @@ The concept supports managing one or multiple Azure tenants. The configuration d
 Most automation systems are supported, Azure DevOps is the preferred one for easy integration with Azure security. Supports self-hosted build agents with a user-assigned Managed Identity or Microsoft-hosted agents with certificate authentication.
 
 ![Overview](doc/Overview-Push%20Mode.drawio.svg)
+
+### Getting Started
+
+For getting started, please refer to the [technical guide](./docs/readme.md).
