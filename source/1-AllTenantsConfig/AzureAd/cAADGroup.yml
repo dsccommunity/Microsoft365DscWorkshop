@@ -6,3 +6,4 @@ Items:
     SecurityEnabled: true
     TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
     ManagedIdentity: true
+    Ensure: Absent
