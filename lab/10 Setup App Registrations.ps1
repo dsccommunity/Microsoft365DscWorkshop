@@ -40,6 +40,11 @@ foreach ($environmentName in $environments) {
         Write-Host "  'AzApplicationId: $($appRegistration.AppId)'" -ForegroundColor Magenta
         Write-Host "  'AzApplicationSecret: $($clientSecret.SecretText)'" -ForegroundColor Magenta
 
+        Write-Host "Updating credentials for environment $environmentName."
+        $pass = $datum.__Definition.DatumHandlers.'Datum.ProtectedData::ProtectedDatum'.CommandOptions.PlainTextPassword | ConvertTo-SecureString -AsPlainText -Force
+        $environment.AzApplicationId = $appRegistration.AppId
+        $environment.AzApplicationSecret = $clientSecret.SecretText | Protect-Datum -Password $pass -MaxLineLength 9999
+
         Write-Host "Waiting 10 seconds before assigning the application '$($datum.Global.ProjectSettings.Name)' to the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
         Start-Sleep -Seconds 10
         Write-Host "Assigning the application '$($datum.Global.ProjectSettings.Name)' to the role 'Owner' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
@@ -145,3 +150,13 @@ foreach ($environmentName in $environments) {
 }
 
 Write-Host 'Finished working in all environments'
+
+Write-Host "Updating the file '\source\Global\Azure\Azure.yml' to store the new credentials."
+$datum.Global.Azure | ConvertTo-Yaml | Out-File -FilePath $PSScriptRoot\..\source\Global\Azure.yml -Force
+
+Write-Host "Committing and pushing the changes to the repository '$(git config --get remote.origin.url)'."
+git add ../source/Global/Azure.yml
+git commit -m 'Tenant Update' | Out-Null
+git push | Out-Null
+
+Write-Host Done. -ForegroundColor Green

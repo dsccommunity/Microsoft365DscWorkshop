@@ -3,23 +3,25 @@ $requiredModules = @{
     'Microsoft.Graph.Applications'        = '2.15.0'
     'Microsoft.Graph.Authentication'      = '2.15.0'
     'Microsoft.Graph.Identity.Governance' = '2.15.0'
-    'Az.Resources'                        = 'latest'
-    'Microsoft365DSC'                     = 'latest'
+    'Az.Resources'                        = 'latest'    
     'powershell-yaml'                     = 'latest'
-    'VSTeam'                              = 'latest'
+    Microsoft365DSC                       = 'latest'
+    VSTeam                                = 'latest'
+    AutomatedLab                          = 'latest'
 }
 
 foreach ($module in $requiredModules.GetEnumerator()) {
     $param = @{
-        Name  = $module.Name
-        Scope = 'AllUsers'
-        Force = $true
+        Name         = $module.Name
+        Scope        = 'AllUsers'
+        Force        = $true
+        AllowClobber = $true
     }
     if ($module.Value -ne 'latest') {
         $param.RequiredVersion = $module.Value
     }
 
-    $moduleInfo = Get-Module -Name $module -ListAvailable
+    $moduleInfo = Get-Module -Name $module.Name -ListAvailable
     if ($module.Value -ne 'latest') {
         $moduleInfo = $moduleInfo | Where-Object Version -EQ $module.Value
     }
@@ -29,6 +31,35 @@ foreach ($module in $requiredModules.GetEnumerator()) {
         Install-Module @param
     }
     else {
-        Write-Host "Module '$($module.Name)' with version '$($moduel.Value)' is already installed"
+        Write-Host "Module '$($module.Name)' with version '$($module.Value)' is already installed"
     }
+}
+
+Write-Host 'Installing the Azure modules for AutomatedLab...' -NoNewline
+Install-LabAzureRequiredModule -Scope AllUsers
+Write-Host done.
+if (-not (Test-LabAzureModuleAvailability)) {
+    Write-Host 'Azure modules for AutomatedLab are still not available. Please restart the script.'
+    return
+}
+
+Write-Host 'Enabling remoting for the lab hosts...' -NoNewline
+if (-not (Test-LabHostRemoting)) {
+    Enable-LabHostRemoting
+}
+Write-Host done.
+if (-not (Test-LabHostRemoting)) {
+    Write-Host 'Remoting for the lab hosts is still not enabled. Please restart the script.'
+    return
+}
+
+if ($null -eq (git config --global user.email)) {
+    $emailAddress = Read-Host -Prompt 'The git user email is not set. Please enter your email address'
+    git config --global user.email $emailAddress
+
+    $yourName = Read-Host -Prompt 'The git user name is not set. Please enter your / a name'
+    git config --global user.name $yourName
+}
+else {
+    Write-Host 'Git user email and name are already set.'
 }
