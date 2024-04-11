@@ -7,12 +7,38 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
 Import-Module -Name $here\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
 
+if ($datum.Global.AzureDevOps.OrganizationName -eq '<OrganizationName>')
+{
+    $datum.Global.AzureDevOps.OrganizationName = Read-Host -Prompt 'Enter the name of your Azure DevOps organization'
+    $datum.Global.AzureDevOps | ConvertTo-Yaml | Out-File $here\..\source\Global\AzureDevOps.yml
+}
+
+if ($datum.Global.AzureDevOps.PersonalAccessToken -eq '<PersonalAccessToken>')
+{
+    $pat = Read-Host -Prompt 'Enter your Azure DevOps Personal Access Token'
+    $pass = $datum.__Definition.DatumHandlers.'Datum.ProtectedData::ProtectedDatum'.CommandOptions.PlainTextPassword | ConvertTo-SecureString -AsPlainText -Force
+    $datum.Global.AzureDevOps.PersonalAccessToken = $pat | Protect-Datum -Password $pass -MaxLineLength 9999
+
+    $datum.Global.AzureDevOps | ConvertTo-Yaml | Out-File $here\..\source\Global\AzureDevOps.yml
+}
+
+if ((git status -s) -like '*source/Global/AzureDevOps.yml')
+{
+    git add $here\..\source\Global\AzureDevOps.yml
+    git commit -m 'Updated Azure DevOps Organization Data' | Out-Null
+    git push | Out-Null
+}
+
 Set-VSTeamAccount -Account "https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName)/" -PersonalAccessToken $datum.Global.AzureDevOps.PersonalAccessToken
 Write-Host "Connected to Azure DevOps organization '$($datum.Global.AzureDevOps.OrganizationName)' with PAT."
 
-if (-not (Get-VSTeamPool))
+try
 {
-    Write-Error "No data returned from Azure DevOps organization '$($datum.Global.AzureDevOps.OrganizationName)'. The authentication might have failed, please check the PAT."
+    Get-VSTeamPool
+}
+catch
+{
+    Write-Error "No data returned from Azure DevOps organization '$($datum.Global.AzureDevOps.OrganizationName)'. The authentication might have failed, please check the Organization Name and the PAT."
     return
 }
 
