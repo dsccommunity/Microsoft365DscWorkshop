@@ -22,23 +22,21 @@ foreach ($environmentName in $environments) {
 
     Write-Host "Checking permissions for environment '$environmentName' (TenantId $($environment.AzTenantId), SubscriptionId $($environment.AzSubscriptionId))"
 
-    $managedIdentityName = "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)"
-
     $requiredPermissions = Get-M365DSCCompiledPermissionList2
-    $permissions = Get-ServicePrincipalAppPermissions -DisplayName $managedIdentityName
+    $permissions = Get-ServicePrincipalAppPermissions -DisplayName $datum.Global.ProjectSettings.Name
 
     $permissionDifference = (Compare-Object -ReferenceObject $requiredPermissions -DifferenceObject $permissions).InputObject
 
     if ($permissionDifference) {
-        Write-Warning "There are $($permissionDifference.Count) differences in permissions for managed identity '$managedIdentityName'"
+        Write-Warning "There are $($permissionDifference.Count) differences in permissions for managed identity '$($datum.Global.ProjectSettings.Name)'"
         Write-Host "$($permissionDifference | ConvertTo-Json -Depth 10)"
         Write-Host
 
-        Write-Host "Updating permissions for managed identity '$managedIdentityName'"
-        Set-ServicePrincipalAppPermissions -DisplayName $managedIdentityName -Permissions $requiredPermissions
+        Write-Host "Updating permissions for managed identity '$($datum.Global.ProjectSettings.Name)'"
+        Set-ServicePrincipalAppPermissions -DisplayName $datum.Global.ProjectSettings.Name -Permissions $requiredPermissions
     }
     else {
-        Write-Host "Permissions for managed identity '$managedIdentityName' are up to date" -ForegroundColor Green
+        Write-Host "Permissions for managed identity '$($datum.Global.ProjectSettings.Name)' are up to date" -ForegroundColor Green
     }
 
 }
