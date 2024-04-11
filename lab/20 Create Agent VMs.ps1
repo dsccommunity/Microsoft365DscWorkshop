@@ -60,7 +60,7 @@ foreach ($environmentName in $environments) {
 
 Write-Host "Finished creating all labs VMs for the project '$($datum.Global.ProjectSettings.Name)'" -ForegroundColor Green
 Write-Host "Starting to assign managed identity to VMs and set permissions for Microsoft365DSC workloads" -ForegroundColor Green
-
+$labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
 foreach ($lab in $labs)
 {
     $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
