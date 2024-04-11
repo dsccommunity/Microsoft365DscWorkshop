@@ -84,7 +84,7 @@ foreach ($environmentName in $environments)
             name = $environmentName
         } | ConvertTo-Json
     
-        Invoke-VSTeamRequest -Method Post -ContentType 'application/json' -Body $requestBodyEnvironment -ProjectName Microsoft365DscWorkshop -Area distributedtask -Resource environments -Version '7.1-preview.1' | Out-Null
+        Invoke-VSTeamRequest -Method Post -ContentType 'application/json' -Body $requestBodyEnvironment -ProjectName $datum.Global.AzureDevOps.ProjectName -Area distributedtask -Resource environments -Version '7.1-preview.1' | Out-Null
     }
     else
     {
