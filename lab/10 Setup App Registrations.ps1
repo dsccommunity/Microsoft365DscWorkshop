@@ -152,7 +152,7 @@ foreach ($environmentName in $environments) {
 Write-Host 'Finished working in all environments'
 
 Write-Host "Updating the file '\source\Global\Azure\Azure.yml' to store the new credentials."
-$datum.Global.Azure | ConvertTo-Yaml | Out-File -FilePath $PSScriptRoot\..\source\Global\Azure.yml -Force
+$datum.Global.Azure | ConvertTo-Yaml | Out-File -FilePath $here\..\source\Global\Azure.yml -Force
 
 Write-Host "Committing and pushing the changes to the repository '$(git config --get remote.origin.url)'."
 git add ../source/Global/Azure.yml

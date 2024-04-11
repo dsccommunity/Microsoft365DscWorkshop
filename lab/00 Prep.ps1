@@ -12,10 +12,11 @@ $requiredModules = @{
 
 foreach ($module in $requiredModules.GetEnumerator()) {
     $param = @{
-        Name         = $module.Name
-        Scope        = 'AllUsers'
-        Force        = $true
-        AllowClobber = $true
+        Name               = $module.Name
+        Scope              = 'AllUsers'
+        Force              = $true
+        AllowClobber       = $true
+        SkipPublisherCheck = $true
     }
     if ($module.Value -ne 'latest') {
         $param.RequiredVersion = $module.Value
@@ -43,6 +44,9 @@ if (-not (Test-LabAzureModuleAvailability)) {
     return
 }
 
+Write-Host '------------------------------------------------------------' -ForegroundColor Magenta
+Write-Host 'PowerShell may exit during the next step. If it does, please restart the script.' -ForegroundColor Magenta
+Write-Host '------------------------------------------------------------' -ForegroundColor Magenta
 Write-Host 'Enabling remoting for the lab hosts...' -NoNewline
 if (-not (Test-LabHostRemoting)) {
     Enable-LabHostRemoting
@@ -63,3 +67,5 @@ if ($null -eq (git config --global user.email)) {
 else {
     Write-Host 'Git user email and name are already set.'
 }
+
+Write-Host 'The preparation is done. You can now continue with the next steps.'

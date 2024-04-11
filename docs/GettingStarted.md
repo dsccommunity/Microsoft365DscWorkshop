@@ -36,11 +36,15 @@ For each environment / tenant, please update the settings `AzTenantId`, `AzTenan
 
 ## 1.5. Run the Lab Setup Scripts
 
+All the script to setup the environment are in the folder [lab](../lab/).
+
 ### 1.5.1 `00 Prep.ps1`
 
 > :warning: Please do not reuse the session you ran the build script in. Please kill the old PowerShell session and start a new one. Otherwise you may get weird errors because of conflicts like `The 'Connect-AzAccount' command was found in the module 'Az.Accounts', but the module could not be loaded due to the following error: [Assembly with same name is already loaded] For more information, run 'Import-Module Az.Accounts'.`.
 
-All the script to setup the environment are in the folder [lab](../lab/).
+> :warning: This script may kill the PowerShell session when setting local policies required for AutomatedLab. In this case, just restart it.
+
+
 
 Call the script [00 Prep.ps1](../lab//00%20Prep.ps1). It installs required modules on your machine.
 
@@ -50,9 +54,9 @@ The script `10 Setup App Registrations.ps1` creates an app in each tenant define
 
 > :information_source: After the project setup is completed, the apps can be deleted. The script [91 Cleanup App Registrations.ps1](../lab//91%20Cleanup%20App%20Registrations.ps1) helps with that.
 
-The App ID and the encrypted secrets are written to the `Azure.yml` file. The file is then committed and pushed to the code repository.
+The App ID and the encrypted secrets are shown on the console in case you want to copy them and also written to the `Azure.yml` file. The file is then committed and pushed to the code repository.
 
-> :warning: For password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
+> :warning: The password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
 
 ### 1.5.2 `20 Create Agent VMs.ps1`
 
