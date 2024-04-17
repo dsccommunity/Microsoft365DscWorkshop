@@ -1,11 +1,10 @@
-$here = $PSScriptRoot
-$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+$requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
 if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
-Import-Module -Name $here\AzHelpers.psm1 -Force
-$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
+$datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
 foreach ($environmentName in $environments) {
@@ -114,12 +113,12 @@ foreach ($environmentName in $environments) {
         continue
     }
 
-    if ($servicePrincipal = Get-ServicePrincipal | Where-Object DisplayName -EQ $appRegistration.Displayname) {
+    if ($servicePrincipal = Get-ServicePrincipal | Where-Object DisplayName -EQ $appPrincipal.Displayname) {
         Write-Host "The EXO service principal for application '$($datum.Global.ProjectSettings.Name)' already exists in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
     }
     else {
         Write-Host "Creating the EXO service principal for application '$($datum.Global.ProjectSettings.Name)' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
-        $servicePrincipal = New-ServicePrincipal -AppId $appRegistration.AppId -ObjectId $appRegistration.Id -DisplayName $appRegistration.Displayname
+        $servicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $appPrincipal.Displayname
     }
 
     if (Get-RoleGroupMember -Identity 'Organization Management' | Where-Object Name -EQ $servicePrincipal.ObjectId) {
@@ -152,11 +151,12 @@ foreach ($environmentName in $environments) {
 Write-Host 'Finished working in all environments'
 
 Write-Host "Updating the file '\source\Global\Azure\Azure.yml' to store the new credentials."
-$datum.Global.Azure | ConvertTo-Yaml | Out-File -FilePath $here\..\source\Global\Azure.yml -Force
+$datum.Global.Azure | ConvertTo-Yaml | Out-File -FilePath $PSScriptRoot\..\source\Global\Azure.yml -Force
 
 Write-Host "Committing and pushing the changes to the repository '$(git config --get remote.origin.url)'."
+$currentBranchName = git rev-parse --abbrev-ref HEAD
 git add ../source/Global/Azure.yml
 git commit -m 'Tenant Update' | Out-Null
-git push | Out-Null
+git push --set-upstream origin $currentBranchName | Out-Null
 
 Write-Host Done. -ForegroundColor Green

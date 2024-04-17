@@ -20,3 +20,5 @@ output/RequiredModules/DscBuildHelpers/*
 !output/RequiredModules/Sampler.DscPipeline
 output/RequiredModules/Sampler.DscPipeline/*
 !output/RequiredModules/Sampler.DscPipeline/0.8.0
+
+lab/testResults.xml

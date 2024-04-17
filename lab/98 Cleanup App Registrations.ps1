@@ -1,10 +1,9 @@
-$here = $PSScriptRoot
-$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+$requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
 if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
-$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+$datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
 foreach ($environmentName in $environments) {

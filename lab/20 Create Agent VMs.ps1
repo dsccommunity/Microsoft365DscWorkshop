@@ -1,11 +1,10 @@
-$here = $PSScriptRoot
-$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+$requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
 if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
-Import-Module -Name $here\AzHelpers.psm1 -Force
-$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
+$datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
 if (-not (Test-LabAzureModuleAvailability)) {
@@ -41,7 +40,7 @@ foreach ($environmentName in $environments) {
 
     Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation $datum.Global.AzureDevOps.AgentAzureLocation
 
-    Set-LabInstallationCredential -Username Install -Password Somepass1
+    Set-LabInstallationCredential -Username $datum.Global.AzureDevOps.BuildAgents.UserName -Password $datum.Global.AzureDevOps.BuildAgents.Password
 
     $PSDefaultParameterValues = @{
         'Add-LabMachineDefinition:ToolsPath'       = "$labSources\Tools"

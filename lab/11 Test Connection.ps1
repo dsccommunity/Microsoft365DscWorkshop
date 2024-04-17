@@ -6,15 +6,14 @@ param (
     [switch]$DoNotDisconnect
 )
 
-$here = $PSScriptRoot
-$requiredModulesPath = (Resolve-Path -Path $here\..\output\RequiredModules).Path
+$requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
 if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 {
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
-Import-Module -Name $here\AzHelpers.psm1 -Force
-$datum = New-DatumStructure -DefinitionFile $here\..\source\Datum.yml
+Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
+$datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
 if ($EnvironmentName)
@@ -49,3 +48,5 @@ foreach ($environmentName in $environments)
         Disconnect-ExchangeOnline -Confirm:$false
     }
 }
+
+Write-Host "Connection test completed" -ForegroundColor Green
