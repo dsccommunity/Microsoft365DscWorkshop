@@ -7,7 +7,7 @@ output/RequiredModules/*
 
 !output/RequiredModules/ProtectedData
 output/RequiredModules/ProtectedData/*
-!output/RequiredModules/ProtectedData/4.2.0
+!output/RequiredModules/ProtectedData/5.0.0
 
 !output/RequiredModules/DscConfig.M365
 output/RequiredModules/DscConfig.M365/*
