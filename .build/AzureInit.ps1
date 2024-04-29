@@ -1,7 +1,12 @@
 Task AzureInit {
 
-    Remove-Module -Name Az.Accounts -ErrorAction SilentlyContinue
-    Import-Module -Name Az.Resources
+    try {
+        Remove-Module -Name Az.Accounts -ErrorAction SilentlyContinue
+        Import-Module -Name Az.Resources -ErrorAction SilentlyContinue
+    }
+    catch {
+        Write-Verbose 'There were issues importing the Az modules.'
+    }
 
     $datum = New-DatumStructure -DefinitionFile $ProjectPath\source\Datum.yml
     $global:azBuildParameters = @{}
