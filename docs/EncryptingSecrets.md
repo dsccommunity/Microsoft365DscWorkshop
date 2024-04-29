@@ -4,6 +4,7 @@
   - [1.3. Update the `Datum.yml` file](#13-update-the-datumyml-file)
   - [1.4. Update the existing Credentials](#14-update-the-existing-credentials)
   - [1.5. Test your new Encrypted Secrets](#15-test-your-new-encrypted-secrets)
+  - [Update Remaining Credentials](#update-remaining-credentials)
 
 # 1. Encrypting Secrets in Configuration Data
 
@@ -98,6 +99,10 @@ $d = New-DatumStructure -DefinitionFile .\source\Datum.yml
 $d.Global.Azure.Environments.Dev.AzApplicationSecret
 ```
 
-If you access the key `AzApplicationSecret`, you should see the application secret and not a string like `[ENC=PE9ianMgVmVyc2lvbj...`. 
+If you access the key `AzApplicationSecret`, you should see the application secret and not a string like `[ENC=PE9ianMgVmVyc2lvbj...`.
 
 Finally you can use the script [11 Test Connection.ps1](../lab//11%20Test%20Connection.ps1) to test connecting to your Azure tenants.
+
+## Update Remaining Credentials
+
+Finally, update all other credentials in the same way. Very likely you have an encrypted personal access token for Azure DevOps in the file [AzureDevOps.yml](../source/Global/AzureDevOps.yml). In the same file, there is also a password used for configuring the Azure DevOps build workers.
