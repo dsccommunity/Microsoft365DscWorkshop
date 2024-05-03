@@ -38,7 +38,7 @@ DatumHandlers:
   Datum.ProtectedData::ProtectedDatum:
     CommandOptions:
       PlainTextPassword: SomeSecret
-      #CertificateThumbprint: ABC
+      #Certificate: <Thumbprint>
   Datum.InvokeCommand::InvokeCommand:
     SkipDuringLoad: true
 
