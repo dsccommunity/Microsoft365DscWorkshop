@@ -5,4 +5,4 @@ AgentPoolName: DSC
 AgentAzureLocation: UK South
 BuildAgents:
   UserName: worker
-  Password: <PersonalAccessToken>
+  Password: <Password>
