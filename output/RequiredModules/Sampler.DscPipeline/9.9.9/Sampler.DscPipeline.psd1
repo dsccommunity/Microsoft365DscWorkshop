@@ -4,7 +4,7 @@
     RootModule        = 'Sampler.DscPipeline.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '0.8.0'
+    ModuleVersion     = '9.9.9'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()

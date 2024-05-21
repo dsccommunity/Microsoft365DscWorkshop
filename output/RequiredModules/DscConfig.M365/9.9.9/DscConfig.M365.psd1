@@ -1,6 +1,6 @@
 @{
     RootModule        = 'DscConfig.M365.psm1'
-    ModuleVersion     = '1.0.0'
+    ModuleVersion     = '9.9.9'
     GUID              = '3ed9a67d-9e7e-4c59-86b3-4f4bfd929c31'
     Author            = 'DSC Community'
     CompanyName       = 'DSC Community'
