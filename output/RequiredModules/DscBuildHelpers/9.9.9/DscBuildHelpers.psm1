@@ -63,12 +63,12 @@ function Get-RequiredModulesFromMOF {
         $moduleVersion = $null
 
         Get-Content -Path $Path -Encoding Unicode | ForEach-Object {
-    
+
             $line = $_;
             if ($line -match '^\s?Instance of') {
                 ## We have a new instance so write the existing one
                 if (($null -ne $moduleName) -and ($null -ne $moduleVersion)) {
-            
+
                     $modules[$moduleName] = $moduleVersion;
                     $moduleName = $null
                     $moduleVersion = $null
@@ -239,11 +239,11 @@ function Clear-CachedDscResource {
 
     if ($pscmdlet.ShouldProcess($env:computername)) {
         Write-Verbose 'Stopping any existing WMI processes to clear cached resources.'
-        
+
         ### find the process that is hosting the DSC engine
         $dscProcessID = Get-WmiObject msft_providers |
           Where-Object {$_.provider -like 'dsccore'} |
-            Select-Object -ExpandProperty HostProcessIdentifier 
+            Select-Object -ExpandProperty HostProcessIdentifier
 
         ### Stop the process
         if ($dscProcessID -and $pscmdlet.ShouldProcess('DSC Process')) {
@@ -303,7 +303,7 @@ function Find-ModuleToPublish {
         [ValidateNotNullOrEmpty()]
         [String[]]
         $DscBuildSourceResources,
-        
+
         [ValidateNotNullOrEmpty()]
         [Microsoft.PowerShell.Commands.ModuleSpecification[]]
         $ExcludedModules = $null,
@@ -392,7 +392,7 @@ function Get-DscFailedResource {
             else {
                 $resourceNameOrPath = $resource.Name
             }
-            
+
             if (-not (Test-xDscResource -Name $resourceNameOrPath)) {
                 Write-Warning "`tResources $($_.name) is invalid."
                 $resource
@@ -516,7 +516,6 @@ function Get-DscResourceProperty
 
     foreach ($key in $resourceProperties.Keys)
     {
-
         $resourceProperty = $resourceProperties.$key
 
         $dscClassParameterInfo = & $ModuleInfo {
@@ -529,6 +528,7 @@ function Get-DscResourceProperty
             $result = @{
                 ElementType         = $null
                 Type                = $null
+                IsArray             = $false
             }
 
             try
@@ -538,6 +538,7 @@ function Get-DscResourceProperty
                 if ($result.Type.IsArray)
                 {
                     $result.ElementType = $result.Type.GetElementType().FullName
+                    $result.IsArray = $true
                 }
             }
             catch
@@ -547,6 +548,14 @@ function Get-DscResourceProperty
             return $result
 
         } $resourceProperty.TypeConstraint
+
+        $isArrayType = if ($null -ne $dscClassParameterInfo.Type){
+            $dscClassParameterInfo.IsArray
+        }
+        else
+        {
+            $resourceProperty.TypeConstraint -match '.+\[\]'
+        }
 
         [PSCustomObject]@{
             Name                = $resourceProperty.Name
@@ -559,6 +568,7 @@ function Get-DscResourceProperty
             Mandatory           = $resourceProperty.Mandatory
             IsKey               = $resourceProperty.IsKey
             Range               = $resourceProperty.Range
+            IsArray             = $isArrayType
             ElementType         = $dscClassParameterInfo.ElementType
             Type                = $dscClassParameterInfo.Type
         }
@@ -639,12 +649,289 @@ function Get-DscSplattedResource
         $null = $stringBuilder.AppendLine("$ResourceName {")
     }
 
+    foreach ($propertyName in $Properties.Keys)
+    {
+        $cimProperty = Get-CimType -DscResourceName $ResourceName -PropertyName $propertyName
+        if ($cimProperty)
+        {
+            Write-CimProperty -StringBuilder $stringBuilder -CimProperty $cimProperty -Path $propertyName -ResourceName $ResourceName
+        }
+        else
+        {
+            $null = $stringBuilder.AppendLine("$propertyName = `$Parameters['$propertyName']")
+        }
+    }
+
+    $null = $stringBuilder.AppendLine("}")
+    Write-Debug -Message ('Generated Resource Block = {0}' -f $stringBuilder.ToString())
+
+    if ($NoInvoke)
+    {
+        [scriptblock]::Create($stringBuilder.ToString())
+    }
+    else
+    {
+        if ($Properties)
+        {
+            [scriptblock]::Create($stringBuilder.ToString()).Invoke($Properties)
+        } else
+        {
+            [scriptblock]::Create($stringBuilder.ToString()).Invoke()
+        }
+    }
+}
+
+function Write-CimProperty
+{
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Text.StringBuilder]$StringBuilder,
+
+        [Parameter(Mandatory = $true)]
+        [object]$CimProperty,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ResourceName
+    )
+
+    $null = $StringBuilder.Append("$($CimProperty.Name) = ")
+    if ($CimProperty.IsArray -or $CimProperty.PropertyType.IsArray -or $CimProperty.CimType -eq 'InstanceArray') {
+        $null = $StringBuilder.Append("@(`n")
+
+        $pathValue = Get-PropertiesData -Path $Path
+
+        $i = 0
+        foreach ($element in $pathValue)
+        {
+            $p = $Path + $i
+            Write-CimPropertyValue -StringBuilder $StringBuilder -CimProperty $CimProperty -Path $p -ResourceName $ResourceName
+            $i++
+        }
+
+        $null = $StringBuilder.Append(")`n")
+    }
+    else
+    {
+        Write-CimPropertyValue -StringBuilder $StringBuilder -CimProperty $CimProperty -Path $Path -ResourceName $ResourceName
+    }
+}
+
+function Write-CimPropertyValue
+{
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Text.StringBuilder]$StringBuilder,
+
+        [Parameter(Mandatory = $true)]
+        [object]$CimProperty,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ResourceName
+    )
+
+    $type = Get-DynamicTypeObject -Object $CimProperty
+    if ($type.IsArray)
+    {
+        if ($type -is [pscustomobject])
+        {
+            $typeName = $type.TypeConstraint -replace '\[\]', ''
+            $typeProperties = ($allDscSchemaClasses.Where({ $_.CimClassName -eq $typeName -and $_.ResourceName -eq $ResourceName })).CimClassProperties
+        }
+        else
+        {
+            $typeName = $type.Name -replace '\[\]', ''
+            $typeProperties = $type.GetElementType().GetProperties().Where({$_.CustomAttributes.AttributeType.Name -eq 'DscPropertyAttribute' })
+        }
+    }
+    else
+    {
+        if ($type -is [pscustomobject])
+        {
+            $typeName = $type.TypeConstraint
+            $typeProperties = ($allDscSchemaClasses.Where({ $_.CimClassName -eq $typeName -and $_.ResourceName -eq $ResourceName })).CimClassProperties
+        }
+        elseif ($type -is [type])
+        {
+            $typeName = $type.Name
+            $typeProperties = $type.GetProperties().Where({$_.CustomAttributes.AttributeType.Name -eq 'DscPropertyAttribute' })
+        }
+        elseif ($type.GetType().FullName -eq 'Microsoft.Management.Infrastructure.Internal.Data.CimClassPropertyOfClass')
+        {
+            $typeName = $type.ReferenceClassName
+            $typeProperties = ($allDscSchemaClasses.Where({ $_.CimClassName -eq $typeName -and $_.ResourceName -eq $ResourceName })).CimClassProperties
+        }
+    }
+
+    $null = $StringBuilder.AppendLine($typeName)
+    $null = $StringBuilder.AppendLine('{')
+
+    foreach ($property in $typeProperties)
+    {
+        #function Get-IsCimType
+        $isCimProperty = if ($property.GetType().Name -eq 'CimClassPropertyOfClass')
+        {
+            if ($property.CimType -in 'Instance', 'InstanceArray')
+            {
+                $true
+            }
+            else
+            {
+                $property.CimType -notin $standardCimTypes.CimType
+            }
+        }
+        else
+        {
+            $property.PropertyType.FullName -notin $standardCimTypes.DotNetType
+        }
+
+        $pathValue = Get-PropertiesData -Path ($Path + $property.Name)
+
+        if ($null -ne $pathValue)
+        {
+            if ($isCimProperty)
+            {
+                Write-CimProperty -StringBuilder $StringBuilder -CimProperty $property -Path ($Path + $property.Name) -ResourceName $ResourceName
+            }
+            else
+            {
+                $paths = foreach ($p in $Path) { "['$p']" }
+                $null = $StringBuilder.AppendLine("$($property.Name) = `$Parameters$($paths -join '')['$($property.Name)']")
+            }
+        }
+    }
+    $null = $StringBuilder.AppendLine('}')
+}
+
+function Get-PropertiesData
+{
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string[]]$Path
+    )
+
+    $paths = foreach ($p in $Path) { "['$p']" }
+
+    $pathValue = try
+    {
+        Invoke-Expression "`$Properties$($paths -join '')"
+    }
+    catch
+    {
+        $null
+    }
+
+    return $pathValue
+}
+
+function Get-CimType
+{
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$DscResourceName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$PropertyName
+    )
+
+    $cimType = $allDscResourcePropertiesTable."$ResourceName-$PropertyName"
+
+    if ($null -eq $cimType)
+    {
+        Write-Verbose "The CIM Type for DSC resource '$DscResourceName' with the name '$PropertyName'. It is not a CIM type."
+        return
+    }
+
+    return $cimType
+}
+
+function Get-DynamicTypeObject
+{
+    [CmdletBinding()]
+
+    param (
+        [Parameter(Mandatory = $true)]
+        [object]$Object
+    )
+
+    if ($Object.ElementType)
+    {
+        return $Object.Type.GetElementType()
+    }
+    elseif ($Object.PropertyType)
+    {
+        return $Object.PropertyType
+    }
+    elseif ($Object.Type)
+    {
+        return $Object.Type
+    }
+    else
+    {
+        return $Object
+    }
+}
+
+function Get-DscSplattedResource3
+{
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [String]
+        $ResourceName,
+
+        [Parameter()]
+        [String]
+        $ExecutionName,
+
+        [Parameter()]
+        [hashtable]
+        $Properties,
+
+        [Parameter()]
+        [switch]
+        $NoInvoke
+    )
+
+    if (-not $script:allDscResourcePropertiesTable -and -not $script:allDscResourcePropertiesTableWarningShown) {
+        Write-Warning -Message "The 'allDscResourcePropertiesTable' is not defined. This will be an expensive operation. Resources with MOF sub-types are only supported when calling 'Initialize-DscResourceMetaInfo' once before starting the compilation process."
+        $script:allDscResourcePropertiesTableWarningShown = $true
+    }
+
+    $standardCimTypes = Get-StandardCimType
+
+    # Remove Case Sensitivity of ordered Dictionary or Hashtables
+    $Properties = @{} + $Properties
+
+    $stringBuilder = [System.Text.StringBuilder]::new()
+    $null = $stringBuilder.AppendLine("Param([hashtable]`$Parameters)")
+    $null = $stringBuilder.AppendLine()
+
+    if ($ExecutionName)
+    {
+        $null = $stringBuilder.AppendLine("$ResourceName '$ExecutionName' {")
+    }
+    else
+    {
+        $null = $stringBuilder.AppendLine("$ResourceName {")
+    }
+
     foreach ($PropertyName in $Properties.Keys) {
 
         $cimType = $allDscResourcePropertiesTable."$ResourceName-$PropertyName"
         if ($cimType)
         {
+            $cimTypeConstraint = $cimType.TypeConstraint.Replace('[]', '')
             $isCimArray = $cimType.TypeConstraint.EndsWith("[]")
+            $cimClass = $allDscSchemaClasses | Where-Object CimClassName -eq $cimTypeConstraint
             $cimProperties = $Properties.$PropertyName
             $null = $stringBuilder.AppendLine("$PropertyName = {0}" -f $(if ($isCimArray) { '@(' } else { "$($cimType.TypeConstraint.Replace('[]', '')) {" }))
             if ($isCimArray)
@@ -662,14 +949,36 @@ function Get-DscSplattedResource
 
                     foreach ($cimSubProperty in $cimPropertyValue.GetEnumerator())
                     {
-                        if ($cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.IsArray)
+                        if (
+                            ($null -ne $cimType.Type -and $cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.IsArray) -or
+                            ($null -eq $cimType.Type -and $cimType.TypeConstraint -like '*[[]]')
+                        )
                         {
                             $null = $stringBuilder.AppendLine("$($cimSubProperty.Name) = @(")
-                            $arrayItemTypeName = $cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.GetElementType().Name
+                            try {
+                                if ($null -ne $cimType.Type)
+                                {
+                                    $arrayItemTypeName = $cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.GetElementType().Name
+                                    $isCimSubArray = $cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.GetElementType().FullName -notin $standardCimTypes.DotNetType
+                                }
+                                else {
+                                    $x = $cimClass.CimClassProperties.Where({ $_.Name -eq $cimSubProperty.Name} )
+                                    if ($x.CimType -eq 'Instance')
+                                    {
+                                        $arrayItemTypeName = $x.Qualifiers.Where({ $_.Name -eq 'EmbeddedInstance' }).Value
+                                    }
+                                    else
+                                    {
+                                        $arrayItemTypeName = $x.CimType
+                                    }
+                                    $isCimSubArray = $arrayItemTypeName -notin $standardCimTypes.CimType
+                                }
+                            }
+                            catch {
+                                'x'
+                            }
 
                             $j = 0
-
-                            $isCimSubArray = $cimType.Type.GetElementType().GetProperty($cimSubProperty.Name).PropertyType.GetElementType().FullName -notin $standardCimTypes.DotNetType
 
                             foreach ($arrayItem in $cimSubProperty.Value)
                             {
@@ -855,11 +1164,32 @@ function Initialize-DscResourceMetaInfo
     $standardCimTypes = Get-StandardCimType
 
     $script:allDscResourcePropertiesTable = @{}
+    $script:allDscSchemaClasses = @()
 
     $script:allDscResourceProperties = foreach ($dscResource in $allDscResources)
     {
         $moduleInfo = $modulesWithDscResources |
                 Where-Object { $_.Name -EQ $dscResource.ModuleName -and $_.Version -eq $dscResource.Version }
+
+        try
+        {
+            $m = [System.Tuple]::Create($dscResource.Module.Name, [System.Version]$dscResource.Version)
+            $exceptionCollection = [System.Collections.ObjectModel.Collection[System.Exception]]::new()
+            $f = [System.IO.Path]::ChangeExtension($dscResource.Path, 'schema.mof')
+
+            $dscSchemaClasses = [Microsoft.PowerShell.DesiredStateConfiguration.Internal.DscClassCache]::ImportClasses($f, $m, $exceptionCollection)
+            foreach ($dscSchemaClass in $dscSchemaClasses)
+            {
+                $dscSchemaClass | Add-Member -Name ModuleName -MemberType NoteProperty -Value $dscResource.ModuleName
+                $dscSchemaClass | Add-Member -Name ModuleVersion -MemberType NoteProperty -Value $dscResource.Version
+                $dscSchemaClass | Add-Member -Name ResourceName -MemberType NoteProperty -Value $dscResource.Name
+            }
+            $script:allDscSchemaClasses += $dscSchemaClasses
+        }
+        catch
+        {
+            'x'
+        }
 
         $cimProperties = if ($ReturnAllProperties)
         {
@@ -911,7 +1241,7 @@ function Publish-DscConfiguration {
     Process {
         Write-Verbose "Publishing Configuration MOFs from $DscBuildOutputConfigurations"
 
-        
+
         Get-ChildItem -Path (join-path -Path $DscBuildOutputConfigurations -ChildPath '*.mof') |
             foreach-object {
                 if ( !(Test-Path -Path $PullServerWebConfig) ) {
@@ -971,7 +1301,7 @@ function Publish-DscResourceModule {
             }
         }
     }
-    
+
 }
 #EndRegion '.\Public\Publish-DscResourceModule.ps1' 46
 #Region '.\Public\Push-DscConfiguration.ps1' -1
@@ -990,15 +1320,15 @@ function Push-DscConfiguration {
                    ,ValueFromPipelineByPropertyName
         )]
         [ValidateNotNullOrEmpty()]
-        [System.Management.Automation.Runspaces.PSSession] 
+        [System.Management.Automation.Runspaces.PSSession]
         $Session,
-        
+
         # Param2 help description
         [Parameter()]
         [Alias('MOF','Path')]
         [System.IO.FileInfo]
         $ConfigurationDocument,
-        
+
         # Param3 help description
         [Parameter()]
         [psmoduleinfo[]]
@@ -1027,8 +1357,8 @@ function Push-DscConfiguration {
         [switch]
         $Force
     )
-    
-   
+
+
     process {
         if ($pscmdlet.ShouldProcess($Session.ComputerName, "Applying MOF $ConfigurationDocument")) {
             if ($WithModule) {
@@ -1067,7 +1397,7 @@ function Push-DscConfiguration {
     Injects Modules via PS Session.
 
     .DESCRIPTION
-    Injects the missing modules on a remote node via a PSSession. 
+    Injects the missing modules on a remote node via a PSSession.
     The module list is checked again the available modules from the remote computer,
     Any missing version is then zipped up and sent over the PS session,
     before being extracted in the root PSModulePath folder of the remote node.
@@ -1091,7 +1421,7 @@ function Push-DscConfiguration {
     .EXAMPLE
     Push-DscModuleToNode -Module (Get-ModuleFromFolder C:\src\SampleKitchen\modules) -Session $RemoteSession -StagingFolderPath "C:\BuildOutput"
 
-#> 
+#>
 function Push-DscModuleToNode {
     [CmdletBinding()]
     [OutputType([void])]
@@ -1103,10 +1433,10 @@ function Push-DscModuleToNode {
             ,ValueFromPipelineByPropertyName
             ,ValueFromRemainingArguments
         )]
-        [Alias("ModuleInfo")] 
+        [Alias("ModuleInfo")]
         [System.Management.Automation.PSModuleInfo[]]
         $Module,
-        
+
         [Parameter(
             ,Position = 1
             ,ValueFromPipelineByPropertyName
@@ -1179,7 +1509,7 @@ function Push-DscModuleToNode {
         Write-Verbose "looking for missing zip modules in $($StagingFolderPath)"
         $MissingModules.where{ !(Test-Path "$StagingFolderPath\$($_.Name)_$($_.version).zip")} |
             Compress-DscResourceModule -DscBuildOutputModules $StagingFolderPath
-        
+
         # Copy missing modules to remote node if not present already
         foreach ($module in $MissingModules) {
             $FileName = "$($StagingFolderPath)/$($module.Name)_$($module.Version).zip"
@@ -1207,12 +1537,12 @@ function Push-DscModuleToNode {
         }
 
         # Extract missing modules on remote node to PSModulePath
-        Write-Verbose "Expanding $ResolvedRemoteStagingPath/*.zip to $Env:CommonProgramW6432\WindowsPowerShell\Modules\$($Module.Name)\$($module.version)" 
+        Write-Verbose "Expanding $ResolvedRemoteStagingPath/*.zip to $Env:CommonProgramW6432\WindowsPowerShell\Modules\$($Module.Name)\$($module.version)"
         Invoke-Command -Session $Session -ScriptBlock {
             Param($MissingModules,$PathToZips)
             foreach ($module in $MissingModules) {
                 $fileName = "$($module.Name)_$($module.version).zip"
-                Write-Verbose "Expanding $PathToZips/$fileName to $Env:CommonProgramW6432\WindowsPowerShell\Modules\$($Module.Name)\$($module.version)" 
+                Write-Verbose "Expanding $PathToZips/$fileName to $Env:CommonProgramW6432\WindowsPowerShell\Modules\$($Module.Name)\$($module.version)"
                 Expand-Archive -Path "$PathToZips/$fileName" -DestinationPath "$Env:ProgramW6432\WindowsPowerShell\Modules\$($Module.Name)\$($module.version)" -Force
             }
         } -ArgumentList $MissingModules,$ResolvedRemoteStagingPath
@@ -1259,7 +1589,7 @@ function Test-DscResourceFromModuleInFolderIsValid {
         [ValidateNotNullOrEmpty()]
         [System.io.DirectoryInfo]
         $ModuleFolder,
-        
+
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName,
@@ -1269,7 +1599,7 @@ function Test-DscResourceFromModuleInFolderIsValid {
         [AllowNull()]
         $Modules
     )
-    
+
     Process {
         Foreach ($module in $Modules) {
             $Resources = Get-DscResourceFromModuleInFolder -ModuleFolder $ModuleFolder `

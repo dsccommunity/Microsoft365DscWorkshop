@@ -1,7 +1,7 @@
 @{
     RootModule        = 'DscBuildHelpers.psm1'
 
-    ModuleVersion     = '0.3.0'
+    ModuleVersion     = '9.9.9'
 
     GUID              = '23ccd4bf-0a52-4077-986f-c153893e5a6a'
 
