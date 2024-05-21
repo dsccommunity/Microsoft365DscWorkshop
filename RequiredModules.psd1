@@ -22,7 +22,7 @@
     'DscResource.AnalyzerRules'                            = 'latest'
     DscBuildHelpers                                        = 'latest'
     Datum                                                  = 'latest'
-    #ProtectedData                                          = 'latest'
+    ProtectedData                                          = 'latest'
     'Datum.ProtectedData'                                  = 'latest'
     'Datum.InvokeCommand'                                  = 'latest'
     Configuration                                          = 'latest'
