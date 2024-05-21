@@ -1,0 +1,24 @@
+Items:
+  - Name: Sales Department
+    Alias: SalesDepartment
+    Identity: Sales Department
+    PrimarySmtpAddress: '[x={ "SalesDepartment@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    Type: Security
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true
+
+  - Name: Brokerage Department
+    Alias: BrokerageDepartment
+    Identity: Brokerage Department
+    PrimarySmtpAddress: '[x={ "BrokerageDepartment@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    Type: Security
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true
+
+  - Name: Marketing Department
+    Alias: MarketingDepartment
+    Identity: Marketing Department
+    PrimarySmtpAddress: '[x={ "MarketingDepartment@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    Type: Security
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true

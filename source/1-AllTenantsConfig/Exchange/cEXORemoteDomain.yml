@@ -1,0 +1,47 @@
+Items:
+  - Identity: Contoso
+    AllowedOOFType: External
+    AutoForwardEnabled: true
+    AutoReplyEnabled: true
+    ByteEncoderTypeFor7BitCharsets: Undefined
+    CharacterSet: iso-8859-1
+    ContentType: MimeHtmlText
+    DeliveryReportEnabled: true
+    DisplaySenderName: true
+    DomainName: contoso.com
+    IsInternal: false
+    LineWrapSize: Unlimited
+    MeetingForwardNotificationEnabled: false
+    Name: Contoso
+    NonMimeCharacterSet: iso-8859-1
+    PreferredInternetCodePageForShiftJis: Undefined
+    TargetDeliveryDomain: false
+    TrustedMailInboundEnabled: false
+    TrustedMailOutboundEnabled: false
+    UseSimpleDisplayName: false
+    Ensure: Present
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true
+  - Identity: TailspinToys
+    AllowedOOFType: External
+    AutoForwardEnabled: true
+    AutoReplyEnabled: true
+    ByteEncoderTypeFor7BitCharsets: Undefined
+    CharacterSet: iso-8859-1
+    ContentType: MimeHtmlText
+    DeliveryReportEnabled: true
+    DisplaySenderName: true
+    DomainName: tailspintoys.com
+    IsInternal: false
+    LineWrapSize: Unlimited
+    MeetingForwardNotificationEnabled: false
+    Name: TailspinToys
+    NonMimeCharacterSet: iso-8859-1
+    PreferredInternetCodePageForShiftJis: Undefined
+    TargetDeliveryDomain: false
+    TrustedMailInboundEnabled: false
+    TrustedMailOutboundEnabled: false
+    UseSimpleDisplayName: false
+    Ensure: Present
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true

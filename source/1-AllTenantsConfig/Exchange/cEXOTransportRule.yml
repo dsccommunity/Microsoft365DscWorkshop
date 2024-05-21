@@ -1,0 +1,16 @@
+Items:
+  - Name: Contoso Transport Rule
+    BetweenMemberOf1: '[x={ "SalesDepartment@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    BetweenMemberOf2: '[x={ "BrokerageDepartment@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ExceptIfSubjectContainsWords: Press Release
+    RejectMessageReasonText: Messages sent between the Sales and Brokerage departments are strictly prohibited.
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true
+  - Name: Contoso Different Transport Rule
+    BetweenMemberOf1: '[x={ "SalesDepartment@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    BetweenMemberOf2: '[x={ "MarketingDepartment@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ExceptIfSubjectContainsWords: Press Release
+    RejectMessageReasonText: Messages sent between the Sales and Marketing departments are strictly prohibited.
+    #FreeBusyAccessLevel          : AvailabilityOnly
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true
