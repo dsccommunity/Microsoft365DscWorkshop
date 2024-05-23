@@ -7,5 +7,7 @@ Items:
     ScopedRoleMembers:
       - RoleName: User Administrator
         RoleMemberInfo:
-          Identity: admin@$Domain
+          Identity: '[x={ "admin@" + $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
           Type: User
+    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+    ManagedIdentity: true
