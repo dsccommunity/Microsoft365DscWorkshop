@@ -32,17 +32,9 @@ stages:
               name: clean
               displayName: 'Clean Program Files Modules'
               inputs:
-                targetType: inline
                 pwsh: true
-                script: |
-                  $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
-                  $modulesToKeep = 'Microsoft.PowerShell.Operation.Validation', 'PackageManagement', 'Pester', 'PowerShellGet', 'PSReadline'
-
-                  Get-Process -Name WmiPrvSE -IncludeUserName -ErrorAction Ignore | Where-Object UserName -eq 'NT AUTHORITY\SYSTEM' | Sort-Object -Property WS -Descending | Select-Object -First 1 | Stop-Process
-
-                  Start-Sleep -Seconds 2
-
-                  dir -Path $programFileModulePath | Where-Object { $_.BaseName -notin $modulesToKeep } | Remove-Item -Recurse -Force
+                filePath: './build.ps1'
+                arguments: '-ResolveDependency -Tasks InitializeModuleFolder'
 
             - task: PowerShell@2
               name: build
@@ -50,7 +42,7 @@ stages:
               inputs:
                 pwsh: true
                 filePath: './build.ps1'
-                arguments: '-ResolveDependency -Tasks build -Filter { $_.Environment -eq $env:BuildEnvironment }'
+                arguments: '-Tasks build -Filter { $_.Environment -eq $env:BuildEnvironment }'
               #env:
               #  ModuleVersion: $(NuGetVersionV2)
 
@@ -60,7 +52,7 @@ stages:
               inputs:
                 pwsh: true
                 filePath: './build.ps1'
-                arguments: '-ResolveDependency -Tasks pack -Filter { $_.Environment -eq $env:BuildEnvironment }'
+                arguments: '-Tasks pack -Filter { $_.Environment -eq $env:BuildEnvironment }'
               enabled: false
 
             - task: PublishPipelineArtifact@1
