@@ -31,15 +31,17 @@ function Get-ServicePrincipalAppPermissions
         $apiPermission = $api.AppRoles | Where-Object Id -EQ $appRole.AppRoleId
 
         [pscustomobject][ordered]@{
-            ApiAppId          = $api.AppId
-            ApiId             = $api.Id
-            ApiRoleId         = $apiPermission.Id
-            ApiDisplayName    = $api.DisplayName
-            ApiPermissionName = $apiPermission.Value
-            PermissionType    = $apiPermission.AllowedMemberTypes -join ', '
+            ApiAppId             = $api.AppId
+            ApiId                = $api.Id
+            ApiRoleId            = $apiPermission.Id
+            ApiDisplayName       = $api.DisplayName
+            ApiPermissionName    = $apiPermission.Value
+            PermissionType       = $apiPermission.AllowedMemberTypes -join ', '
+            AppRoleAssignmentId  = $appRole.Id
+            PrincipalDisplayName = $appRole.PrincipalDisplayName
+            PrincipalId          = $appRole.PrincipalId
         }
     }
-
 }
 
 function Set-ServicePrincipalAppPermissions
@@ -109,12 +111,113 @@ function Set-ServicePrincipalAppPermissions
 
 }
 
+function Remove-ServicePrincipalAppPermissions
+{
+    param (
+        [Parameter(Mandatory = $true, ParameterSetName = 'byId')]
+        [string]$ObjectId,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'byDisplayName')]
+        [string]$DisplayName,
+
+        [Parameter(Mandatory = $true)]
+        [object[]]$Permissions,
+
+        [Parameter()]
+        [switch]$PassThru
+    )
+
+    $principal = if ($ObjectId)
+    {
+        Get-MgServicePrincipal -Filter "Id eq 'ObjectId'" -ErrorAction SilentlyContinue
+    }
+    else
+    {
+        Get-MgServicePrincipal -Filter "DisplayName eq '$DisplayName'" -ErrorAction SilentlyContinue
+    }
+
+    if (-not $principal)
+    {
+        Write-Error "Service principal '$($principal.DisplayName)' not found"
+        return
+    }
+
+    if ($principal.Count -gt 1)
+    {
+        Write-Error "Multiple service principals with display name '$DisplayName' found"
+        return
+    }
+
+    [void]$PSBoundParameters.Remove('Permissions')
+    [void]$PSBoundParameters.Remove('PassThru')
+
+    $existingPermissions = Get-ServicePrincipalAppPermissions @PSBoundParameters
+
+    foreach ($p in $permissions)
+    {
+        if (($existingPermissions | Where-Object ApiRoleId -EQ $p.ApiRoleId) -or (-not $p.ApiRoleId))
+        {
+            Write-Verbose "Permission $($p.ApiPermissionName) ($($p.ApiRoleId)) exists for $($p.ApiDisplayName) and will be removed."
+
+            $params = @{
+                ServicePrincipalId = $principal.Id
+                AppRoleId          = $p.ApiRoleId
+                ResourceId         = $p.ApiId
+                PrincipalId        = $principal.Id
+            }
+
+            $GraphApp = Get-MgServicePrincipal -Filter "AppId eq '$($p.ApiAppId)'"
+            $Role = $GraphApp.AppRoles | Where-Object Id -EQ $p.ApiRoleId
+            $AppRoleAssignment = @{
+                'PrincipalId' = $principal.Id
+                'ResourceId'  = $GraphApp.Id
+                'AppRoleId'   = $Role.Id 
+            }
+
+            Remove-MgServicePrincipalAppRoleAssignment -AppRoleAssignmentId $p.AppRoleAssignmentId -ServicePrincipalId $principal.Id
+            Write-Host "Removed role assignment / permission '$($p.ApiPermissionName)' for principal '$($p.PrincipalDisplayName)' (AppRoleAssignmentId was '$($p.AppRoleAssignmentId)')"
+
+        }
+        else
+        {
+            Write-Verbose "Permission $($p.ApiPermissionName) ($($p.ApiRoleId)) does not exist for $($p.ApiDisplayName) and cannot be removed."
+        }
+    
+    }
+
+    if ($PassThru)
+    {
+        Get-ServicePrincipalAppPermissions @PSBoundParameters
+    }
+
+}
+
 function Get-M365DSCCompiledPermissionList2
 {
-    param ()
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [ValidateSet('Update', 'Read')]
+        [string]$AccessType = 'Update'
+    )
 
-    $m365GraphPermissionList = ((Get-M365DSCCompiledPermissionList -ResourceNameList (Get-M365DSCAllResources)).Update)
+    $m365GraphPermissionList = ((Get-M365DSCCompiledPermissionList -ResourceNameList (Get-M365DSCAllResources)).$AccessType)
 
+    $m365GraphPermissionList += @{ 
+        Permission = @{
+            Type = 'Application'
+            Name = if ($AccessType -eq 'Update')
+            {                
+                'Sites.FullControl.All' 
+            }
+            else
+            {
+                'Sites.Read.All'
+            } 
+        }
+        API        = 'SharePoint' 
+    }
+    
     $resourceAppIds = @{
         Graph      = '00000003-0000-0000-c000-000000000000'
         SharePoint = '00000003-0000-0ff1-ce00-000000000000'
@@ -248,8 +351,8 @@ function Connect-EXO
     )
 
     $tokenBody = @{     
-        Grant_Type    = "client_credentials" 
-        Scope         = "https://outlook.office365.com/.default"
+        Grant_Type    = 'client_credentials' 
+        Scope         = 'https://outlook.office365.com/.default'
         Client_Id     = $ServicePrincipalId
         Client_Secret = $ServicePrincipalSecret
     }  
