@@ -201,21 +201,18 @@ function Get-M365DSCCompiledPermissionList2
         [string]$AccessType = 'Update'
     )
 
-    $m365GraphPermissionList = ((Get-M365DSCCompiledPermissionList -ResourceNameList (Get-M365DSCAllResources)).$AccessType)
+    $m365GraphPermissionList = Get-M365DSCCompiledPermissionList -ResourceNameList (Get-M365DSCAllResources) -AccessType $AccessType -PermissionType Delegated
 
     $m365GraphPermissionList += @{ 
-        Permission = @{
-            Type = 'Application'
-            Name = if ($AccessType -eq 'Update')
-            {                
-                'Sites.FullControl.All' 
-            }
-            else
-            {
-                'Sites.Read.All'
-            } 
+        PermissionName = if ($AccessType -eq 'Update')
+        {                
+            'Sites.FullControl.All' 
         }
-        API        = 'SharePoint' 
+        else
+        {
+            'Sites.Read.All'
+        } 
+        API = 'SharePoint' 
     }
     
     $resourceAppIds = @{
@@ -230,23 +227,29 @@ function Get-M365DSCCompiledPermissionList2
         Exchange   = Get-MgServicePrincipal -Filter "AppId eq '$($resourceAppIds.Exchange)'"
     }
 
-    $m365GraphApplicationPermissionList = $m365GraphPermissionList | Where-Object { $_.Permission.Type -ne 'Delegated' }
-
-    foreach ($permission in $m365GraphApplicationPermissionList.GetEnumerator())
+    $result = foreach ($permission in $m365GraphPermissionList)
     {
         $servicePrincipal = $servicePrincipals."$($permission.Api)"
 
-        $appRole = $servicePrincipal.AppRoles | Where-Object -FilterScript { $_.Value -eq $permission.Permission.Name }
+        $appRole = $servicePrincipal.AppRoles | Where-Object -FilterScript { $_.Value -eq $permission.PermissionName }
 
         [pscustomobject][ordered]@{
             ApiAppId          = $servicePrincipal.AppId
             ApiId             = $servicePrincipal.Id
             ApiRoleId         = $appRole.Id
             ApiDisplayName    = $servicePrincipal.DisplayName
-            ApiPermissionName = $permission.Permission.Name
-            PermissionType    = $permission.Permission.Type
+            ApiPermissionName = $permission.PermissionName
+            PermissionType    = 'Delegated'
         }
+    }
 
+    if ($AccessType -eq 'Read')
+    {
+        $result | Where-Object { $_.ApiPermissionName -notlike '*FullControl*' -and $_.ApiPermissionName -notlike '*Write*' }
+    }
+    else
+    {
+        $result
     }
 }
 
