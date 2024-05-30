@@ -20,14 +20,28 @@ Connect-MgGraph -Scopes $scopes
 
 1. Connect to the Azure tenant using the cmdlet `Connect-AzAccount` and using your global admin account
 
-1. Create a new Azure User Assigned Identity.
+## Create the User Assigned Identity
+
+1. Create a new Azure User Assigned Identity using the following commands:
 
 ```powershell
 $id = New-AzUserAssignedIdentity -Name ProdLcm -ResourceGroupName ProdTest -Location GermanyWestCentral
+```
+
+1. Then assign it to the virtual machine that you want to become an Azure DevOps build worker:
+
+```powershell
+$vm = Get-AzVM -ResourceGroupName ProdTest -Name ProdLcm
 Update-AzVM -ResourceGroupName ProdTest -VM $vm -IdentityType UserAssigned -IdentityId $id.Id
 ```
 
-1. Then get the principal in Graph and add it to the Global Reader role
+## Assigning permissions
+
+> :information_source: Note: This guide assumes you are installing the agent for the production tenant. Please change the commands if you deploy for a different tenant.
+
+> :information_source: Note: This guide explains how to assign read-only permissions to the Azure DevOps build agent's managed identity as well as full permissions. Please change the command depending of that permissions you want to have the build agent.
+
+2. Then get the principal in Graph and add it to the Global Reader role
 
 ```powershell
 $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq 'ProdLcm'"
@@ -35,19 +49,31 @@ $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayNa
 New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/"
 ```
 
-Add the Graph Permissions required by Microsoft365DSC for read-only access to the tenant
+Add the Graph permissions required by Microsoft365DSC for read-only or read/write access to the tenant:
 
-Firest we need to start the build script which prepares the PowerShell sessions and amends the PSModulePath so the Microsoft365DSC module is available to the PowerShell session. The script also installs the required modules and sets up the required environment variables.
+1. First we need to start the build script which prepares the PowerShell sessions and amends the `PSModulePath` so the Microsoft365DSC module is available to the PowerShell session. The script also installs the required modules and sets up the required environment variables:
+
+```powershell
 .\build.ps1 -tasks noop
+```
 
-Next we need to import the AzHelper module
+1. Next we need to import the `AzHelper` module:
+
+```powershell
 Import-Module -Name .\lab\AzHelpers.psm1
+```
 
-Then we get the read-only permissions for the tenant
+1. Then we get the desired permissions for the tenant (in the following case read-only):
+
+```powershell
 $requiredPermissions = Get-M365DSCCompiledPermissionList2 -AccessType Read
+```
 
 And then we configure the permissions for the previously created principal
+
+```powershell
 Set-ServicePrincipalAppPermissions -DisplayName ProdLcm -Permissions $requiredPermissions
+```
 
 You may want to double check the permissions are set correctly in the Azure portal.
 
@@ -55,14 +81,22 @@ You may want to double check the permissions are set correctly in the Azure port
 
 Now connect to Exchange Online using the global admin account
 
+```powershell
 Connect-ExchangeOnline
+```
 
 Create a service principal for the Exchange Online connection
+
+```powershell
 $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq 'ProdLcm'"
 $servicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName ProdLcm
+```
 
 Assign to the service principal the View-Only Configuration role
+
+```powershell
 New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "View-Only Configuration"
+```
 
 Disconnect-ExchangeOnline
 
