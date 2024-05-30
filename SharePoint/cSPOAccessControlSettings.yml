@@ -1,0 +1,14 @@
+IsSingleInstance: Yes
+DisplayStartASiteOption: false
+StartASiteFormUrl: https://contoso.sharepoint.com
+IPAddressEnforcement: false
+IPAddressWACTokenLifetime: 15
+DisallowInfectedFileDownload: false
+ExternalServicesEnabled: true
+EmailAttestationRequired: false
+EmailAttestationReAuthDays: 30
+Ensure: Present
+TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+CertificateThumbprint: 0ba5e579d86c813abc2b3be88252c7f672d674d5
+ApplicationId: 5715c518-d0c8-4385-8c3d-f213b270c921
+#ManagedIdentity: true
