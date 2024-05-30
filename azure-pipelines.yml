@@ -50,27 +50,11 @@ stages:
             env:
               ModuleVersion: $(NuGetVersionV2)
 
-          #- task: PowerShell@2
-          #  name: pack
-          #  displayName: 'Pack DSC Artifacts'
-          #  inputs:
-          #    filePath: './build.ps1'
-          #    arguments: '-tasks pack'
-          #    pwsh: true
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Output Folder'
-            inputs:
-              targetPath: '$(buildFolderName)/'
-              artifact: 'output7'
-              publishLocation: 'pipeline'
-              parallel: true
-
           - task: PublishPipelineArtifact@1
             displayName: 'Publish MOF Files'
             inputs:
               targetPath: '$(buildFolderName)/MOF'
-              artifact: 'MOF7'
+              artifact: 'MOF'
               publishLocation: 'pipeline'
               parallel: true
 
@@ -78,15 +62,7 @@ stages:
             displayName: 'Publish Meta MOF Files'
             inputs:
               targetPath: '$(buildFolderName)/MetaMOF'
-              artifact: 'MetaMOF7'
-              publishLocation: 'pipeline'
-              parallel: true
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Compressed Modules'
-            inputs:
-              targetPath: '$(buildFolderName)/CompressedModules'
-              artifact: 'CompressedModules7'
+              artifact: 'MetaMOF'
               publishLocation: 'pipeline'
               parallel: true
 
@@ -94,7 +70,7 @@ stages:
             displayName: 'Publish RSOP Files'
             inputs:
               targetPath: '$(buildFolderName)/RSOP'
-              artifact: 'RSOP7'
+              artifact: 'RSOP'
               publishLocation: 'pipeline'
               parallel: true
 
