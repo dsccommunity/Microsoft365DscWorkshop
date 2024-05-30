@@ -50,13 +50,13 @@ stages:
             env:
               ModuleVersion: $(NuGetVersionV2)
 
-          - task: PowerShell@2
-            name: pack
-            displayName: 'Pack DSC Artifacts'
-            inputs:
-              filePath: './build.ps1'
-              arguments: '-tasks pack'
-              pwsh: true
+          #- task: PowerShell@2
+          #  name: pack
+          #  displayName: 'Pack DSC Artifacts'
+          #  inputs:
+          #    filePath: './build.ps1'
+          #    arguments: '-tasks pack'
+          #    pwsh: true
 
           - task: PublishPipelineArtifact@1
             displayName: 'Publish Output Folder'
