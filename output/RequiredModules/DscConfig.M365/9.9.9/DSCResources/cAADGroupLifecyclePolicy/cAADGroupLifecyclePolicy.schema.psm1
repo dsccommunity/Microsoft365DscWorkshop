@@ -45,7 +45,11 @@ configuration cAADGroupLifecyclePolicy {
 
         [Parameter()]
         [bool]
-        $ManagedIdentity
+        $ManagedIdentity,
+
+        [Parameter()]
+        [string[]]
+        $AccessTokens
 )
 
 <#
@@ -55,6 +59,7 @@ AADGroupLifecyclePolicy [String] #ResourceName
     GroupLifetimeInDays = [UInt32]
     IsSingleInstance = [string]{ Yes }
     ManagedGroupTypes = [string]{ All | None | Selected }
+    [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]

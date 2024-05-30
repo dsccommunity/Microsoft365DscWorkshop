@@ -9,6 +9,7 @@ configuration cEXOTransportRule {
 EXOTransportRule [String] #ResourceName
 {
     Name = [string]
+    [AccessTokens = [string[]]]
     [ActivationDate = [string]]
     [ADComparisonAttribute = [string]]
     [ADComparisonOperator = [string]{ Equal | NotEqual }]
@@ -143,7 +144,7 @@ EXOTransportRule [String] #ResourceName
     [ModerateMessageByUser = [string[]]]
     [NotifySender = [string]{ NotifyOnly | RejectMessage | RejectUnlessExplicitOverride | RejectUnlessFalsePositiveOverride | RejectUnlessSilentOverride }]
     [PrependSubject = [string]]
-    [Priority = [string]]
+    [Priority = [UInt32]]
     [PsDscRunAsCredential = [PSCredential]]
     [Quarantine = [bool]]
     [RecipientADAttributeContainsWords = [string[]]]

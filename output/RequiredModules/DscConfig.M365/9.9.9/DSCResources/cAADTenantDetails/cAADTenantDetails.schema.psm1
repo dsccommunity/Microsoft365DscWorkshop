@@ -43,13 +43,18 @@ configuration cAADTenantDetails {
 
         [Parameter()]
         [bool]
-        $ManagedIdentity
+        $ManagedIdentity,
+
+        [Parameter()]
+        [string[]]
+        $AccessTokens
 )
 
 <#
 AADTenantDetails [String] #ResourceName
 {
     IsSingleInstance = [string]{ Yes }
+    [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]

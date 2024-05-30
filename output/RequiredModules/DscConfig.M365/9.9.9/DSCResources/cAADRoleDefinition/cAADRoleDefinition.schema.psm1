@@ -11,6 +11,7 @@ AADRoleDefinition [String] #ResourceName
     DisplayName = [string]
     IsEnabled = [bool]
     RolePermissions = [string[]]
+    [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]

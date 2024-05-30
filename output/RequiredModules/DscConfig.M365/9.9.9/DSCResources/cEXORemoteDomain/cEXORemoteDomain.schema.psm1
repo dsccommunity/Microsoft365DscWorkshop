@@ -9,6 +9,7 @@ configuration cEXORemoteDomain {
 EXORemoteDomain [String] #ResourceName
 {
     Identity = [string]
+    [AccessTokens = [string[]]]
     [AllowedOOFType = [string]{ External | ExternalLegacy | InternalLegacy | None }]
     [ApplicationId = [string]]
     [AutoForwardEnabled = [bool]]

@@ -9,6 +9,7 @@ configuration cAADRoleSetting {
 AADRoleSetting [String] #ResourceName
 {
     DisplayName = [string]
+    [AccessTokens = [string[]]]
     [ActivateApprover = [string[]]]
     [ActivationMaxDuration = [string]]
     [ActivationReqJustification = [bool]]
@@ -28,6 +29,9 @@ AADRoleSetting [String] #ResourceName
     [ApprovaltoActivate = [bool]]
     [AssignmentReqJustification = [bool]]
     [AssignmentReqMFA = [bool]]
+    [AuthenticationContextId = [string]]
+    [AuthenticationContextName = [string]]
+    [AuthenticationContextRequired = [bool]]
     [CertificateThumbprint = [string]]
     [Credential = [PSCredential]]
     [DependsOn = [string[]]]

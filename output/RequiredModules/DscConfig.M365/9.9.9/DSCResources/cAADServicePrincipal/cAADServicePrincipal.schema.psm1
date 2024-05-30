@@ -9,6 +9,7 @@ configuration cAADServicePrincipal {
 AADServicePrincipal [String] #ResourceName
 {
     AppId = [string]
+    [AccessTokens = [string[]]]
     [AccountEnabled = [bool]]
     [AlternativeNames = [string[]]]
     [ApplicationId = [string]]

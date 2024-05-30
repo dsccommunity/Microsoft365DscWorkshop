@@ -1,4 +1,4 @@
-configuration cAADGroupsNamingPolicy {
+configuration cSPOAccessControlSettings {
     param (
         [Parameter(Mandatory = $true)]
         [ValidateSet('Yes')]
@@ -6,12 +6,40 @@ configuration cAADGroupsNamingPolicy {
         $IsSingleInstance,
 
         [Parameter()]
-        [string]
-        $PrefixSuffixNamingRequirement,
+        [bool]
+        $DisplayStartASiteOption,
 
         [Parameter()]
-        [string[]]
-        $CustomBlockedWordsList,
+        [string]
+        $StartASiteFormUrl,
+
+        [Parameter()]
+        [bool]
+        $IPAddressEnforcement,
+
+        [Parameter()]
+        [string]
+        $IPAddressAllowList,
+
+        [Parameter()]
+        [System.UInt32]
+        $IPAddressWACTokenLifetime,
+
+        [Parameter()]
+        [bool]
+        $DisallowInfectedFileDownload,
+
+        [Parameter()]
+        [bool]
+        $ExternalServicesEnabled,
+
+        [Parameter()]
+        [bool]
+        $EmailAttestationRequired,
+
+        [Parameter()]
+        [System.UInt32]
+        $EmailAttestationReAuthDays,
 
         [Parameter()]
         [ValidateSet('Present', 'Absent')]
@@ -27,12 +55,20 @@ configuration cAADGroupsNamingPolicy {
         $ApplicationId,
 
         [Parameter()]
+        [PSCredential]
+        $ApplicationSecret,
+
+        [Parameter()]
         [string]
         $TenantId,
 
         [Parameter()]
         [PSCredential]
-        $ApplicationSecret,
+        $CertificatePassword,
+
+        [Parameter()]
+        [string]
+        $CertificatePath,
 
         [Parameter()]
         [string]
@@ -43,25 +79,40 @@ configuration cAADGroupsNamingPolicy {
         $ManagedIdentity,
 
         [Parameter()]
+        [ValidateSet('AllowFullAccess', 'AllowLimitedAccess', 'BlockAccess', 'ProtectionLevel')]
+        [string]
+        $ConditionalAccessPolicy,
+
+        [Parameter()]
         [string[]]
         $AccessTokens
 )
 
 <#
-AADGroupsNamingPolicy [String] #ResourceName
+SPOAccessControlSettings [String] #ResourceName
 {
     IsSingleInstance = [string]{ Yes }
     [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
+    [CertificatePassword = [PSCredential]]
+    [CertificatePath = [string]]
     [CertificateThumbprint = [string]]
+    [ConditionalAccessPolicy = [string]{ AllowFullAccess | AllowLimitedAccess | BlockAccess | ProtectionLevel }]
     [Credential = [PSCredential]]
-    [CustomBlockedWordsList = [string[]]]
     [DependsOn = [string[]]]
+    [DisallowInfectedFileDownload = [bool]]
+    [DisplayStartASiteOption = [bool]]
+    [EmailAttestationReAuthDays = [UInt32]]
+    [EmailAttestationRequired = [bool]]
     [Ensure = [string]{ Absent | Present }]
+    [ExternalServicesEnabled = [bool]]
+    [IPAddressAllowList = [string]]
+    [IPAddressEnforcement = [bool]]
+    [IPAddressWACTokenLifetime = [UInt32]]
     [ManagedIdentity = [bool]]
-    [PrefixSuffixNamingRequirement = [string]]
     [PsDscRunAsCredential = [PSCredential]]
+    [StartASiteFormUrl = [string]]
     [TenantId = [string]]
 }
 
@@ -71,7 +122,7 @@ AADGroupsNamingPolicy [String] #ResourceName
     Import-DscResource -ModuleName PSDesiredStateConfiguration
     Import-DscResource -ModuleName Microsoft365DSC
 
-    $dscResourceName = 'AADGroupsNamingPolicy'
+    $dscResourceName = 'SPOAccessControlSettings'
 
     $param = $PSBoundParameters
     $param.Remove("InstanceName")

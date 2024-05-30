@@ -9,6 +9,7 @@ configuration cAADAdministrativeUnit {
 AADAdministrativeUnit [String] #ResourceName
 {
     DisplayName = [string]
+    [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]

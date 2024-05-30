@@ -13,6 +13,7 @@ EXODistributionGroup [String] #ResourceName
     [AcceptMessagesOnlyFrom = [string[]]]
     [AcceptMessagesOnlyFromDLMembers = [string[]]]
     [AcceptMessagesOnlyFromSendersOrMembers = [string[]]]
+    [AccessTokens = [string[]]]
     [Alias = [string]]
     [ApplicationId = [string]]
     [BccBlocked = [bool]]

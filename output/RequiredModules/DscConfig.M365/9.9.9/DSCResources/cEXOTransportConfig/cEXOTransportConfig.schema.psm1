@@ -135,13 +135,18 @@ configuration cEXOTransportConfig {
 
         [Parameter()]
         [bool]
-        $ManagedIdentity
+        $ManagedIdentity,
+
+        [Parameter()]
+        [string[]]
+        $AccessTokens
 )
 
 <#
 EXOTransportConfig [String] #ResourceName
 {
     IsSingleInstance = [string]{ Yes }
+    [AccessTokens = [string[]]]
     [AddressBookPolicyRoutingEnabled = [bool]]
     [AllowLegacyTLSClients = [bool]]
     [ApplicationId = [string]]

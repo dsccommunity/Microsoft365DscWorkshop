@@ -9,6 +9,7 @@ configuration cAADApplication {
 AADApplication [String] #ResourceName
 {
     DisplayName = [string]
+    [AccessTokens = [string[]]]
     [AppId = [string]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]

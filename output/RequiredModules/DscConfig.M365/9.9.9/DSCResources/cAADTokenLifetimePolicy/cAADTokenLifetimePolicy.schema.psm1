@@ -9,6 +9,7 @@ configuration cAADTokenLifetimePolicy {
 AADTokenLifetimePolicy [String] #ResourceName
 {
     DisplayName = [string]
+    [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]

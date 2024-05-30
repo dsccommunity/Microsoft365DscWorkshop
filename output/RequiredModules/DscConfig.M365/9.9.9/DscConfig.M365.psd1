@@ -15,17 +15,38 @@
     PrivateData       = @{
 
         PSData = @{
-            Prerelease   = '2024update0001'
+            Prerelease   = ''
             Tags         = @('DesiredStateConfiguration', 'DSC', 'DSCResource')
             LicenseUri   = 'https://github.com/dsccommunity/DscConfig.M365/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/dsccommunity/DscConfig.M365'
             IconUri      = 'https://dsccommunity.org/images/DSC_Logo_300p.png'
-            ReleaseNotes = '## [0.3.0-2024update0001] - 2024-02-24
+            ReleaseNotes = '## [0.3.1] - 2024-05-24
 
 ### Changed
 
-- Build requires PowerShell 7 now.
-- Fixed build issues by adding pre-release of ''DscBuildHelpers''.
+- Excluding folder ''source/DSCResources'' from git.
+- Updated these modules to latest version:
+  - ProtectedData
+  - DscBuildHelpers
+- Updated to latest Sampler build scripts.
+
+### Added
+
+- Added test data for:
+  - cEXOTransportRule
+  - cEXODistributionGroup
+  - cAADAdministrativeUnit
+  - cAADAuthenticationMethodPolicy
+  - cAADAuthenticationMethodPolicyAuthenticator
+  - cAADAuthenticationMethodPolicyEmail
+  - cAADAuthenticationMethodPolicyFido2
+  - cAADAuthenticationMethodPolicySms
+  - cAADAuthenticationMethodPolicySoftware
+  - cAADAuthenticationMethodPolicyTemporary
+  - cAADAuthenticationMethodPolicyVoice
+  - cAADAuthenticationMethodPolicyX509
+  - cAADAuthenticationStrengthPolicy
+  - cO365OrgSettings
 
 '
         }

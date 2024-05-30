@@ -44,13 +44,18 @@ configuration cAADSecurityDefaults {
 
         [Parameter()]
         [bool]
-        $ManagedIdentity
+        $ManagedIdentity,
+
+        [Parameter()]
+        [string[]]
+        $AccessTokens
 )
 
 <#
 AADSecurityDefaults [String] #ResourceName
 {
     IsSingleInstance = [string]{ Yes }
+    [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]

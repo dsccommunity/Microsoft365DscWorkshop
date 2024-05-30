@@ -1,4 +1,4 @@
-configuration cEXOAcceptedDomain {
+configuration cAADAuthenticationMethodPolicySms {
     param (
         [Parameter()]
         [hashtable[]]
@@ -6,22 +6,21 @@ configuration cEXOAcceptedDomain {
 )
 
 <#
-EXOAcceptedDomain [String] #ResourceName
+AADAuthenticationMethodPolicySms [String] #ResourceName
 {
-    Identity = [string]
+    Id = [string]
     [AccessTokens = [string[]]]
     [ApplicationId = [string]]
-    [CertificatePassword = [PSCredential]]
-    [CertificatePath = [string]]
+    [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]
     [Credential = [PSCredential]]
     [DependsOn = [string[]]]
-    [DomainType = [string]{ Authoritative | InternalRelay }]
     [Ensure = [string]{ Absent | Present }]
+    [ExcludeTargets = [MSFT_AADAuthenticationMethodPolicySmsExcludeTarget[]]]
+    [IncludeTargets = [MSFT_AADAuthenticationMethodPolicySmsIncludeTarget[]]]
     [ManagedIdentity = [bool]]
-    [MatchSubDomains = [bool]]
-    [OutboundOnly = [bool]]
     [PsDscRunAsCredential = [PSCredential]]
+    [State = [string]{ disabled | enabled }]
     [TenantId = [string]]
 }
 
@@ -31,12 +30,12 @@ EXOAcceptedDomain [String] #ResourceName
     Import-DscResource -ModuleName PSDesiredStateConfiguration
     Import-DscResource -ModuleName Microsoft365DSC
 
-    $dscResourceName = 'EXOAcceptedDomain'
+    $dscResourceName = 'AADAuthenticationMethodPolicySms'
 
     $param = $PSBoundParameters
     $param.Remove("InstanceName")
 
-    $dscParameterKeys = 'Identity' -split ', '
+    $dscParameterKeys = 'Id' -split ', '
 
         foreach ($item in $Items)
         {

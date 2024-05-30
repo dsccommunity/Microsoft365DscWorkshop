@@ -9,6 +9,7 @@ configuration cAADConditionalAccessPolicy {
 AADConditionalAccessPolicy [String] #ResourceName
 {
     DisplayName = [string]
+    [AccessTokens = [string[]]]
     [ApplicationEnforcedRestrictionsIsEnabled = [bool]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]

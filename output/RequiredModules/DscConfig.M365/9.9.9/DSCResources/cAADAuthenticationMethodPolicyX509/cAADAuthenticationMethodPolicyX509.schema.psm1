@@ -1,4 +1,4 @@
-configuration cEXOAcceptedDomain {
+configuration cAADAuthenticationMethodPolicyX509 {
     param (
         [Parameter()]
         [hashtable[]]
@@ -6,22 +6,23 @@ configuration cEXOAcceptedDomain {
 )
 
 <#
-EXOAcceptedDomain [String] #ResourceName
+AADAuthenticationMethodPolicyX509 [String] #ResourceName
 {
-    Identity = [string]
+    Id = [string]
     [AccessTokens = [string[]]]
     [ApplicationId = [string]]
-    [CertificatePassword = [PSCredential]]
-    [CertificatePath = [string]]
+    [ApplicationSecret = [PSCredential]]
+    [AuthenticationModeConfiguration = [MSFT_MicrosoftGraphx509CertificateAuthenticationModeConfiguration]]
     [CertificateThumbprint = [string]]
+    [CertificateUserBindings = [MSFT_MicrosoftGraphx509CertificateUserBinding[]]]
     [Credential = [PSCredential]]
     [DependsOn = [string[]]]
-    [DomainType = [string]{ Authoritative | InternalRelay }]
     [Ensure = [string]{ Absent | Present }]
+    [ExcludeTargets = [MSFT_AADAuthenticationMethodPolicyX509ExcludeTarget[]]]
+    [IncludeTargets = [MSFT_AADAuthenticationMethodPolicyX509IncludeTarget[]]]
     [ManagedIdentity = [bool]]
-    [MatchSubDomains = [bool]]
-    [OutboundOnly = [bool]]
     [PsDscRunAsCredential = [PSCredential]]
+    [State = [string]{ disabled | enabled }]
     [TenantId = [string]]
 }
 
@@ -31,12 +32,12 @@ EXOAcceptedDomain [String] #ResourceName
     Import-DscResource -ModuleName PSDesiredStateConfiguration
     Import-DscResource -ModuleName Microsoft365DSC
 
-    $dscResourceName = 'EXOAcceptedDomain'
+    $dscResourceName = 'AADAuthenticationMethodPolicyX509'
 
     $param = $PSBoundParameters
     $param.Remove("InstanceName")
 
-    $dscParameterKeys = 'Identity' -split ', '
+    $dscParameterKeys = 'Id' -split ', '
 
         foreach ($item in $Items)
         {

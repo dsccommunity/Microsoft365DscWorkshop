@@ -38,6 +38,10 @@ configuration cAADGroupsSettings {
         $UsageGuidelinesUrl,
 
         [Parameter()]
+        [bool]
+        $NewUnifiedGroupWritebackDefault,
+
+        [Parameter()]
         [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure,
@@ -64,13 +68,18 @@ configuration cAADGroupsSettings {
 
         [Parameter()]
         [bool]
-        $ManagedIdentity
+        $ManagedIdentity,
+
+        [Parameter()]
+        [string[]]
+        $AccessTokens
 )
 
 <#
 AADGroupsSettings [String] #ResourceName
 {
     IsSingleInstance = [string]{ Yes }
+    [AccessTokens = [string[]]]
     [AllowGuestsToAccessGroups = [bool]]
     [AllowGuestsToBeGroupOwner = [bool]]
     [AllowToAddGuests = [bool]]
@@ -85,6 +94,7 @@ AADGroupsSettings [String] #ResourceName
     [GroupCreationAllowedGroupName = [string]]
     [GuestUsageGuidelinesUrl = [string]]
     [ManagedIdentity = [bool]]
+    [NewUnifiedGroupWritebackDefault = [bool]]
     [PsDscRunAsCredential = [PSCredential]]
     [TenantId = [string]]
     [UsageGuidelinesUrl = [string]]

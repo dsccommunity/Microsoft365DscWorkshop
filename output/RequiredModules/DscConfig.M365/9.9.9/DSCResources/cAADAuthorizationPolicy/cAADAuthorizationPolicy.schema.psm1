@@ -90,13 +90,18 @@ configuration cAADAuthorizationPolicy {
 
         [Parameter()]
         [bool]
-        $ManagedIdentity
+        $ManagedIdentity,
+
+        [Parameter()]
+        [string[]]
+        $AccessTokens
 )
 
 <#
 AADAuthorizationPolicy [String] #ResourceName
 {
     IsSingleInstance = [string]{ Yes }
+    [AccessTokens = [string[]]]
     [AllowedToSignUpEmailBasedSubscriptions = [bool]]
     [AllowedToUseSSPR = [bool]]
     [AllowEmailVerifiedUsersToJoinOrganization = [bool]]

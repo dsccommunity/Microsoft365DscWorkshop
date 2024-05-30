@@ -1,4 +1,4 @@
-configuration cEXOAcceptedDomain {
+configuration cAADAuthenticationMethodPolicyTemporary {
     param (
         [Parameter()]
         [hashtable[]]
@@ -6,22 +6,26 @@ configuration cEXOAcceptedDomain {
 )
 
 <#
-EXOAcceptedDomain [String] #ResourceName
+AADAuthenticationMethodPolicyTemporary [String] #ResourceName
 {
-    Identity = [string]
+    Id = [string]
     [AccessTokens = [string[]]]
     [ApplicationId = [string]]
-    [CertificatePassword = [PSCredential]]
-    [CertificatePath = [string]]
+    [ApplicationSecret = [PSCredential]]
     [CertificateThumbprint = [string]]
     [Credential = [PSCredential]]
+    [DefaultLength = [UInt32]]
+    [DefaultLifetimeInMinutes = [UInt32]]
     [DependsOn = [string[]]]
-    [DomainType = [string]{ Authoritative | InternalRelay }]
     [Ensure = [string]{ Absent | Present }]
+    [ExcludeTargets = [MSFT_AADAuthenticationMethodPolicyTemporaryExcludeTarget[]]]
+    [IncludeTargets = [MSFT_AADAuthenticationMethodPolicyTemporaryIncludeTarget[]]]
+    [IsUsableOnce = [bool]]
     [ManagedIdentity = [bool]]
-    [MatchSubDomains = [bool]]
-    [OutboundOnly = [bool]]
+    [MaximumLifetimeInMinutes = [UInt32]]
+    [MinimumLifetimeInMinutes = [UInt32]]
     [PsDscRunAsCredential = [PSCredential]]
+    [State = [string]{ disabled | enabled }]
     [TenantId = [string]]
 }
 
@@ -31,12 +35,12 @@ EXOAcceptedDomain [String] #ResourceName
     Import-DscResource -ModuleName PSDesiredStateConfiguration
     Import-DscResource -ModuleName Microsoft365DSC
 
-    $dscResourceName = 'EXOAcceptedDomain'
+    $dscResourceName = 'AADAuthenticationMethodPolicyTemporary'
 
     $param = $PSBoundParameters
     $param.Remove("InstanceName")
 
-    $dscParameterKeys = 'Identity' -split ', '
+    $dscParameterKeys = 'Id' -split ', '
 
         foreach ($item in $Items)
         {

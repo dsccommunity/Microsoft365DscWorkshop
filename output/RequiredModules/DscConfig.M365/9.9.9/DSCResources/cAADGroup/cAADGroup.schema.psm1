@@ -12,6 +12,7 @@ AADGroup [String] #ResourceName
     MailEnabled = [bool]
     MailNickname = [string]
     SecurityEnabled = [bool]
+    [AccessTokens = [string[]]]
     [ApplicationId = [string]]
     [ApplicationSecret = [PSCredential]]
     [AssignedLicenses = [MSFT_AADGroupLicense[]]]
