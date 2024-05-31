@@ -5,9 +5,13 @@ To setup the build agent for an environment manually without the script provided
 - This machine needs network connectivity to Azure DevOps (https://dev.azure.com)
 - It also needs network connectivity to configure the respective tenant
 
+> :information_source: Note: This guide assumes you are installing the agent for the production tenant. Please change the commands if you deploy for a different tenant.
+
+> :information_source: Note: This guide explains how to assign read-only permissions to the Azure DevOps build agent's managed identity as well as full permissions. Please change the command depending of that permissions you want to have the build agent.
+
 ## Connect to your Azure Tenant
 
-1. First connect to graph using your global admin account
+1. :pencil2: First connect to graph using your global admin account
 ```powershell
 $scopes = 'RoleManagement.ReadWrite.Directory',
     'Directory.ReadWrite.All',
@@ -18,87 +22,91 @@ $scopes = 'RoleManagement.ReadWrite.Directory',
 Connect-MgGraph -Scopes $scopes
 ```
 
-1. Connect to the Azure tenant using the cmdlet `Connect-AzAccount` and using your global admin account
+1. :pencil2: Connect to the Azure tenant using the cmdlet `Connect-AzAccount` and using your global admin account
 
 ## Create the User Assigned Identity
 
-1. Create a new Azure User Assigned Identity using the following commands:
+1. :pencil2: Create a new Azure User Assigned Identity using the following commands:
 
 ```powershell
-$id = New-AzUserAssignedIdentity -Name ProdLcm -ResourceGroupName ProdTest -Location GermanyWestCentral
+$id = New-AzUserAssignedIdentity -Name LcmNew365ProdRO -ResourceGroupName M365DSCWorker -Location GermanyWestCentral
 ```
 
-1. Then assign it to the virtual machine that you want to become an Azure DevOps build worker:
+1. :pencil2: Then assign it to the virtual machine that you want to become an Azure DevOps build worker:
 
 ```powershell
-$vm = Get-AzVM -ResourceGroupName ProdTest -Name ProdLcm
-Update-AzVM -ResourceGroupName ProdTest -VM $vm -IdentityType UserAssigned -IdentityId $id.Id
+$vm = Get-AzVM -ResourceGroupName M365DSCWorker -Name LcmNew365ProdRO
+Update-AzVM -ResourceGroupName M365DSCWorker -VM $vm -IdentityType UserAssigned -IdentityId $id.Id
 ```
 
 ## Assigning permissions
 
-> :information_source: Note: This guide assumes you are installing the agent for the production tenant. Please change the commands if you deploy for a different tenant.
-
-> :information_source: Note: This guide explains how to assign read-only permissions to the Azure DevOps build agent's managed identity as well as full permissions. Please change the command depending of that permissions you want to have the build agent.
-
-2. Then get the principal in Graph and add it to the Global Reader role
+1. :pencil2: Then get the principal in Graph and add it to the `Global Reader` role
 
 ```powershell
-$appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq 'ProdLcm'"
+$appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq 'LcmNew365ProdRO'"
 $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Global Reader'"
 New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/"
 ```
 
 Add the Graph permissions required by Microsoft365DSC for read-only or read/write access to the tenant:
 
-1. First we need to start the build script which prepares the PowerShell sessions and amends the `PSModulePath` so the Microsoft365DSC module is available to the PowerShell session. The script also installs the required modules and sets up the required environment variables:
+1. :pencil2: First we need to start the build script which prepares the PowerShell sessions and amends the `PSModulePath` so the Microsoft365DSC module is available to the PowerShell session. The script also installs the required modules and sets up the required environment variables:
 
 ```powershell
 .\build.ps1 -tasks noop
 ```
 
-1. Next we need to import the `AzHelper` module:
+1. :pencil2: Next we need to import the `AzHelper` module:
 
 ```powershell
 Import-Module -Name .\lab\AzHelpers.psm1
 ```
 
-1. Then we get the desired permissions for the tenant (in the following case read-only):
+1. :pencil2: Then we get the desired permissions for the tenant (in the following case read-only):
 
 ```powershell
 $requiredPermissions = Get-M365DSCCompiledPermissionList2 -AccessType Read
 ```
 
-And then we configure the permissions for the previously created principal
+1. :pencil2: Then set the permissions on the previously created principal
 
 ```powershell
 Set-ServicePrincipalAppPermissions -DisplayName ProdLcm -Permissions $requiredPermissions
 ```
 
-You may want to double check the permissions are set correctly in the Azure portal.
+You may want to double check the permissions are set correctly in the Azure portal or run the command
+
+```powershell
+Get-ServicePrincipalAppPermissions -DisplayName LcmNew365ProdRO
+```
 
 ------------------------------------
 
-Now connect to Exchange Online using the global admin account
+1. :pencil2: Now connect to Exchange Online using the global admin account
 
 ```powershell
 Connect-ExchangeOnline
 ```
 
-Create a service principal for the Exchange Online connection
+1. :pencil2: Create a service principal for the Exchange Online connection
 
 ```powershell
-$appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq 'ProdLcm'"
-$servicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName ProdLcm
+$appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq 'LcmNew365ProdRO'"
+$servicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName LcmNew365ProdRO
 ```
 
-Assign to the service principal the View-Only Configuration role
+1. :pencil2: Assign to the service principal the `View-Only Configuration` role
 
 ```powershell
 New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "View-Only Configuration"
 ```
 
-Disconnect-ExchangeOnline
+1. :pencil2: We are done, you can disconnect from Exchange Online.
+
+```powershell
+Disconnect-ExchangeOnline -Confirm:$false
+```
 
 ------------------------------------
 
