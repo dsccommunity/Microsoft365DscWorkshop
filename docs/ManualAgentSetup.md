@@ -1,17 +1,30 @@
-# Manually setting up the Azure DevOps Build Agent
+# 1. Manually setting up the Azure DevOps Build Agent
+
+The Azure DevOps agent setup for this solution can fully automated with the script [](../lab/31%20Agent%20Setup.ps1). The automation is based on [AutomatedLab](https://automatedlab.org/) which sometimes conflicts with security guidelines in production environments. The guide is for setting up the build agent without the scripts provided.
+
+- [1. Manually setting up the Azure DevOps Build Agent](#1-manually-setting-up-the-azure-devops-build-agent)
+  - [1.1. Connect to and prepare the Azure Tenant](#11-connect-to-and-prepare-the-azure-tenant)
+  - [1.2. Create the User Assigned Identity](#12-create-the-user-assigned-identity)
+  - [1.3. Assigning permissions](#13-assigning-permissions)
+  - [1.4. Connect to and prepare Exchange Online](#14-connect-to-and-prepare-exchange-online)
+  - [1.5. Prepare the VM](#15-prepare-the-vm)
 
 To setup the build agent for an environment manually without the script provided, make sure you have
+
 - A virtual machine in Azure with Windows Server 2022.
-- This machine needs network connectivity to Azure DevOps (https://dev.azure.com)
-- It also needs network connectivity to configure the respective tenant
+- This machine needs network connectivity to Azure DevOps (https://dev.azure.com).
+- It also needs network connectivity to configure the respective tenant.
 
 > :information_source: Note: This guide assumes you are installing the agent for the production tenant. Please change the commands if you deploy for a different tenant.
 
 > :information_source: Note: This guide explains how to assign read-only permissions to the Azure DevOps build agent's managed identity as well as full permissions. Please change the command depending of that permissions you want to have the build agent.
 
-## Connect to and prepare the Azure Tenant
+---
+
+## 1.1. Connect to and prepare the Azure Tenant
 
 1. :pencil2: First connect to graph using your global admin account
+
 ```powershell
 $scopes = 'RoleManagement.ReadWrite.Directory',
     'Directory.ReadWrite.All',
@@ -24,7 +37,7 @@ Connect-MgGraph -Scopes $scopes
 
 1. :pencil2: Connect to the Azure tenant using the cmdlet `Connect-AzAccount` and using your global admin account
 
-## Create the User Assigned Identity
+## 1.2. Create the User Assigned Identity
 
 1. :pencil2: Create a new Azure User Assigned Identity using the following commands:
 
@@ -39,7 +52,7 @@ $vm = Get-AzVM -ResourceGroupName M365DSCWorker -Name LcmNew365ProdRO
 Update-AzVM -ResourceGroupName M365DSCWorker -VM $vm -IdentityType UserAssigned -IdentityId $id.Id
 ```
 
-## Assigning permissions
+## 1.3. Assigning permissions
 
 1. :pencil2: Then get the principal in Graph and add it to the `Global Reader` role
 
@@ -83,7 +96,7 @@ Get-ServicePrincipalAppPermissions -DisplayName LcmNew365ProdRO
 
 ---
 
-## Connect to and prepare Exchange Online
+## 1.4. Connect to and prepare Exchange Online
 
 1. :pencil2: Now connect to Exchange Online using the global admin account
 
@@ -112,7 +125,7 @@ Disconnect-ExchangeOnline -Confirm:$false
 
 ---
 
-## Prepare the VM
+## 1.5. Prepare the VM
 
 On the VM we need to install some software and the Azure DevOps Build Worker. Then we connect the Azure DevOps Build Agent service to your Azure DevOps organization.
 
