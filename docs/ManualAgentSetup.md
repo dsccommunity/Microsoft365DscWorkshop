@@ -9,7 +9,7 @@ To setup the build agent for an environment manually without the script provided
 
 > :information_source: Note: This guide explains how to assign read-only permissions to the Azure DevOps build agent's managed identity as well as full permissions. Please change the command depending of that permissions you want to have the build agent.
 
-## Connect to your Azure Tenant
+## Connect to and prepare the Azure Tenant
 
 1. :pencil2: First connect to graph using your global admin account
 ```powershell
@@ -81,7 +81,9 @@ You may want to double check the permissions are set correctly in the Azure port
 Get-ServicePrincipalAppPermissions -DisplayName LcmNew365ProdRO
 ```
 
-------------------------------------
+---
+
+## Connect to and prepare Exchange Online
 
 1. :pencil2: Now connect to Exchange Online using the global admin account
 
@@ -108,33 +110,55 @@ New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "View-Only Confi
 Disconnect-ExchangeOnline -Confirm:$false
 ```
 
-------------------------------------
+---
 
-## Install Software inside the Build Agent machine and connect it to Azure DevOps
+## Prepare the VM
 
-1. Please, logon to the VM that you have dedicated as the Azure DevOps Worker
+On the VM we need to install some software and the Azure DevOps Build Worker. Then we connect the Azure DevOps Build Agent service to your Azure DevOps organization.
 
-1. Install the following software:
-- Install Visual Studio Code with the PowerShell extension
-- Install Git
-- Install PowerShell 7
+Install Software inside the Build Agent machine and connect it to Azure DevOps
 
-Please download the Azure DevOps Agent from the [GitHub Release](https://github.com/microsoft/azure-pipelines-agent/releases) page.
+1. :pencil2: Logon to the VM that you have dedicated as the Azure DevOps Worker with Remote Desktop.
 
-Then extract the zip file like this (please change the path according to your needs), set an environment variable and 
+1. :pencil2: Install the following software on the VM:
+   - Install PowerShell 7
+   - Install Git (only required for debugging)
+   - Install Visual Studio Code with the PowerShell extension (only required for debugging)
+
+1. :pencil2: Please download the Azure DevOps Agent (Windows x64) from the [GitHub Release](https://github.com/microsoft/azure-pipelines-agent/releases) page.
+
+1. :pencil2: Then extract the zip file like this (please change the path according to your needs), set an environment variable and connect the build agent service to your Azure DevOps organization.
 
 ```powershell
 Unblock-File -Path .\Downloads\vsts-agent-win-x64-3.240.1.zip
 
 Expand-Archive -Path .\Downloads\vsts-agent-win-x64-3.240.1.zip -DestinationPath C:\ProdAgent1
+```
 
+1. :pencil2: Create the system-wide environment variable `BuildEnvironment`. It stores the name of the environment for which the build agent is set up. The variable is added as a [build agent capability](https://learn.microsoft.com/en-us/azure/devops/pipelines/agents/agents?view=azure-devops&tabs=yaml%2Cbrowser) in Azure DevOps and allows the Azure DevOps pipeline to select the correct worker for each environment.
+
+```powershell
 [System.Environment]::SetEnvironmentVariable('BuildEnvironment', 'Prod', 'Machine')
+```
 
+Now it is time to connect the build agent service to your Azure DevOps organization.
+
+1. :pencil2: Please follow the guide [Register an agent using a personal access token (PAT)](https://learn.microsoft.com/en-us/azure/devops/pipelines/agents/personal-access-token-agent-registration?view=azure-devops) and create a personal access token.
+
+1. :pencil2: Connect the build agent service to your Azure DevOps organization using the following commands:
+
+```powershell
 $pat = '<PAT>'
 C:\ProdAgent1\config.cmd --unattended --url https://dev.azure.com/<YourOrganizationName> --auth pat --token $pat --pool DSC --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
+```
 
+1. :pencil2: Then update the `NuGet` provider and the `PowerShellGet` module with these two commands:
+
+```powershell
 Install-PackageProvider -Name NuGet -Force
 Install-Module -Name PowerShellGet -Force
 ```
 
-1. Please check the Azure DevOps Agent Pool if the new worker appears there. Please also check for its capabilities. There should be a capability named `BuildEnvironment` with the value `Prod`
+1. please check the Azure DevOps Agent Pool to see if the new worker appears there. Please also check its capabilities. There should be a capability named `BuildEnvironment` with the value `Prod`.
+
+Now your Azure DevOps Build Worker is ready and accepts jobs from the pipeline for the respective environment.
