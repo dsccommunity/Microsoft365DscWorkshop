@@ -175,21 +175,11 @@ function Remove-ServicePrincipalAppPermissions
             Write-Verbose "Permission $($p.ApiPermissionName) ($($p.ApiRoleId)) exists for $($p.ApiDisplayName) and will be removed."
 
             $params = @{
-                ServicePrincipalId = $principal.Id
-                AppRoleId          = $p.ApiRoleId
-                ResourceId         = $p.ApiId
-                PrincipalId        = $principal.Id
+                AppRoleAssignmentId = $p.AppRoleAssignmentId
+                ServicePrincipalId  = $principal.Id
             }
 
-            $GraphApp = Get-MgServicePrincipal -Filter "AppId eq '$($p.ApiAppId)'"
-            $Role = $GraphApp.AppRoles | Where-Object Id -EQ $p.ApiRoleId
-            $AppRoleAssignment = @{
-                'PrincipalId' = $principal.Id
-                'ResourceId'  = $GraphApp.Id
-                'AppRoleId'   = $Role.Id 
-            }
-
-            Remove-MgServicePrincipalAppRoleAssignment -AppRoleAssignmentId $p.AppRoleAssignmentId -ServicePrincipalId $principal.Id
+            Remove-MgServicePrincipalAppRoleAssignment @params
             Write-Host "Removed role assignment / permission '$($p.ApiPermissionName)' for principal '$($p.PrincipalDisplayName)' (AppRoleAssignmentId was '$($p.AppRoleAssignmentId)')"
 
         }
@@ -197,7 +187,7 @@ function Remove-ServicePrincipalAppPermissions
         {
             Write-Verbose "Permission $($p.ApiPermissionName) ($($p.ApiRoleId)) does not exist for $($p.ApiDisplayName) and cannot be removed."
         }
-    
+
     }
 
     if ($PassThru)
@@ -217,7 +207,7 @@ function Get-M365DSCCompiledPermissionList2
     )
 
     $m365GraphPermissionList = Get-M365DSCCompiledPermissionList -ResourceNameList (Get-M365DSCAllResources)
-    
+
     $resourceAppIds = @{
         Graph      = '00000003-0000-0000-c000-000000000000'
         SharePoint = '00000003-0000-0ff1-ce00-000000000000'
@@ -249,7 +239,10 @@ function Get-M365DSCCompiledPermissionList2
 
     if ($AccessType -eq 'Read')
     {
-        $result | Where-Object { $_.ApiPermissionName -notlike '*FullControl*' -and $_.ApiPermissionName -notlike '*Write*' }
+        $result | Where-Object { $_.ApiPermissionName -notlike '*FullControl*' -and
+            $_.ApiPermissionName -notlike '*Write*'
+            $_.ApiPermissionName -notlike '*Delete*'
+        }
     }
     else
     {
@@ -276,7 +269,7 @@ function Get-GraphPermission
             Write-Warning "Permission '$Permission' not found"
             continue
         }
-        
+
         [pscustomobject][ordered]@{
             ApiAppId          = $servicePrincipal.AppId
             ApiId             = $servicePrincipal.Id
@@ -357,18 +350,18 @@ function Connect-EXO
         [string]$ServicePrincipalSecret
     )
 
-    $tokenBody = @{     
-        Grant_Type    = 'client_credentials' 
+    $tokenBody = @{
+        Grant_Type    = 'client_credentials'
         Scope         = 'https://outlook.office365.com/.default'
         Client_Id     = $ServicePrincipalId
         Client_Secret = $ServicePrincipalSecret
-    }  
+    }
 
     try
     {
         $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token" -Method POST -Body $tokenBody
 
-        Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName -ShowBanner:$false 
+        Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName -ShowBanner:$false
 
         Write-Host "Successfully connected to Exchange Online of tenant '$TenantName' with service principal '$ServicePrincipalId'"
     }
