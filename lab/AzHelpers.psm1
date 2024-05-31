@@ -90,18 +90,33 @@ function Set-ServicePrincipalAppPermissions
     {
         if (($existingPermissions | Where-Object ApiRoleId -EQ $p.ApiRoleId) -or (-not $p.ApiRoleId))
         {
-            Write-Verbose "Permission $($p.ApiPermissionName) ($($p.ApiRoleId)) already exists for $($p.ApiDisplayName)"
+            Write-Verbose "Permission '$($p.ApiPermissionName)' ($($p.ApiRoleId)) already exists for '$($p.ApiDisplayName)'"
             continue
         }
 
-        Write-Verbose "Adding Permission $($p.ApiPermissionName) ($($p.ApiRoleId)) for $($p.ApiDisplayName)"
+        Write-Verbose "Adding Permission '$($p.ApiPermissionName)' ($($p.ApiRoleId)) for '$($p.ApiDisplayName)'"
         $params = @{
             ServicePrincipalId = $principal.Id
             AppRoleId          = $p.ApiRoleId
             ResourceId         = $p.ApiId
             PrincipalId        = $principal.Id
         }
-        New-MgServicePrincipalAppRoleAssignment @params | Out-Null
+        New-MgServicePrincipalAppRoleAssignment @params -ErrorAction SilentlyContinue -ErrorVariable assignmentError | Out-Null
+        if ($assignmentError.Count -gt 0)
+        {
+            if ($assignmentError.Exception.Message -like '*already exists*')
+            {
+                Write-Verbose "Permission '$($p.ApiPermissionName)' ($($p.ApiRoleId)) already exists for '$($p.ApiDisplayName)'"
+            }
+            else
+            {
+                Write-Error -ErrorRecord $_
+            }
+        }
+        else
+        {
+            Write-Verbose "Added role assignment / permission '$($p.ApiPermissionName)' for principal '$($p.PrincipalDisplayName)'"
+        }
     }
 
     if ($PassThru)
