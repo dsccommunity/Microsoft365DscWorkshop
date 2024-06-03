@@ -34,16 +34,15 @@
     Metadata                                               = 'latest'
     xDscResourceDesigner                                   = 'latest'
     'DscResource.Test'                                     = 'latest'
-    #'Microsoft.PowerShell.SecretManagement'           = 'latest'
 
     # Composites
     'DscConfig.M365'                                       = '0.2.3'
     'DscConfig.Demo'                                       = '0.8.2'
 
     # Azure
-    'Az.KeyVault'                                          = 'latest'
-    'Az.Resources'                                         = 'latest'
-    'Az.Accounts'                                          = 'latest'
+    'Az.KeyVault'                                          = '6.0.0'
+    'Az.Resources'                                         = '7.1.0'
+    'Az.Accounts'                                          = '3.0.0'
     'Microsoft.Graph.Identity.DirectoryManagement'         = '2.19.0'
 
     #DSC Resources
