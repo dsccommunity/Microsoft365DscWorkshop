@@ -24,29 +24,25 @@ if ($EnvironmentName)
 foreach ($environmentName in $environments)
 {
     $environment = $datum.Global.Azure.Environments.$environmentName
+    $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
-    
-    $param = @{
-        TenantId               = $environment.AzTenantId
-        SubscriptionId         = $environment.AzSubscriptionId
-        ServicePrincipalId     = $environment.AzApplicationId
-        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
-    }
-    Connect-Azure @param -ErrorAction Stop
 
     $param = @{
         TenantId               = $environment.AzTenantId
         TenantName             = $environment.AzTenantName
-        ServicePrincipalId     = $environment.AzApplicationId
-        ServicePrincipalSecret = $environment.AzApplicationSecret
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $setupIdentity.ApplicationId
+        ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
 
-    Connect-EXO @param -ErrorAction Stop
+    Connect-M365Dsc @param -ErrorAction Stop
+
+    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction Stop | Out-Null
+
     if (-not $DoNotDisconnect)
     {
-        Disconnect-MgGraph | Out-Null
-        Disconnect-ExchangeOnline -Confirm:$false
+        Disconnect-M365Dsc
     }
 }
 
-Write-Host "Connection test completed" -ForegroundColor Green
+Write-Host 'Connection test completed' -ForegroundColor Green
