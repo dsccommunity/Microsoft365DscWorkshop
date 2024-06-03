@@ -534,7 +534,7 @@ function Get-M365DscIdentity
     if ($appRegistration = Get-MgApplication -Filter "displayName eq '$Name'" -ErrorAction SilentlyContinue)
     {
         Write-Verbose "Found application '$Name' with Id '$($appRegistration.Id)' and AppId '$($appRegistration.AppId)'."
-        $appPrincipal = Get-MgServicePrincipal -Filter "appId eq '$($appRegistration.AppId)'"
+        $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue
         $exchangeServicePrincipal = Get-ServicePrincipal -Identity $Name -ErrorAction SilentlyContinue
 
         [M365DscIdentity]::new($appRegistration.DisplayName,

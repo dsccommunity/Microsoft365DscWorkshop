@@ -17,14 +17,14 @@ $labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings
 foreach ($lab in $labs)
 {
     $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
-    $currentEnvironmentName = $Matches.Environment
-    if ($EnvironmentName -and $currentEnvironmentName -notin $EnvironmentName)
+    $envName = $Matches.Environment
+    if ($EnvironmentName -and $envName -notin $EnvironmentName)
     {
-        Write-Host "Skipping lab '$lab' for environment '$currentEnvironmentName'." -ForegroundColor Yellow
+        Write-Host "Skipping lab '$lab' for environment '$envName'." -ForegroundColor Yellow
         continue
     }
 
-    $environment = $datum.Global.Azure.Environments.$currentEnvironmentName
+    $environment = $datum.Global.Azure.Environments.$envName
     $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
     Write-Host "Connecting to environment '$envName'" -ForegroundColor Magenta
 
@@ -38,7 +38,7 @@ foreach ($lab in $labs)
     Connect-M365Dsc @param -ErrorAction Stop
     Write-Host "Successfully connected to Azure environment '$envName'."
 
-    Write-Host "Removing lab '$lab' for environment '$currentEnvironmentName'" -ForegroundColor Magenta
+    Write-Host "Removing lab '$lab' for environment '$envName'" -ForegroundColor Magenta
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
 
@@ -55,20 +55,20 @@ try
     Get-VSTeamProject -Name $datum.Global.AzureDevOps.ProjectName | Out-Null
     Remove-VSTeamProject -Name $datum.Global.AzureDevOps.ProjectName -Force -ErrorAction Stop
     Write-Host "Project '$($datum.Global.AzureDevOps.ProjectName)' has been removed."
+
+    if ($pool = Get-VSTeamPool | Where-Object Name -EQ $datum.Global.AzureDevOps.AgentPoolName)
+    {
+        Remove-VSTeamPool -Id $pool.Id
+        Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' has been removed."
+    }
+    else
+    {
+        Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' does not exists."
+    }
 }
 catch
 {
     Write-Host "Project '$($datum.Global.AzureDevOps.ProjectName)' does not exists."
-}
-
-if ($pool = Get-VSTeamPool | Where-Object Name -EQ $datum.Global.AzureDevOps.AgentPoolName)
-{
-    Remove-VSTeamPool -Id $pool.Id
-    Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' has been removed."
-}
-else
-{
-    Write-Host "Agent pool '$($datum.Global.AzureDevOps.AgentPoolName)' does not exists."
 }
 
 Write-Host 'Finished cleanup.'

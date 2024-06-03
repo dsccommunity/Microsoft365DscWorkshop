@@ -29,17 +29,27 @@ $vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/3.232.3/vsts-agent
 foreach ($lab in $labs)
 {
     $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
-    $environmentName = $Matches.Environment
-    $environment = $datum.Global.Azure.Environments.$environmentName
-    Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
+    $envName = $Matches.Environment
+    if ($EnvironmentName -and $envName -notin $EnvironmentName)
+    {
+        Write-Host "Skipping environment '$envName'" -ForegroundColor Yellow
+        continue
+    }
 
+    $environment = $datum.Global.Azure.Environments.$envName
+    $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
+    Write-Host "Working in environment '$envName'" -ForegroundColor Magenta
+
+    Write-Host "Connecting to environment '$envName'" -ForegroundColor Magenta
     $param = @{
         TenantId               = $environment.AzTenantId
+        TenantName             = $environment.AzTenantName
         SubscriptionId         = $environment.AzSubscriptionId
-        ServicePrincipalId     = $environment.AzApplicationId
-        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
+        ServicePrincipalId     = $setupIdentity.ApplicationId
+        ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-    Connect-Azure @param -ErrorAction Stop
+    Connect-M365Dsc @param -ErrorAction Stop
+    Write-Host "Successfully connected to Azure environment '$envName'."
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
     $vms = Get-LabVM
@@ -50,10 +60,6 @@ foreach ($lab in $labs)
         Write-Host "$($vms.Count) machine(s) are stopped. Starting them now."
         Start-LabVM -All -Wait
     }
-
-    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
-    $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
-    Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
 
     $vscodeInstaller = Get-LabInternetFile -Uri $vscodeDownloadUrl -Path $labSources\SoftwarePackages -PassThru
     $gitInstaller = Get-LabInternetFile -Uri $gitDownloadUrl -Path $labSources\SoftwarePackages -PassThru
@@ -99,6 +105,6 @@ foreach ($lab in $labs)
     Write-Host "Restarting $($vms.Count) machines"
     Restart-LabVM -ComputerName $vms -Wait
 
-    Write-Host "Finished installing AzDo Build Agent on $($vms.Count) machines in environment '$environmentName'"
+    Write-Host "Finished installing AzDo Build Agent on $($vms.Count) machines in environment '$envName'"
 
 }

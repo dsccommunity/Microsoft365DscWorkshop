@@ -95,12 +95,17 @@ $labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings
 foreach ($lab in $labs)
 {
     $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
-    $environmentName = $Matches.Environment
+    $envName = $Matches.Environment
+    if ($EnvironmentName -and $envName -notin $EnvironmentName)
+    {
+        Write-Host "Skipping environment '$envName'" -ForegroundColor Yellow
+        continue
+    }
 
-    $environment = $datum.Global.Azure.Environments."$environmentName"
+    $environment = $datum.Global.Azure.Environments."$envName"
     $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
-    Write-Host "Connecting to environment '$environmentName'" -ForegroundColor Magenta
 
+    Write-Host "Connecting to environment '$envName'" -ForegroundColor Magenta
     $param = @{
         TenantId               = $environment.AzTenantId
         TenantName             = $environment.AzTenantName
@@ -109,31 +114,31 @@ foreach ($lab in $labs)
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
     Connect-M365Dsc @param -ErrorAction Stop
-    Write-Host "Successfully connected to Azure environment '$environmentName'."
+    Write-Host "Successfully connected to Azure environment '$envName'."
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
     $resourceGroupName = $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName
-    Write-Host "Working in lab '$($lab.Name)' with environment '$environmentName'"
+    Write-Host "Working in lab '$($lab.Name)' with environment '$envName'"
 
-    if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
+    if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
     {
-        Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)'"
+        Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.Name)$($envName)'"
         $id = New-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
     }
 
-    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName"
+    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName"
     if ($vm.Identity.UserAssignedIdentities.Keys -eq $id.Id)
     {
-        Write-Host "Managed Identity already assigned to VM 'Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)' in environment '$environmentName'"
+        Write-Host "Managed Identity already assigned to VM 'Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)' in environment '$envName'"
     }
     else
     {
-        Write-Host "Assigning Managed Identity to VM 'Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)' in environment '$environmentName'"
+        Write-Host "Assigning Managed Identity to VM 'Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)' in environment '$envName'"
         Update-AzVM -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -VM $vm -IdentityType UserAssigned -IdentityId $id.Id | Out-Null
     }
 
-    $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName" -PassThru
-    Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$environmentName' in environment '$environmentName'"
+    $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName" -PassThru
+    Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$envName' in environment '$envName'"
     New-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
 }
 

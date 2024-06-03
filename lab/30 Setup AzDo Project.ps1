@@ -1,5 +1,12 @@
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [string[]]$EnvironmentName
+)
+
 $requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
-if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+if ($env:PSModulePath -notlike "*$requiredModulesPath*")
+{
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
@@ -100,19 +107,19 @@ Write-Host "Creating environments in project '$($datum.Global.AzureDevOps.Projec
 $environments = $datum.Global.Azure.Environments.Keys
 $existingEnvironments = Invoke-VSTeamRequest -Method Get -Area distributedtask -Resource environments -Version '7.1-preview.1' -ProjectName $datum.Global.AzureDevOps.ProjectName
 
-foreach ($environmentName in $environments)
+foreach ($environment in $environments)
 {
-    if (-not ($existingEnvironments.value | Where-Object { $_.name -eq $environmentName }))
+    if (-not ($existingEnvironments.value | Where-Object { $_.name -eq $environment }))
     {
-        Write-Host "Creating environment '$environmentName' in project '$($datum.Global.AzureDevOps.ProjectName)'."
+        Write-Host "Creating environment '$environment' in project '$($datum.Global.AzureDevOps.ProjectName)'."
         $requestBodyEnvironment = @{
-            name = $environmentName
+            name = $environment
         } | ConvertTo-Json
-    
+
         Invoke-VSTeamRequest -Method Post -ContentType 'application/json' -Body $requestBodyEnvironment -ProjectName $datum.Global.AzureDevOps.ProjectName -Area distributedtask -Resource environments -Version '7.1-preview.1' | Out-Null
     }
     else
     {
-        Write-Host "Environment '$environmentName' already exists in project '$($datum.Global.AzureDevOps.ProjectName)'."
+        Write-Host "Environment '$environment' already exists in project '$($datum.Global.AzureDevOps.ProjectName)'."
     }
 }
