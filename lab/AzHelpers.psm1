@@ -426,47 +426,52 @@ function Add-M365DscIdentity
         Write-Verbose "Creating application '$Name'."
 
         $appRegistration = New-MgApplication -DisplayName $Name
+
         Update-MgApplication -ApplicationId $appRegistration.Id -SignInAudience AzureADMyOrg
-        Write-Verbose "Creating service principal for application '$Name'."
-        $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId
-
-        if ($GenereateAppSecret)
-        {
-            $passwordCred = @{
-                displayName = 'Secret'
-                endDateTime = (Get-Date).AddMonths(12)
-            }
-            Write-Verbose "Creating password secret for application '$Name'."
-            $clientSecret = Add-MgApplicationPassword -ApplicationId $appRegistration.Id -PasswordCredential $passwordCred
-        }
-
-        Write-Verbose 'Waiting 10 seconds for service principal to be created.'
-        Start-Sleep -Seconds 10
-
-        if ($exchangeServicePrincipal = Get-ServicePrincipal | Where-Object DisplayName -EQ $Name)
-        {
-            Write-Verbose "The EXO service principal for application '$Name' already exists."
-        }
-        else
-        {
-            Write-Verbose "Creating the EXO service principal for application '$Name'."
-            $exchangeServicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $Name
-        }
-
-        if ($PassThru)
-        {
-            [M365DscIdentity]::new($appRegistration.DisplayName,
-                $appRegistration.Id,
-                $appRegistration.AppId,
-                $appPrincipal.Id,
-                $exchangeServicePrincipal.Id,
-                $appPrincipal.ServicePrincipalType,
-                $clientSecret)
-        }
     }
     else
     {
-        Write-Warning "Application '$Name' already exists in environment."
+        Write-Verbose "Application '$Name' already exists in environment."
+    }
+
+    if (-not ($appPrincipal = Get-MgServicePrincipal -Filter "appId eq '$($appRegistration.AppId)'" -ErrorAction SilentlyContinue))
+    {
+        Write-Verbose "Creating service principal for application '$Name'."
+        $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId
+    }
+
+    if ($GenereateAppSecret)
+    {
+        $passwordCred = @{
+            displayName = 'Secret'
+            endDateTime = (Get-Date).AddMonths(12)
+        }
+        Write-Verbose "Creating password secret for application '$Name'."
+        $clientSecret = Add-MgApplicationPassword -ApplicationId $appRegistration.Id -PasswordCredential $passwordCred
+    }
+
+    Write-Verbose 'Waiting 10 seconds for service principal to be created.'
+    Start-Sleep -Seconds 10
+
+    if ($exchangeServicePrincipal = Get-ServicePrincipal | Where-Object DisplayName -EQ $Name)
+    {
+        Write-Verbose "The EXO service principal for application '$Name' already exists."
+    }
+    else
+    {
+        Write-Verbose "Creating the EXO service principal for application '$Name'."
+        $exchangeServicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $Name
+    }
+
+    if ($PassThru)
+    {
+        [M365DscIdentity]::new($appRegistration.DisplayName,
+            $appRegistration.Id,
+            $appRegistration.AppId,
+            $appPrincipal.Id,
+            $exchangeServicePrincipal.Id,
+            $appPrincipal.ServicePrincipalType,
+            $clientSecret)
     }
 }
 
