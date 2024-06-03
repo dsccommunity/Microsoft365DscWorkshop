@@ -1,5 +1,12 @@
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [string[]]$EnvironmentName
+)
+
 $requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
-if ($env:PSModulePath -notlike "*$requiredModulesPath*") {
+if ($env:PSModulePath -notlike "*$requiredModulesPath*")
+{
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
@@ -7,14 +14,21 @@ Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
-if (-not (Test-LabAzureModuleAvailability)) {
+if (-not (Test-LabAzureModuleAvailability))
+{
     Install-LabAzureRequiredModule -Scope AllUsers
 }
 
-foreach ($environmentName in $environments) {
+if ($EnvironmentName)
+{
+    $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
+}
+
+foreach ($environmentName in $environments)
+{
     $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
-    
+
     $param = @{
         TenantId               = $environment.AzTenantId
         SubscriptionId         = $environment.AzSubscriptionId
@@ -24,7 +38,8 @@ foreach ($environmentName in $environments) {
     Connect-Azure @param -ErrorAction Stop
 }
 
-foreach ($environmentName in $environments) {
+foreach ($environmentName in $environments)
+{
     $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
     $notes = @{
@@ -58,7 +73,7 @@ foreach ($environmentName in $environments) {
 }
 
 Write-Host "Finished creating all labs VMs for the project '$($datum.Global.ProjectSettings.Name)'" -ForegroundColor Green
-Write-Host "Starting to assign managed identity to VMs and set permissions for Microsoft365DSC workloads" -ForegroundColor Green
+Write-Host 'Starting to assign managed identity to VMs and set permissions for Microsoft365DSC workloads' -ForegroundColor Green
 $labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
 foreach ($lab in $labs)
 {
@@ -67,7 +82,7 @@ foreach ($lab in $labs)
 
     $environment = $datum.Global.Azure.Environments.$environmentName
     Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
-    
+
     $azureParams = @{
         TenantId               = $environment.AzTenantId
         SubscriptionId         = $environment.AzSubscriptionId
@@ -87,13 +102,13 @@ foreach ($lab in $labs)
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
     $resourceGroupName = $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName
     Write-Host "Working in lab '$($lab.Name)' with environment '$environmentName'"
-    
+
     if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
     {
         Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)'"
         $id = New-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
     }
-    
+
     $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName"
     if ($vm.Identity.UserAssignedIdentities.Keys -eq $id.Id)
     {
@@ -109,13 +124,13 @@ foreach ($lab in $labs)
     $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Global Reader'"
     if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
     {
-        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
+        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId '/' | Out-Null
     }
 
     $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Exchange Administrator'"
     if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
     {
-        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId "/" | Out-Null
+        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId '/' | Out-Null
     }
 
     Write-Host 'Getting required permissions for all Microsoft365DSC workloads...' -NoNewline
@@ -138,29 +153,29 @@ foreach ($lab in $labs)
         $servicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $lcmServicePrincipalName
     }
 
-    if (Get-RoleGroupMember -Identity "Organization Management" | Where-Object Name -eq $servicePrincipal.ObjectId)
+    if (Get-RoleGroupMember -Identity 'Organization Management' | Where-Object Name -EQ $servicePrincipal.ObjectId)
     {
         Write-Host "The service principal '$($servicePrincipal.DisplayName)' is already a member of the role 'Organization Management' in environment '$environmentName' in the subscription '$($subscription.Name)'"
     }
     else
     {
         Write-Host "Adding service principal '$($servicePrincipal.DisplayName)' to the role 'Organization Management' in environment '$environmentName' in the subscription '$($subscription.Name)'"
-        Add-RoleGroupMember "Organization Management" -Member $servicePrincipal.DisplayName
+        Add-RoleGroupMember 'Organization Management' -Member $servicePrincipal.DisplayName
 
         $role = Get-RoleGroup -Filter 'Name -eq "Security Administrator"'
         Add-RoleGroupMember -Identity $role.ExchangeObjectId -Member $servicePrincipal.DisplayName
         Add-RoleGroupMember -Identity 'Recipient Management' -Member $servicePrincipal.DisplayName
 
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "Address Lists"
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "E-Mail Address Policies"
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "Mail Recipients"
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role "View-Only Configuration"
+        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'Address Lists'
+        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'E-Mail Address Policies'
+        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'Mail Recipients'
+        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'View-Only Configuration'
     }
 
     Disconnect-ExchangeOnline -Confirm:$false
     Disconnect-MgGraph | Out-Null
 }
 
-Write-Host "Finished assigning managed identity to VMs and setting permissions for Microsoft365DSC workloads" -ForegroundColor Green
+Write-Host 'Finished assigning managed identity to VMs and setting permissions for Microsoft365DSC workloads' -ForegroundColor Green
 
 Write-Host 'All done.'

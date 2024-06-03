@@ -1,7 +1,7 @@
 [CmdletBinding()]
-param(
+param (
     [Parameter()]
-    [string[]]$EnvironmentNames
+    [string[]]$EnvironmentName
 )
 
 $requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
@@ -12,9 +12,9 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
-if ($EnvironmentNames)
+if ($EnvironmentName)
 {
-    $environments = $environments | Where-Object { $EnvironmentNames -contains $_ }
+    $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
 }
 
 foreach ($environmentName in $environments)

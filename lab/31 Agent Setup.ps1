@@ -1,3 +1,9 @@
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [string[]]$EnvironmentName
+)
+
 $requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
 if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 {
@@ -34,13 +40,13 @@ foreach ($lab in $labs)
         ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
     Connect-Azure @param -ErrorAction Stop
-    
+
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
     $vms = Get-LabVM
     Write-Host "Imported lab '$($lab.Name)' with $($vms.Count) machines"
 
     if ((Get-LabVMStatus) -eq 'Stopped')
-    { 
+    {
         Write-Host "$($vms.Count) machine(s) are stopped. Starting them now."
         Start-LabVM -All -Wait
     }
@@ -65,11 +71,11 @@ foreach ($lab in $labs)
         C:\AL\AzureLabSources.ps1
 
     } -ComputerName $vms
-    
+
     Invoke-LabCommand -Activity 'Setup AzDo Build Agent' -ScriptBlock {
 
         if (-not (Get-Service -Name vstsagent*))
-        {            
+        {
             Expand-Archive -Path $vstsAgenZip.FullName -DestinationPath C:\Agent -Force
             "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName) --auth pat --token $($datum.Global.AzureDevOps.PersonalAccessToken) --pool $($datum.Global.AzureDevOps.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
             C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName) --auth pat --token $($datum.Global.AzureDevOps.PersonalAccessToken) --pool $($datum.Global.AzureDevOps.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
