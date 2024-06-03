@@ -1,9 +1,9 @@
 $requiredModules = @{
     'Az.ManagedServiceIdentity'           = 'latest'
-    'Microsoft.Graph.Applications'        = '2.15.0'
-    'Microsoft.Graph.Authentication'      = '2.15.0'
-    'Microsoft.Graph.Identity.Governance' = '2.15.0'
-    'Az.Resources'                        = 'latest'    
+    'Microsoft.Graph.Applications'        = 'latest'
+    'Microsoft.Graph.Authentication'      = 'latest'
+    'Microsoft.Graph.Identity.Governance' = 'latest'
+    'Az.Resources'                        = 'latest'
     'powershell-yaml'                     = 'latest'
     Microsoft365DSC                       = 'latest'
     VSTeam                                = 'latest'
@@ -67,5 +67,8 @@ if ($null -eq (git config --global user.email)) {
 else {
     Write-Host 'Git user email and name are already set.'
 }
+
+Write-Host 'Disabling web account manager login for Azure.'
+Set-AzConfig -EnableLoginByWam $false
 
 Write-Host 'The preparation is done. You can now continue with the next steps.'
