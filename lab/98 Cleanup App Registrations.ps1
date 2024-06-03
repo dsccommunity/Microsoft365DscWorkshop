@@ -30,7 +30,7 @@ foreach ($environmentName in $environments)
         }
 
         Write-Host "Removing the permissions for the application '$($identity.Name)' for environment '$environmentName'."
-        Remove-M365DscIdentityPermission -Identity $azIdentity
+        Remove-M365DscIdentityPermission -Identity $azIdentity -SkipGraphApiPermissions
 
         Write-Host "Removing the application '$($identity.Name)' for environment '$environmentName'."
         Remove-M365DscIdentity -Identity $azIdentity
