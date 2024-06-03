@@ -13,47 +13,61 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
+if ($EnvironmentName)
+{
+    $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
+}
+Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
 
 if (-not (Test-LabAzureModuleAvailability))
 {
     Install-LabAzureRequiredModule -Scope AllUsers
 }
 
-if ($EnvironmentName)
+foreach ($envName in $environments)
 {
-    $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
-}
-
-foreach ($environmentName in $environments)
-{
-    $environment = $datum.Global.Azure.Environments.$environmentName
-    Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
+    $environment = $datum.Global.Azure.Environments.$envName
+    $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
+    Write-Host "Testing connection to environment '$envName'" -ForegroundColor Magenta
 
     $param = @{
         TenantId               = $environment.AzTenantId
+        TenantName             = $environment.AzTenantName
         SubscriptionId         = $environment.AzSubscriptionId
-        ServicePrincipalId     = $environment.AzApplicationId
-        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
+        ServicePrincipalId     = $setupIdentity.ApplicationId
+        ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-    Connect-Azure @param -ErrorAction Stop
+
+    Connect-M365Dsc @param -ErrorAction Stop
+
+    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction Stop
 }
 
-foreach ($environmentName in $environments)
+foreach ($envName in $environments)
 {
-    $environment = $datum.Global.Azure.Environments.$environmentName
-    Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
+    $environment = $datum.Global.Azure.Environments.$envName
+    Write-Host "Working in environment '$envName'" -ForegroundColor Magenta
     $notes = @{
-        Environment = $environmentName
+        Environment = [string]$envName
     }
 
-    $cred = New-Object pscredential($environment.AzApplicationId, ($environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force))
-    $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $environment.AzTenantId -ErrorAction Stop
-    Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
+    $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
+    Write-Host "Connecting to environment '$envName'" -ForegroundColor Magenta
 
-    Write-Host "Creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
-    New-LabDefinition -Name "$($datum.Global.ProjectSettings.Name)$($environmentName)" -DefaultVirtualizationEngine Azure -Notes $notes
+    $param = @{
+        TenantId               = $environment.AzTenantId
+        TenantName             = $environment.AzTenantName
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $setupIdentity.ApplicationId
+        ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
+    }
+    Connect-M365Dsc @param -ErrorAction Stop
+    Write-Host "Successfully connected to Azure environment '$envName'."
 
-    Add-LabAzureSubscription -SubscriptionId $subscription.Context.Subscription.Id -DefaultLocation $datum.Global.AzureDevOps.AgentAzureLocation
+    Write-Host "Creating lab for environment '$envName' in the subscription."
+    New-LabDefinition -Name "$($datum.Global.ProjectSettings.Name)$($envName)" -DefaultVirtualizationEngine Azure -Notes $notes
+
+    Add-LabAzureSubscription -SubscriptionId $environment.AzSubscriptionId -DefaultLocation $datum.Global.AzureDevOps.BuildAgents.AzureLocation
 
     Set-LabInstallationCredential -Username $datum.Global.AzureDevOps.BuildAgents.UserName -Password $datum.Global.AzureDevOps.BuildAgents.Password
 
@@ -62,17 +76,20 @@ foreach ($environmentName in $environments)
         'Add-LabMachineDefinition:OperatingSystem' = 'Windows Server 2022 Datacenter (Desktop Experience)'
     }
 
-    Add-LabDiskDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)Data1" -DiskSizeInGb 1000 -Label Data
+    Add-LabDiskDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($envName)Data1" -DiskSizeInGb 250 -Label Data
 
-    Add-LabMachineDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)" -AzureRoleSize Standard_D8lds_v5 -DiskName "Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)Data1"
+    Add-LabMachineDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($envName)" -AzureRoleSize $datum.Global.AzureDevOps.BuildAgents.AzureRoleSize -DiskName "Lcm$($datum.Global.ProjectSettings.Name)$($envName)Data1"
 
     Install-Lab
 
-    Write-Host "Finished creating lab for environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name)'"
+    Write-Host "Finished creating lab for environment '$envName'."
 
 }
 
 Write-Host "Finished creating all labs VMs for the project '$($datum.Global.ProjectSettings.Name)'" -ForegroundColor Green
+
+# ------------------------------------------------------------------------------------------------------------
+
 Write-Host 'Starting to assign managed identity to VMs and set permissions for Microsoft365DSC workloads' -ForegroundColor Green
 $labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
 foreach ($lab in $labs)
@@ -80,24 +97,19 @@ foreach ($lab in $labs)
     $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
     $environmentName = $Matches.Environment
 
-    $environment = $datum.Global.Azure.Environments.$environmentName
-    Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
+    $environment = $datum.Global.Azure.Environments."$environmentName"
+    $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
+    Write-Host "Connecting to environment '$environmentName'" -ForegroundColor Magenta
 
-    $azureParams = @{
-        TenantId               = $environment.AzTenantId
-        SubscriptionId         = $environment.AzSubscriptionId
-        ServicePrincipalId     = $environment.AzApplicationId
-        ServicePrincipalSecret = $environment.AzApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
-    }
-    Connect-Azure @azureParams -ErrorAction Stop
-
-    $exoParams = @{
+    $param = @{
         TenantId               = $environment.AzTenantId
         TenantName             = $environment.AzTenantName
-        ServicePrincipalId     = $environment.AzApplicationId
-        ServicePrincipalSecret = $environment.AzApplicationSecret
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $setupIdentity.ApplicationId
+        ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
-    Connect-EXO @exoParams -ErrorAction Stop
+    Connect-M365Dsc @param -ErrorAction Stop
+    Write-Host "Successfully connected to Azure environment '$environmentName'."
 
     $lab = Import-Lab -Name $lab -NoValidation -PassThru
     $resourceGroupName = $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName
@@ -120,60 +132,9 @@ foreach ($lab in $labs)
         Update-AzVM -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -VM $vm -IdentityType UserAssigned -IdentityId $id.Id | Out-Null
     }
 
-    $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$("Lcm$($datum.Global.ProjectSettings.Name)$environmentName")'"
-    $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Global Reader'"
-    if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
-    {
-        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId '/' | Out-Null
-    }
-
-    $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq 'Exchange Administrator'"
-    if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($appPrincipal.Id)'"))
-    {
-        New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId '/' | Out-Null
-    }
-
-    Write-Host 'Getting required permissions for all Microsoft365DSC workloads...' -NoNewline
-    $permissions = Get-M365DSCCompiledPermissionList2
-    Write-Host "found $($permissions.Count) permissions"
-
-    Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$($environmentName)' in environment '$environmentName'"
-    Set-ServicePrincipalAppPermissions -DisplayName "Lcm$($datum.Global.ProjectSettings.Name)$environmentName" -Permissions $permissions
-
-    #------------------------------------ EXO ----------------------------------------------------
-
-    $lcmServicePrincipalName = "Lcm$($datum.Global.ProjectSettings.Name)$environmentName"
-    if ($servicePrincipal = Get-ServicePrincipal -Identity $appPrincipal.Id -ErrorAction SilentlyContinue)
-    {
-        Write-Host "The EXO service principal for application '$lcmServicePrincipalName' already exists in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
-    }
-    else
-    {
-        Write-Host "Creating the EXO service principal for application '$lcmServicePrincipalName' in environment '$environmentName' in the subscription '$($subscription.Context.Subscription.Name) ($($subscription.Context.Subscription.Id))'"
-        $servicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $lcmServicePrincipalName
-    }
-
-    if (Get-RoleGroupMember -Identity 'Organization Management' | Where-Object Name -EQ $servicePrincipal.ObjectId)
-    {
-        Write-Host "The service principal '$($servicePrincipal.DisplayName)' is already a member of the role 'Organization Management' in environment '$environmentName' in the subscription '$($subscription.Name)'"
-    }
-    else
-    {
-        Write-Host "Adding service principal '$($servicePrincipal.DisplayName)' to the role 'Organization Management' in environment '$environmentName' in the subscription '$($subscription.Name)'"
-        Add-RoleGroupMember 'Organization Management' -Member $servicePrincipal.DisplayName
-
-        $role = Get-RoleGroup -Filter 'Name -eq "Security Administrator"'
-        Add-RoleGroupMember -Identity $role.ExchangeObjectId -Member $servicePrincipal.DisplayName
-        Add-RoleGroupMember -Identity 'Recipient Management' -Member $servicePrincipal.DisplayName
-
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'Address Lists'
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'E-Mail Address Policies'
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'Mail Recipients'
-        New-ManagementRoleAssignment -App $servicePrincipal.AppId -Role 'View-Only Configuration'
-    }
-
-    Disconnect-ExchangeOnline -Confirm:$false
-    Disconnect-MgGraph | Out-Null
+    $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$environmentName" -PassThru
+    Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$environmentName' in environment '$environmentName'"
+    New-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
 }
 
 Write-Host 'Finished assigning managed identity to VMs and setting permissions for Microsoft365DSC workloads' -ForegroundColor Green
