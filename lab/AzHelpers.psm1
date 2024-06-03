@@ -375,6 +375,12 @@ function Connect-EXO
     }
 }
 
+enum M365DscIdentityType
+{
+    Application
+    ManagedIdentity
+}
+
 class M365DscIdentity
 {
     [string]$DisplayName
@@ -382,10 +388,10 @@ class M365DscIdentity
     [string]$AppId
     [string]$AppPrincipalId
     [string]$ExchangePrincipalId
-    [string]$ServicePrincipalType
+    [M365DscIdentityType]$ServicePrincipalType
     [object]$Secret
 
-    M365DscIdentity([string]$DisplayName, [string]$Id, [string]$AppId, [string]$AppPrincipalId, [string]$ExchangePrincipalId, [string]$ServicePrincipalType, [object]$Secret)
+    M365DscIdentity([string]$DisplayName, [string]$Id, [string]$AppId, [string]$AppPrincipalId, [string]$ExchangePrincipalId, [M365DscIdentityType]$ServicePrincipalType, [object]$Secret)
     {
         $this.DisplayName = $DisplayName
         $this.Id = $Id
@@ -396,7 +402,7 @@ class M365DscIdentity
         $this.Secret = $Secret
     }
 
-    M365DscIdentity([string]$DisplayName, [string]$Id, [string]$AppId, [string]$AppPrincipalId, [string]$ExchangePrincipalId, [string]$ServicePrincipalType)
+    M365DscIdentity([string]$DisplayName, [string]$Id, [string]$AppId, [string]$AppPrincipalId, [string]$ExchangePrincipalId, [M365DscIdentityType]$ServicePrincipalType)
     {
         $this.DisplayName = $DisplayName
         $this.Id = $Id
@@ -407,7 +413,7 @@ class M365DscIdentity
     }
 }
 
-function Add-M365DscIdentity
+function New-M365DscIdentity
 {
     param (
         [Parameter(Mandatory = $true)]
@@ -417,41 +423,47 @@ function Add-M365DscIdentity
         [switch]$GenereateAppSecret,
 
         [Parameter()]
+        [switch]$OnlyServicePrincipals,
+
+        [Parameter()]
         [switch]$PassThru
     )
 
-    if (-not ($appRegistration = Get-MgApplication -Filter "displayName eq '$Name'" -ErrorAction SilentlyContinue))
+    if (-not $OnlyServicePrincipals)
     {
-        Write-Verbose "Did not find application '$Name' in environment."
-        Write-Verbose "Creating application '$Name'."
+        if (-not ($appRegistration = Get-MgApplication -Filter "displayName eq '$Name'" -ErrorAction SilentlyContinue))
+        {
+            Write-Verbose "Did not find application '$Name' in environment."
+            Write-Verbose "Creating application '$Name'."
 
-        $appRegistration = New-MgApplication -DisplayName $Name
+            $appRegistration = New-MgApplication -DisplayName $Name
 
-        Update-MgApplication -ApplicationId $appRegistration.Id -SignInAudience AzureADMyOrg
+            Update-MgApplication -ApplicationId $appRegistration.Id -SignInAudience AzureADMyOrg
+        }
+        else
+        {
+            Write-Verbose "Application '$Name' already exists in environment."
+        }
+
+        if ($GenereateAppSecret)
+        {
+            $passwordCred = @{
+                displayName = 'Secret'
+                endDateTime = (Get-Date).AddMonths(12)
+            }
+            Write-Verbose "Creating password secret for application '$Name'."
+            $clientSecret = Add-MgApplicationPassword -ApplicationId $appRegistration.Id -PasswordCredential $passwordCred
+        }
+
+        Write-Verbose 'Waiting 15 seconds for service principal to be created.'
+        Start-Sleep -Seconds 15
     }
-    else
-    {
-        Write-Verbose "Application '$Name' already exists in environment."
-    }
 
-    if (-not ($appPrincipal = Get-MgServicePrincipal -Filter "appId eq '$($appRegistration.AppId)'" -ErrorAction SilentlyContinue))
+    if (-not ($appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue))
     {
         Write-Verbose "Creating service principal for application '$Name'."
         $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId
     }
-
-    if ($GenereateAppSecret)
-    {
-        $passwordCred = @{
-            displayName = 'Secret'
-            endDateTime = (Get-Date).AddMonths(12)
-        }
-        Write-Verbose "Creating password secret for application '$Name'."
-        $clientSecret = Add-MgApplicationPassword -ApplicationId $appRegistration.Id -PasswordCredential $passwordCred
-    }
-
-    Write-Verbose 'Waiting 10 seconds for service principal to be created.'
-    Start-Sleep -Seconds 10
 
     if ($exchangeServicePrincipal = Get-ServicePrincipal | Where-Object DisplayName -EQ $Name)
     {
@@ -531,6 +543,18 @@ function Get-M365DscIdentity
             $appPrincipal.Id,
             $exchangeServicePrincipal.Id,
             $appPrincipal.ServicePrincipalType)
+    }
+    elseif ($principal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue)
+    {
+        Write-Verbose "Found principal '$Name' with Id '$($principal.Id)' and AppId '$($principal.AppId)'."
+        $exchangeServicePrincipal = Get-ServicePrincipal -Identity $Name -ErrorAction SilentlyContinue
+
+        [M365DscIdentity]::new($principal.DisplayName,
+            $null,
+            $principal.AppId,
+            $principal.Id,
+            $exchangeServicePrincipal.Id,
+            $principal.ServicePrincipalType)
     }
     else
     {
@@ -804,7 +828,7 @@ function Disconnect-M365Dsc
     Write-Host 'Disconnected from all services.'
 }
 
-function Add-M365DscIdentityPermission
+function New-M365DscIdentityPermission
 {
     [CmdletBinding()]
     param (
