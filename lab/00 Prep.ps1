@@ -79,6 +79,8 @@ else
 }
 
 Write-Host 'Disabling web account manager login for Azure.'
-Set-AzConfig -EnableLoginByWam $false
+Set-AzConfig -EnableLoginByWam $false | Out-Null
+Set-AzConfig -DisplaySecretsWarning $false | Out-Null
+Set-Item -Path Env:\AZURE_CLIENTS_SHOW_SECRETS_WARNING -Value $false
 
 Write-Host 'The preparation is done. You can now continue with the next steps.'
