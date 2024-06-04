@@ -454,9 +454,6 @@ function New-M365DscIdentity
             Write-Verbose "Creating password secret for application '$Name'."
             $clientSecret = Add-MgApplicationPassword -ApplicationId $appRegistration.Id -PasswordCredential $passwordCred
         }
-
-        Write-Verbose 'Waiting 15 seconds for service principal to be created.'
-        Start-Sleep -Seconds 15
     }
 
     if (-not ($appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue))
@@ -472,7 +469,21 @@ function New-M365DscIdentity
     else
     {
         Write-Verbose "Creating the EXO service principal for application '$Name'."
-        $exchangeServicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $Name
+        $retryCount = 5
+        while ($retryCount -gt 0)
+        {
+            try
+            {
+                $exchangeServicePrincipal = New-ServicePrincipal -AppId $appPrincipal.AppId -ObjectId $appPrincipal.Id -DisplayName $Name -ErrorAction Stop
+                break
+            }
+            catch
+            {
+                Write-Warning "Failed to create the EXO service principal for application '$Name'. Retrying in 10 seconds."
+                Start-Sleep -Seconds 10
+                $retryCount--
+            }
+        }
     }
 
     if ($PassThru)
@@ -1042,5 +1053,5 @@ function Remove-M365DscIdentityPermission
         Remove-RoleGroupMember -Identity $role.ExchangeObjectId -Member $Identity.AppPrincipalId -Confirm:$false
     }
 
-    Write-Host 'Done adding identity to required roles Exchange Roles' -ForegroundColor Magenta
+    Write-Host 'Done removing identity to required roles Exchange Roles' -ForegroundColor Magenta
 }
