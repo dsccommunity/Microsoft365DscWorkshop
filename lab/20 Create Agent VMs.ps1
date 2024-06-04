@@ -139,7 +139,7 @@ foreach ($lab in $labs)
 
     $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName" -PassThru
     Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$envName' in environment '$envName'"
-    New-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
+    Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
 }
 
 Write-Host 'Finished assigning managed identity to VMs and setting permissions for Microsoft365DSC workloads' -ForegroundColor Green

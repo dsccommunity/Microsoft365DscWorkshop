@@ -828,7 +828,7 @@ function Disconnect-M365Dsc
     Write-Host 'Disconnected from all services.'
 }
 
-function New-M365DscIdentityPermission
+function Add-M365DscIdentityPermission
 {
     [CmdletBinding()]
     param (
