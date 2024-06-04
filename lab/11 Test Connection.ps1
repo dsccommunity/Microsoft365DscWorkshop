@@ -1,6 +1,6 @@
 param (
     [Parameter()]
-    [string]$EnvironmentName,
+    [string[]]$EnvironmentName,
 
     [Parameter()]
     [switch]$DoNotDisconnect
@@ -18,14 +18,16 @@ $environments = $datum.Global.Azure.Environments.Keys
 
 if ($EnvironmentName)
 {
-    $environments = $environments | Where-Object { $_ -eq $EnvironmentName }
+    Write-Host "Filtering environments to: $($EnvironmentName -join ', ')" -ForegroundColor Magenta
+    $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
 }
+Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
 
-foreach ($environmentName in $environments)
+foreach ($envName in $environments)
 {
-    $environment = $datum.Global.Azure.Environments.$environmentName
+    $environment = $datum.Global.Azure.Environments."$envName"
     $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
-    Write-Host "Testing connection to environment '$environmentName'" -ForegroundColor Magenta
+    Write-Host "Testing connection to environment '$envName'" -ForegroundColor Magenta
 
     $param = @{
         TenantId               = $environment.AzTenantId

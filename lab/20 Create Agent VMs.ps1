@@ -13,8 +13,10 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
+
 if ($EnvironmentName)
 {
+    Write-Host "Filtering environments to: $($EnvironmentName -join ', ')" -ForegroundColor Magenta
     $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
 }
 Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
