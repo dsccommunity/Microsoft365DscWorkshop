@@ -23,6 +23,12 @@ BuildWorkflow:
         }
     }
 
+  init:
+    - init7
+    - ShellInit
+    - LoadDatumConfigData
+    - AzureInit
+
   build:
     - Init7
     - Clean

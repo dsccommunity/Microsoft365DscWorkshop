@@ -7,7 +7,7 @@ Task AzureInit {
     }
     catch
     {
-        Write-Verbose 'There were issues importing the Az modules.'
+        Write-Build Yellow 'There were issues importing the Az modules.'
     }
 
     $datum = New-DatumStructure -DefinitionFile $ProjectPath\source\Datum.yml
@@ -20,7 +20,7 @@ Task AzureInit {
             Write-Error "AzTenantId is not defined for environment $($env.Name)" -ErrorAction Stop
         }
 
-        Write-Build Yellow "Adding Azure environment '$($env.Name)' to build parameters."
+        Write-Build DarkGray "`tAdding Azure environment '$($env.Name)' to build parameters."
         $global:azBuildParameters."$($env.Name)" = @{
             AzTenantId   = $env.Value.AzTenantId
             AzTenantName = $env.Value.AzTenantName
