@@ -10,6 +10,12 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
+if ($EnvironmentName)
+{
+    Write-Host "Filtering environments to: $($EnvironmentName -join ', ')" -ForegroundColor Magenta
+}
+Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
+
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $projectSettings = Get-Content $PSScriptRoot\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
