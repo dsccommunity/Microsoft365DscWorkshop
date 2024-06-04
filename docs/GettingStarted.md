@@ -123,7 +123,12 @@ The script will:
 - Creates an agent pool named `DSC`.
 - Disables non-required features in the project.
 - Creates build environments as defined in [Azure.yml](../source/Global//Azure.yml) file.
+- Creates the pipelines for full build, apply and test.
 
 Please inspect the project. You should see the new environments as well as the new agent pool now.
 
 ---
+
+### `31 Agent Setup.ps1`
+
+The script [31 Agent Setup.ps1](../lab//31%20Agent%20Setup.ps1) connects to each created build worker and 
