@@ -1,9 +1,3 @@
-[CmdletBinding()]
-param (
-    [Parameter()]
-    [string[]]$EnvironmentName
-)
-
 $requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
 if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 {
