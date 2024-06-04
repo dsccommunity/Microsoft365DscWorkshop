@@ -17,10 +17,10 @@ if ($EnvironmentName)
     $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
 }
 
-foreach ($environmentName in $environments)
+foreach ($envName in $environments)
 {
-    $environment = $datum.Global.Azure.Environments.$environmentName
-    Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
+    $environment = $datum.Global.Azure.Environments.$envName
+    Write-Host "Working in environment '$envName'" -ForegroundColor Magenta
     Write-Host "Connecting to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'"
 
     Connect-M365Dsc -TenantId $environment.AzTenantId -TenantName $environment.AzTenantName -SubscriptionId $environment.AzSubscriptionId
@@ -35,20 +35,20 @@ foreach ($environmentName in $environments)
 
         if (-not $azIdentity)
         {
-            Write-Host "The application '$($identity.Name)' for environment '$environmentName' does not exist."
+            Write-Host "The application '$($identity.Name)' for environment '$envName' does not exist."
             continue
         }
 
-        Write-Host "Removing the permissions for the application '$($identity.Name)' for environment '$environmentName'."
+        Write-Host "Removing the permissions for the application '$($identity.Name)' for environment '$envName'."
         Remove-M365DscIdentityPermission -Identity $azIdentity -SkipGraphApiPermissions
 
-        Write-Host "Removing the application '$($identity.Name)' for environment '$environmentName'."
+        Write-Host "Removing the application '$($identity.Name)' for environment '$envName'."
         Remove-M365DscIdentity -Identity $azIdentity
 
     }
 
     Disconnect-M365Dsc
-    Write-Host "Finished working in environment '$environmentName'."
+    Write-Host "Finished working in environment '$envName'."
 
 }
 
