@@ -110,10 +110,34 @@ foreach ($environment in $environments)
             name = $environment
         } | ConvertTo-Json
 
-        Invoke-VSTeamRequest -Method Post -ContentType 'application/json' -Body $requestBodyEnvironment -ProjectName $datum.Global.AzureDevOps.ProjectName -Area distributedtask -Resource environments -Version '7.1-preview.1' | Out-Null
+        Invoke-VSTeamRequest -Method Post -ContentType application/json -Body $requestBodyEnvironment -ProjectName $datum.Global.AzureDevOps.ProjectName -Area distributedtask -Resource environments -Version 7.1 | Out-Null
     }
     else
     {
         Write-Host "Environment '$environment' already exists in project '$($datum.Global.AzureDevOps.ProjectName)'."
     }
 }
+
+Write-Host 'Creating pipelines in project.'
+$pipelineNames = 'Apply', 'Test', 'Push'
+foreach ($pipelineName in $pipelineNames)
+{
+    $repo = Get-VSTeamGitRepository -Name $datum.Global.AzureDevOps.ProjectName -ProjectName $datum.Global.AzureDevOps.ProjectName
+    $pipelineParams = @{
+        configuration = @{
+            path       = "pipelines/$pipelineName.yml"
+            repository = @{
+                id   = $repo.Id
+                type = 'azureReposGit'
+            }
+            type       = 'yaml'
+        }
+        name          = "M365DSC $pipelineName"
+    }
+
+    Write-Host "Creating pipeline '$pipelineName' in project '$($datum.Global.AzureDevOps.ProjectName)'."
+    $pipelineParams = $pipelineParams | ConvertTo-Json -Compress
+    Invoke-VSTeamRequest -Area pipelines -Version 7.1 -Method Post -Body $pipelineParams -JSON -ProjectName $datum.Global.AzureDevOps.ProjectName | Out-Null
+}
+
+Write-Host 'All done.'

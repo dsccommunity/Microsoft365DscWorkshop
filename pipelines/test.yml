@@ -1,0 +1,29 @@
+variables:
+  buildFolderName: output
+  testResultFolderName: testResults
+  defaultBranch: main
+  Agent.Source.Git.ShallowFetchDepth: 0
+  EnvironmentToBuild: dev #TODO: Remove this and get environments from Azure.yml.
+  tags: '{"Description":"M365 DSC Infrastructure"}'
+  m365StorageContainerName: modules
+  m365ServiceConnectionName: M365
+
+stages:
+
+- stage: Build
+  pool:
+    name: DscDev
+  jobs:
+
+  - job: CompileDsc
+    displayName: 'Enact existing DSC Configuration'
+    steps:
+
+    - task: PowerShell@2
+      name: build
+      displayName: 'Enact DSC Configuration'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Start-DscConfiguration -UseExisting -Wait -Verbose -Force
+        pwsh: false
