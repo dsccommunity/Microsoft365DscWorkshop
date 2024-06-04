@@ -12,7 +12,7 @@ The Azure DevOps agent setup for this solution can fully automated with the scri
 To setup the build agent for an environment manually without the script provided, make sure you have
 
 - A virtual machine in Azure with Windows Server 2022.
-- This machine needs network connectivity to Azure DevOps (https://dev.azure.com).
+- This machine needs network connectivity to Azure DevOps (<https://dev.azure.com>).
 - It also needs network connectivity to configure the respective tenant.
 
 > :information_source: Note: This guide assumes you are installing the agent for the production tenant. Please change the commands if you deploy for a different tenant.
@@ -134,9 +134,10 @@ Install Software inside the Build Agent machine and connect it to Azure DevOps
 14. :pencil2: Logon to the VM that you have dedicated as the Azure DevOps Worker with Remote Desktop.
 
 15. :pencil2: Install the following software on the VM:
-   - Install PowerShell 7
-   - Install Git (only required for debugging)
-   - Install Visual Studio Code with the PowerShell extension (only required for debugging)
+
+- Install PowerShell 7
+- Install Git (only required for debugging)
+- Install Visual Studio Code with the PowerShell extension (only required for debugging)
 
 16. :pencil2: Please download the Azure DevOps Agent (Windows x64) from the [GitHub Release](https://github.com/microsoft/azure-pipelines-agent/releases) page.
 

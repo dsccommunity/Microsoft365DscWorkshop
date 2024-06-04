@@ -2,13 +2,13 @@
 
 ### :warning: You must be a local administrator one the machine you run the setup scripts on
 
-## 1.1. Forking the Project
+## 1.1. Forking or importing the Project
 
 For this project to work it is required to change the content of some files. Hence, it is required to create yourself a
 writable copy of the project. Either you do a fork on GitHub or you import the content of this project into a project
 you host on a developer platform or code management solution of your choice.
 
-This guide expects you have created a fork on GitHub.
+This guide expects you have created a new project on Azure DevOps and imported the content from here. Alternatively, you can create a fork on GitHub, but then some scripts won't work and you have to make the required tasks manually.
 
 ## 1.2 Cloning the Project
 
@@ -66,7 +66,7 @@ Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It installs required
 After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the shell:
 
 ```powershell
-.\build.ps1 -Tasks init
+.\build.ps1 -Tasks labinit
 ```
 
 ### 1.5.2 `10 Setup App Registrations.ps1`
@@ -125,10 +125,19 @@ The script will:
 - Creates build environments as defined in [Azure.yml](../source/Global//Azure.yml) file.
 - Creates the pipelines for full build, apply and test.
 
-Please inspect the project. You should see the new environments as well as the new agent pool now.
+Please inspect the project. You should see the new environments as well as the new agent pool and the pipelines now.
 
 ---
 
 ### `31 Agent Setup.ps1`
 
-The script [31 Agent Setup.ps1](../lab//31%20Agent%20Setup.ps1) connects to each created build worker and 
+The script [31 Agent Setup.ps1](../lab//31%20Agent%20Setup.ps1) connects to each build worker VM created in the previous step. It installs
+
+- PowerShell 7
+- Git
+- VSCode. After that it installs
+- Azure DevOps Build Agent
+
+Then the Azure Build Agent is connected to the specified Azure DevOps Organization and is added to the `DSC` agent pool. It then sets
+
+Please verify if all the build agents are appearing in the DSC agent pool. 
