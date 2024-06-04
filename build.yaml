@@ -23,7 +23,7 @@ BuildWorkflow:
         }
     }
 
-  init:
+  labinit:
     - init7
     - ShellInit
     - LoadDatumConfigData
