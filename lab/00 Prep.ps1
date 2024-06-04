@@ -5,7 +5,6 @@ $requiredModules = @{
     'Microsoft.Graph.Identity.Governance' = '2.19.0'
     'Az.Resources'                        = '7.1.0'
     'powershell-yaml'                     = 'latest'
-    Microsoft365DSC                       = '1.24.529.1'
     VSTeam                                = 'latest'
     AutomatedLab                          = 'latest'
 }
