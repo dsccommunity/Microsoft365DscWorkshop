@@ -10,6 +10,12 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
+if ($EnvironmentName)
+{
+    Write-Host "Filtering environments to: $($EnvironmentName -join ', ')" -ForegroundColor Magenta
+}
+Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
+
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
@@ -102,7 +108,41 @@ foreach ($lab in $labs)
 
     } -ComputerName $vms -ArgumentList $lab.Notes.Environment
 
-    Write-Host "Restarting $($vms.Count) machines"
+    # Generate client authentication certificate and upload it to the Azure application
+    Remove-LabPSSession -All
+    $s = New-LabPSSession -ComputerName $vms
+    Add-FunctionToPSSession -Session $s -FunctionInfo (Get-Command -Name New-M365DSCSelfSignedCertificate)
+
+    $certificates = Invoke-LabCommand -ComputerName $vms -ActivityName 'Generate client authentication certificate' -ScriptBlock {
+
+        New-M365DSCSelfSignedCertificate -Subject M365DscLcmCertApplication -Store LocalMachine -PassThru
+
+    } -PassThru
+
+    foreach ($certificate in $certificates)
+    {
+        $bytes = $cert.Export('Cert')
+        $params = @{
+            keyCredentials = @(
+                @{
+                    type        = 'AsymmetricX509Cert'
+                    usage       = 'Verify'
+                    key         = $bytes
+                    displayName = 'GeneratedByM365DscWorkshop'
+                }
+            )
+        }
+
+        $id = Get-M365DscIdentity -Name M365DscLcmCertApplication
+        if (-not $id)
+        {
+            Write-Error "The application 'M365DscLcmCertApplication' does not exist. Please create it manually in the Azure portal and try again."
+        }
+        Write-Host "Updating application '$($id.DisplayName)' with new certificate (Thumbprint: $($certificate.Thumbprint))."
+        Update-MgApplication -ApplicationId $id.Id -BodyParameter $params
+    }
+
+    Write-Host "Restarting $($vms.Count) machines."
     Restart-LabVM -ComputerName $vms -Wait
 
     Write-Host "Finished installing AzDo Build Agent on $($vms.Count) machines in environment '$envName'"
