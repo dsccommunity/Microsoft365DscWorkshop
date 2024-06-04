@@ -1,5 +1,5 @@
 - cEXOTransportConfig
 - cEXODistributionGroup
 - cEXOTransportRule
-- cEXOAcceptedDomain
+#- cEXOAcceptedDomain
 - cEXORemoteDomain
