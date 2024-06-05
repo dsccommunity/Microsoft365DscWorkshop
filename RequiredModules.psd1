@@ -36,7 +36,7 @@
     'DscResource.Test'                                     = 'latest'
 
     # Composites
-    'DscConfig.M365'                                       = '0.2.3'
+    'DscConfig.M365'                                       = '0.3.2'
     'DscConfig.Demo'                                       = '0.8.2'
 
     # Azure
