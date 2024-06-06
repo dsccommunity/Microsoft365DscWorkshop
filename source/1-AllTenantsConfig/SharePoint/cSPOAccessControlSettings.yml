@@ -1,13 +1,13 @@
-IsSingleInstance: Yes
-DisplayStartASiteOption: false
-StartASiteFormUrl: https://contoso.sharepoint.com
-IPAddressEnforcement: false
-IPAddressWACTokenLifetime: 15
-DisallowInfectedFileDownload: false
-ExternalServicesEnabled: true
-EmailAttestationRequired: false
-EmailAttestationReAuthDays: 30
+ConditionalAccessPolicy: AllowFullAccess
 Ensure: Present
+DisallowInfectedFileDownload: True
+DisplayStartASiteOption: True
+EmailAttestationReAuthDays: 30
+EmailAttestationRequired: False
+ExternalServicesEnabled: True
+IPAddressEnforcement: False
+IPAddressWACTokenLifetime: 15
+IsSingleInstance: Yes
 TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
 CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).CertificateThumbprint }=]'
 ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).ApplicationId }=]'
