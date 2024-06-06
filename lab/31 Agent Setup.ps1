@@ -103,7 +103,7 @@ foreach ($lab in $labs)
 
     Invoke-LabCommand -Activity 'Setting environment variable for build environment' -ScriptBlock {
 
-        Install-Module -Name microsoft365DSC -Force -AllowClobber -Scope AllUsers
+        Install-Module -Name Microsoft365DSC -Force -AllowClobber -Scope AllUsers
         Set-M365DSCLoggingOption -IncludeNonDrifted $true
         [System.Environment]::SetEnvironmentVariable('BuildEnvironment', $args[0], 'Machine')
 
