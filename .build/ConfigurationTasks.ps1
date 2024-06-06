@@ -1,4 +1,5 @@
-function Wait-DscLocalConfigurationManager {
+function Wait-DscLocalConfigurationManager
+{
     [CmdletBinding()]
     param(
         [switch]
@@ -6,30 +7,37 @@ function Wait-DscLocalConfigurationManager {
     )
 
     Write-Verbose 'Checking if LCM is busy.'
-    if ((Get-DscLocalConfigurationManager).LCMState -eq 'Busy') {
+    if ((Get-DscLocalConfigurationManager).LCMState -eq 'Busy')
+    {
         Write-Host 'LCM is busy, waiting until LCM has finished the job...' -NoNewline
-        while ((Get-DscLocalConfigurationManager).LCMState -eq 'Busy') {
+        while ((Get-DscLocalConfigurationManager).LCMState -eq 'Busy')
+        {
             Start-Sleep -Seconds 1
             Write-Host . -NoNewline
         }
         Write-Host 'done. LCM is no longer busy.'
     }
-    else {
+    else
+    {
         Write-Verbose 'LCM is not busy'
     }
 
-    if (-not $DoNotWaitForProcessToFinish) {
+    if (-not $DoNotWaitForProcessToFinish)
+    {
         $lcmProcessId = (Get-PSHostProcessInfo | Where-Object { $_.AppDomainName -eq 'DscPsPluginWkr_AppDomain' -and $_.ProcessName -eq 'WmiPrvSE' }).ProcessId
-        if ($lcmProcessId) {
-            Write-Host "LCM process with ID $lcmProcessId is still running, waiting for the process to exit..." -NoNewline   
+        if ($lcmProcessId)
+        {
+            Write-Host "LCM process with ID $lcmProcessId is still running, waiting for the process to exit..." -NoNewline
             $lcmProcess = Get-Process -Id $lcmProcessId
-            while (-not $lcmProcess.HasExited) {
+            while (-not $lcmProcess.HasExited)
+            {
                 Write-Host . -NoNewline
                 Start-Sleep -Seconds 2
             }
             Write-Host 'done. Process existed.'
         }
-        else {
+        else
+        {
             Write-Verbose 'LCM process was not running.'
         }
     }
@@ -38,10 +46,11 @@ function Wait-DscLocalConfigurationManager {
 task StartDscConfiguration {
 
     $environment = $env:buildEnvironment
-    if (-not $environment) {
+    if (-not $environment)
+    {
         Write-Error 'The build environment is not set'
     }
-    
+
     Wait-DscLocalConfigurationManager
 
     $MofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
@@ -50,7 +59,7 @@ task StartDscConfiguration {
 
     Write-Host "Cleaning PowerShell module folder '$programFileModulePath'"
     Get-ChildItem -Path $programFileModulePath | Where-Object { $_.BaseName -notin $modulesToKeep } | ForEach-Object {
-        
+
         Write-Host "Removing module '$($_.BaseName)'"
         $_ | Remove-Item -Recurse -Force
     }
@@ -66,21 +75,24 @@ task StartDscConfiguration {
 }
 
 task TestDscConfiguration {
-    
+
     Wait-DscLocalConfigurationManager -DoNotWaitForProcessToFinish
-    
+
     $result = Test-DscConfiguration -Detailed -ErrorAction Stop
 
-    if ($result.ResourcesNotInDesiredState) {
+    if ($result.ResourcesNotInDesiredState)
+    {
         Write-Host "The following $($result.ResourcesNotInDesiredState.ResourceId.Count) resources are not in the desired state:"
 
-        foreach ($resourceId in $result.ResourcesNotInDesiredState.ResourceId) {
+        foreach ($resourceId in $result.ResourcesNotInDesiredState.ResourceId)
+        {
             Write-Host "`t$resourceId"
         }
 
         Write-Error 'Resources are not in desired state as listed above'
     }
-    else {
+    else
+    {
         Write-Host 'All resources are in the desired state' -ForegroundColor Green
     }
 }
@@ -93,7 +105,7 @@ task InitializeModuleFolder {
     Wait-DscLocalConfigurationManager
 
     dir -Path $programFileModulePath |
-        Where-Object { $_.BaseName -notin $modulesToKeep } | 
-        Remove-Item -Recurse -Force
+        Where-Object { $_.BaseName -notin $modulesToKeep } |
+            Remove-Item -Recurse -Force
 
 }
