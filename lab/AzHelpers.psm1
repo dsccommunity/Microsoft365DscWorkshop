@@ -227,6 +227,19 @@ function Get-M365DSCCompiledPermissionList2
     }
 
     $permissions = $m365GraphPermissionList.$AccessType
+
+    if ($AccessType -eq 'Read')
+    {
+        $sitesReadAllGet = GraphPermission -PermissionName Sites.Read.All
+        $permissions += @{
+            API        = 'Graph'
+            Permission = @{
+                Name = $sitesReadAllGet.ApiPermissionName
+                Type = $sitesReadAllGet.PermissionType
+            }
+        }
+    }
+
     $result = foreach ($permission in $permissions)
     {
         $servicePrincipal = $servicePrincipals."$($permission.Api)"
