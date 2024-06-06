@@ -32,6 +32,9 @@ ResolutionPrecedence:
   - 2-EnvironmentConfig\$($Node.Environment)\SharePoint
   - 1-AllTenantsConfig\SharePoint
 
+  - 2-EnvironmentConfig\$($Node.Environment)\Purview
+  - 1-AllTenantsConfig\Purview
+
   - 2-EnvironmentConfig\$($Node.Environment)
   - 1-AllTenantsConfig\Base
   - 0-DscConfiguration\LcmConfiguration
