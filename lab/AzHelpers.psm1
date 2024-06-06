@@ -949,7 +949,14 @@ function Add-M365DscIdentityPermission
 
     if ($AccessType -eq 'Update')
     {
-        $requiredRoles = 'Organization Management', 'Security Administrator', 'Recipient Management'
+        $requiredRoles = 'Organization Management',
+        'Security Administrator',
+        'Recipient Management',
+        'Compliance Administrator',
+        'Compliance Management',
+        'Information Protection Admins',
+        'Privacy Management Administrators',
+        'Privacy Management'
 
         foreach ($requiredRole in $requiredRoles)
         {
