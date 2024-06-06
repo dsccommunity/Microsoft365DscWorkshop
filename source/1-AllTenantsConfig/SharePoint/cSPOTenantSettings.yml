@@ -1,0 +1,22 @@
+ApplyAppEnforcedRestrictionsToAdHocRecipients: True
+CommentsOnSitePagesDisabled: False
+Ensure: Present
+FilePickerExternalImageSearchEnabled: True
+HideDefaultThemes: False
+IsSingleInstance: Yes
+LegacyAuthProtocolsEnabled: True
+MarkNewFilesSensitiveByDefault: AllowExternalSharing
+MaxCompatibilityLevel: 15
+MinCompatibilityLevel: 15
+NotificationsInSharePointEnabled: True
+OfficeClientADALDisabled: False
+OwnerAnonymousNotification: True
+PublicCdnAllowedFileTypes: CSS,EOT,GIF,ICO,JPEG,JPG,JS,MAP,PNG,SVG,TTF,WOFF
+PublicCdnEnabled: False
+SearchResolveExactEmailOrUPN: False
+SignInAccelerationDomain: ""
+UseFindPeopleInPeoplePicker: False
+UsePersistentCookiesForExplorerView: True
+TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).CertificateThumbprint }=]'
+ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).ApplicationId }=]'
