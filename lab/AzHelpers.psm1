@@ -1052,7 +1052,14 @@ function Remove-M365DscIdentityPermission
 
     Write-Host 'Removing identity to required roles Exchange Roles' -ForegroundColor Magenta
 
-    $requiredRoles = 'Organization Management', 'Security Administrator', 'Recipient Management'
+    $requiredRoles =         $requiredRoles = 'Organization Management',
+    'Security Administrator',
+    'Recipient Management',
+    'Compliance Administrator',
+    'Compliance Management',
+    'Information Protection Admins',
+    'Privacy Management Administrators',
+    'Privacy Management'
 
     foreach ($requiredRole in $requiredRoles)
     {
