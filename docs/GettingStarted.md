@@ -1,6 +1,6 @@
 # 1. Getting started
 
-### 1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on
+### 1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on.
 
 ## 1.1. Forking or importing the Project
 
@@ -10,7 +10,7 @@ you host on a developer platform or code management solution of your choice.
 
 This guide expects you have created a new project on Azure DevOps and imported the content from here. Alternatively, you can create a fork on GitHub, but then some scripts won't work and you have to make the required tasks manually.
 
-## 1.2. 1.2 Cloning the Project
+## 1.2. Cloning the Project
 
 > :warning: Do not download the project as a Zip file. The build process will not work if you don't clone the project.
 
@@ -55,7 +55,7 @@ Environments:
 
 All the script to setup the environment are in the folder [lab](../lab/).
 
-### 1.5.1. 1.5.1 `00 Prep.ps1`
+### 1.5.1. `00 Prep.ps1`
 
 > :warning: Please do not reuse the session you ran the build script in. Please kill the old PowerShell session and start a new one. Otherwise you may get weird errors because of conflicts like `The 'Connect-AzAccount' command was found in the module 'Az.Accounts', but the module could not be loaded due to the following error: [Assembly with same name is already loaded] For more information, run 'Import-Module Az.Accounts'.`.
 
@@ -69,7 +69,7 @@ After the preparation script finished, we have all modules and dependencies on t
 .\build.ps1 -Tasks labinit
 ```
 
-### 1.5.2. 1.5.2 `10 Setup App Registrations.ps1`
+### 1.5.2. `10 Setup App Registrations.ps1`
 
 The script `10 Setup App Registrations.ps1` creates an app in each tenant defined in the `Azure.yml` file. Then it assigns these apps very high privileges as they are used to setup the required VMs (Azure DevOps build agents) and the managed identities with the required permissions for Microsoft365DSC. For each app, a service principal is created in Exchange Online.
 
@@ -79,7 +79,7 @@ The App ID and the encrypted secrets are shown on the console in case you want t
 
 > :warning: The password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
 
-### 1.5.3. 1.5.2 `20 Create Agent VMs.ps1`
+### 1.5.3. `20 Create Agent VMs.ps1`
 
 The script [20 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
 
@@ -95,7 +95,7 @@ BuildAgents:
 
 2. Then run the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please. It runs about half an hour. Time to grab a coffee.
 
-### 1.5.4. 1.5.2 `30 Setup AzDo Project.ps1`
+### 1.5.4. `30 Setup AzDo Project.ps1`
 
 This script prepares the Azure DevOps project. The parameters are in the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml).
 
