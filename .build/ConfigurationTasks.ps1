@@ -1,47 +1,4 @@
-function Wait-DscLocalConfigurationManager
-{
-    [CmdletBinding()]
-    param(
-        [switch]
-        $DoNotWaitForProcessToFinish
-    )
-
-    Write-Verbose 'Checking if LCM is busy.'
-    if ((Get-DscLocalConfigurationManager).LCMState -eq 'Busy')
-    {
-        Write-Host 'LCM is busy, waiting until LCM has finished the job...' -NoNewline
-        while ((Get-DscLocalConfigurationManager).LCMState -eq 'Busy')
-        {
-            Start-Sleep -Seconds 1
-            Write-Host . -NoNewline
-        }
-        Write-Host 'done. LCM is no longer busy.'
-    }
-    else
-    {
-        Write-Verbose 'LCM is not busy'
-    }
-
-    if (-not $DoNotWaitForProcessToFinish)
-    {
-        $lcmProcessId = (Get-PSHostProcessInfo | Where-Object { $_.AppDomainName -eq 'DscPsPluginWkr_AppDomain' -and $_.ProcessName -eq 'WmiPrvSE' }).ProcessId
-        if ($lcmProcessId)
-        {
-            Write-Host "LCM process with ID $lcmProcessId is still running, waiting for the process to exit..." -NoNewline
-            $lcmProcess = Get-Process -Id $lcmProcessId
-            while (-not $lcmProcess.HasExited)
-            {
-                Write-Host . -NoNewline
-                Start-Sleep -Seconds 2
-            }
-            Write-Host 'done. Process existed.'
-        }
-        else
-        {
-            Write-Verbose 'LCM process was not running.'
-        }
-    }
-}
+Import-Module -Name $ProjectPath\Lab\M365DscHelpers.psm1
 
 task StartDscConfiguration {
 
@@ -78,18 +35,12 @@ task TestDscConfiguration {
 
     Wait-DscLocalConfigurationManager -DoNotWaitForProcessToFinish
 
-    $result = Test-DscConfiguration -Detailed -ErrorAction Stop
+    $dscState = Write-M365DscStatusEvent -PassThru
 
-    if ($result.ResourcesNotInDesiredState)
+    if (-not $dscState.InDesiredState)
     {
-        Write-Host "The following $($result.ResourcesNotInDesiredState.ResourceId.Count) resources are not in the desired state:"
-
-        foreach ($resourceId in $result.ResourcesNotInDesiredState.ResourceId)
-        {
-            Write-Host "`t$resourceId"
-        }
-
-        Write-Error 'Resources are not in desired state as listed above'
+        Write-Host "The following $($dscState.ResourcesNotInDesiredState.Count) resource(s) are not in the desired state:" -ForegroundColor Magenta
+        $dscState.ResourcesNotInDesiredState | ConvertTo-Yaml | Write-Host
     }
     else
     {
