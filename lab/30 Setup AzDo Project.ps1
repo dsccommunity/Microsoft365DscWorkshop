@@ -119,9 +119,15 @@ foreach ($environment in $environments)
 }
 
 Write-Host 'Creating pipelines in project.'
-$pipelineNames = 'Apply', 'Test', 'Push'
+$pipelineNames = 'apply', 'test', 'push'
 foreach ($pipelineName in $pipelineNames)
 {
+    if (Invoke-VSTeamRequest -Area pipelines -Version 7.1 -Method Get -ProjectName $datum.Global.AzureDevOps.ProjectName | Select-Object -ExpandProperty value | Where-Object { $_.name -eq 'M365DSC Test' })
+    {
+        Write-Host "Pipeline '$pipelineName' already exists in project '$($datum.Global.AzureDevOps.ProjectName)'."
+        continue
+    }
+
     $repo = Get-VSTeamGitRepository -Name $datum.Global.AzureDevOps.ProjectName -ProjectName $datum.Global.AzureDevOps.ProjectName
     $pipelineParams = @{
         configuration = @{
