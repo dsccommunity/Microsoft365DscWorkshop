@@ -12,7 +12,7 @@ NotificationsInSharePointEnabled: True
 OfficeClientADALDisabled: False
 OwnerAnonymousNotification: True
 PublicCdnAllowedFileTypes: CSS,EOT,GIF,ICO,JPEG,JPG,JS,MAP,PNG,SVG,TTF,WOFF
-PublicCdnEnabled: False
+PublicCdnEnabled: True
 SearchResolveExactEmailOrUPN: False
 SignInAccelerationDomain: ""
 UseFindPeopleInPeoplePicker: False
