@@ -5,5 +5,5 @@ AgentPoolName: DSC
 BuildAgents:
   UserName: worker
   Password: <Password>
-  AzureLocation: UK South
-  AzureRoleSize: Standard_D8lds_v5
+  AzureLocation: West Europe
+  AzureRoleSize: Standard_D4ds_v5
