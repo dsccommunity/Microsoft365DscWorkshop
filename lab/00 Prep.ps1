@@ -4,8 +4,8 @@ $requiredModules = @{
     'Microsoft.Graph.Authentication'      = '2.19.0'
     'Microsoft.Graph.Identity.Governance' = '2.19.0'
     'Az.Resources'                        = '7.1.0'
-    'powershell-yaml'                     = 'latest'
-    VSTeam                                = 'latest'
+    'powershell-yaml'                     = '0.4.7'
+    VSTeam                                = '7.15.2'
     AutomatedLab                          = 'latest'
 }
 
@@ -17,6 +17,7 @@ foreach ($module in $requiredModules.GetEnumerator())
         Force              = $true
         AllowClobber       = $true
         SkipPublisherCheck = $true
+        AllowPrerelease    = $tue
     }
     if ($module.Value -ne 'latest')
     {
