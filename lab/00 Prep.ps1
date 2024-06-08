@@ -17,7 +17,6 @@ foreach ($module in $requiredModules.GetEnumerator())
         Force              = $true
         AllowClobber       = $true
         SkipPublisherCheck = $true
-        AllowPrerelease    = $tue
     }
     if ($module.Value -ne 'latest')
     {
