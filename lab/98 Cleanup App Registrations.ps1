@@ -29,6 +29,11 @@ foreach ($envName in $environments)
         Write-Error "Failed to connect to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'" -ErrorAction Stop
     }
 
+    $identities = $environment.Identities.GetEnumerator()
+    $identities += @{
+        Name = "Lcm$($datum.Global.ProjectSettings.Name)$envName"
+    }
+
     foreach ($identity in $environment.Identities.GetEnumerator())
     {
         $azIdentity = Get-M365DscIdentity -Name $identity.Name
