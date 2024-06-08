@@ -63,6 +63,8 @@ All the script to setup the environment are in the folder [lab](../lab/).
 
 Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It installs required modules on your machine.
 
+### Intialize the session (LabInit)
+
 After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the shell:
 
 ```powershell
