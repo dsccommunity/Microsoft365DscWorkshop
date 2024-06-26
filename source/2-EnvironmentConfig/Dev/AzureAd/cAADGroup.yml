@@ -6,7 +6,6 @@ Items:
     SecurityEnabled: true
     TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
     ManagedIdentity: true
-    Ensure: Absent
   - MailNickname: TestGroup2
     DisplayName: Test Group 2
     Description: Test Group 2
