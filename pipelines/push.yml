@@ -16,10 +16,10 @@ parameters:
     type: object
     default:
       - Name: Dev
-      # - Name: Test
-      #   DependsOn: Dev
-      # - Name: Prod
-      #   DependsOn: Test
+      - Name: Test
+        DependsOn: Dev
+      - Name: Prod
+        DependsOn: Test
   - name: poolName
     type: string
     default: DSC
