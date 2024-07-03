@@ -4,6 +4,7 @@ trigger:
 pool:
   vmImage: windows-latest
 
+
 variables:
   buildFolderName: output
   testResultFolderName: testResults
@@ -15,20 +16,26 @@ parameters:
     type: object
     default:
       - Name: Dev
-      - Name: Test
-        DependsOn: Dev
-      - Name: Prod
-        DependsOn: Test
+      # - Name: Test
+      #   DependsOn: Dev
+      # - Name: Prod
+      #   DependsOn: Test
+  - name: poolName
+    type: string
+    default: DSC
 
 stages:
   - template: buildTemplate.yml
     parameters:
       buildEnvironments: ${{ parameters.buildEnvironments }}
+      poolName: ${{ parameters.poolName }}
 
   - template: startDscTemplate.yml
     parameters:
       buildEnvironments: ${{ parameters.buildEnvironments }}
+      poolName: ${{ parameters.poolName }}
 
   - template: testDscTemplate.yml
     parameters:
       buildEnvironments: ${{ parameters.buildEnvironments }}
+      poolName: ${{ parameters.poolName }}

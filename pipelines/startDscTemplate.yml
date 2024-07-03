@@ -2,13 +2,15 @@ parameters:
 - name: buildEnvironments
   type: object
   default: {}
+- name: poolName
+  type: string
 
 stages:
   - ${{ each buildEnvironment in parameters.buildEnvironments }}:
     - stage: StartConfig${{ buildEnvironment.Name }}
       displayName: Start DSC Configuration of environment ${{ buildEnvironment.Name }}
       pool:
-        name: DSC
+        name: ${{ parameters.poolName }}
         demands:
           - buildEnvironment -equals ${{ buildEnvironment.Name }}
       dependsOn:
@@ -21,7 +23,7 @@ stages:
           displayName: Deployment in ${{ buildEnvironment.Name }}
           environment: ${{ buildEnvironment.Name }}
           pool:
-            name: DSC
+            name: ${{ parameters.poolName }}
             demands:
               - buildEnvironment -equals ${{ buildEnvironment.Name }}
           strategy:

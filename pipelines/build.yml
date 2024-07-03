@@ -16,8 +16,12 @@ parameters:
         DependsOn: Dev
       - Name: Prod
         DependsOn: Test
+  - name: poolName
+    type: string
+    default: DSC
 
 stages:
   - template: buildTemplate.yml
     parameters:
       buildEnvironments: ${{ parameters.buildEnvironments }}
+      poolName: ${{ parameters.poolName }}

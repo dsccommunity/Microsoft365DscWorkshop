@@ -2,13 +2,15 @@ parameters:
 - name: buildEnvironments
   type: object
   default: {}
+- name: poolName
+  type: string
 
 stages:
   - ${{ each buildEnvironment in parameters.buildEnvironments }}:
     - stage: Build${{ buildEnvironment.Name }}
       displayName: Build of environment ${{ buildEnvironment.Name }}
       pool:
-        name: DSC
+        name: ${{ parameters.poolName }}
         demands:
           - buildEnvironment -equals ${{ buildEnvironment.Name }}
       dependsOn: []
