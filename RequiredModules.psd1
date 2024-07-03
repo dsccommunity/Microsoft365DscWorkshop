@@ -56,7 +56,7 @@
     xDscDiagnostics                                        = '2.8.0'
     PSDesiredStateConfiguration                            = '2.0.7'
 
-    Microsoft365DSC                                        = '1.24.605.1'
+    Microsoft365DSC                                        = '1.24.626.1'
 
     <#
         To update Microsoft365DSC and its dependencies, do the following steps:
@@ -95,8 +95,8 @@
     'Microsoft.Graph.Users'                                = '2.19.0'
     'Microsoft.Graph.Users.Actions'                        = '2.19.0'
     'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.188'
-    'MicrosoftTeams'                                       = '6.2.0'
-    'MSCloudLoginAssistant'                                = '1.1.17'
+    'MicrosoftTeams'                                       = '6.4.0'
+    'MSCloudLoginAssistant'                                = '1.1.18'
     'PnP.PowerShell'                                       = '1.12.0'
     'ReverseDSC'                                           = '2.0.0.20'
 
