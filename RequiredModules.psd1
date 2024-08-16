@@ -39,12 +39,6 @@
     'DscConfig.M365'                                       = '0.3.2'
     'DscConfig.Demo'                                       = '0.8.2'
 
-    # Azure
-    'Az.KeyVault'                                          = '6.0.0'
-    'Az.Resources'                                         = '7.1.0'
-    'Az.Accounts'                                          = '3.0.0'
-    'Microsoft.Graph.Identity.DirectoryManagement'         = '2.19.0'
-
     #DSC Resources
     xPSDesiredStateConfiguration                           = '9.1.0'
     ComputerManagementDsc                                  = '8.5.0'
@@ -56,6 +50,14 @@
     xDscDiagnostics                                        = '2.8.0'
     PSDesiredStateConfiguration                            = '2.0.7'
 
+    # Azure
+    'Az.KeyVault'                                          = '6.0.1'
+    'Az.Resources'                                         = '7.3.0'
+    'Az.Accounts'                                          = '3.0.3'
+    'Az.ManagedServiceIdentity'                            = '1.2.1'
+    'Microsoft.Graph.Identity.Governance'                  = '2.20.0'
+
+    # Microsoft365DSC
     Microsoft365DSC                                        = '1.24.731.1'
 
     <#
