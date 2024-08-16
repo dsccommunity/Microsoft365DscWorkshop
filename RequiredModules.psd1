@@ -56,7 +56,7 @@
     xDscDiagnostics                                        = '2.8.0'
     PSDesiredStateConfiguration                            = '2.0.7'
 
-    Microsoft365DSC                                        = '1.24.717.1'
+    Microsoft365DSC                                        = '1.24.731.1'
 
     <#
         To update Microsoft365DSC and its dependencies, do the following steps:
@@ -74,7 +74,7 @@
         (Import-PowerShellDataFile -Path '.\output\RequiredModules\Microsoft365DSC\*\Dependencies\Manifest.psd1').Dependencies | ForEach-Object { "'{0}' = '{1}'" -f $_.ModuleName, $_.RequiredVersion } | Set-Clipboard
     #>
 
-    'DSCParser'                                            = '2.0.0.7'
+    'DSCParser'                                            = '2.0.0.8'
     'ExchangeOnlineManagement'                             = '3.4.0'
     'Microsoft.Graph.Applications'                         = '2.20.0'
     'Microsoft.Graph.Authentication'                       = '2.20.0'
