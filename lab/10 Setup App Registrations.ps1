@@ -4,8 +4,6 @@ param (
     [string[]]$EnvironmentName
 )
 
-Import-Module -Name $PSScriptRoot\AzHelpers.psm1
-
 $requiredModulesPath = (Resolve-Path -Path $PSScriptRoot\..\output\RequiredModules).Path
 if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 {
