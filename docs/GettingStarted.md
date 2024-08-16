@@ -22,7 +22,13 @@ git clone https://github.com/raandree/Microsoft365DscWorkshop.git C:\Git
 
 ## 1.3. Test the Build and Download Dependencies
 
-After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the `.\build.ps1 -UseModuleFast` script. This build process takes around 5 minutes to complete. Most of the time is used to download the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1).
+After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the build script:
+
+```powershell
+.\build.ps1 -UseModuleFast
+```
+
+This build process takes around 5 minutes to complete. Most of the time is used to download the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1).
 
 Please verify the artifacts created by the build pipeline, for example the MOF files in the [MOF](../output/MOF/).
 
@@ -57,13 +63,13 @@ All the script to setup the environment are in the folder [lab](../lab/).
 
 ### 1.5.1. `00 Prep.ps1`
 
-> :warning: Please do not reuse the session you ran the build script in. Please kill the old PowerShell session and start a new one. Otherwise you may get weird errors because of conflicts like `The 'Connect-AzAccount' command was found in the module 'Az.Accounts', but the module could not be loaded due to the following error: [Assembly with same name is already loaded] For more information, run 'Import-Module Az.Accounts'.`.
+> :warning: Please do not reuse the session you ran the build script in. Please kill the old PowerShell session and start a new one.
 
 > :warning: This script may kill the PowerShell session when setting local policies required for AutomatedLab. In this case, just restart it.
 
 Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It installs required modules on your machine.
 
-### Intialize the session (LabInit)
+### 1.5.2. Initialize the session (LabInit)
 
 After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the shell:
 
@@ -71,7 +77,7 @@ After the preparation script finished, we have all modules and dependencies on t
 .\build.ps1 -Tasks labinit
 ```
 
-### 1.5.2. `10 Setup App Registrations.ps1`
+### 1.5.3. `10 Setup App Registrations.ps1`
 
 The script `10 Setup App Registrations.ps1` creates an app in each tenant defined in the `Azure.yml` file. Then it assigns these apps very high privileges as they are used to setup the required VMs (Azure DevOps build agents) and the managed identities with the required permissions for Microsoft365DSC. For each app, a service principal is created in Exchange Online.
 
@@ -81,13 +87,13 @@ The App ID and the encrypted secrets are shown on the console in case you want t
 
 > :warning: The password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
 
-### 1.5.3. `20 Create Agent VMs.ps1`
+### 1.5.4. `20 Create Agent VMs.ps1`
 
 The script [20 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
 
 For creating the VMs, we use [AutomatedLab](https://automatedlab.org/en/latest/). All the complexity of that task is handled by that AutomatedLab. The script should run 20 to 30 minutes.
 
-1. Before running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please set a password for the build workers in the file [AzureDevOps.yml](../source/Global/AzureDevOps.yml) by replacing the placeholder `<Password>` with your desired password. If you forget this or your chosen password does not have the necessary complexity, you will get an error later.
+> :warning: Before running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please set a password for the build workers in the file [AzureDevOps.yml](../source/Global/AzureDevOps.yml) by replacing the placeholder `<Password>` with your desired password. If you forget this or your chosen password does not have the necessary complexity, you will get an error later.
 
 ```yml
 BuildAgents:
@@ -95,9 +101,9 @@ BuildAgents:
   Password: Somepass1
 ```
 
-2. Then run the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please. It runs about half an hour. Time to grab a coffee.
+Running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1) takes about half an hour, depending on how many tenants you have configured. Time to grab a coffee.
 
-### 1.5.4. `30 Setup AzDo Project.ps1`
+### 1.5.5. `30 Setup AzDo Project.ps1`
 
 This script prepares the Azure DevOps project. The parameters are in the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml).
 
@@ -131,7 +137,7 @@ Please inspect the project. You should see the new environments as well as the n
 
 ---
 
-### 1.5.5. `31 Agent Setup.ps1`
+### 1.5.6. `31 Agent Setup.ps1`
 
 The script [31 Agent Setup.ps1](../lab//31%20Agent%20Setup.ps1) connects to each build worker VM created in the previous step. It installs
 
