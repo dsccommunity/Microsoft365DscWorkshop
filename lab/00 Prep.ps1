@@ -1,9 +1,9 @@
 $requiredModules = @{
     'Az.ManagedServiceIdentity'           = '1.2.1'
-    'Microsoft.Graph.Applications'        = '2.19.0'
-    'Microsoft.Graph.Authentication'      = '2.19.0'
-    'Microsoft.Graph.Identity.Governance' = '2.19.0'
     'Az.Resources'                        = '7.3.0'
+    'Microsoft.Graph.Applications'        = '2.20.0'
+    'Microsoft.Graph.Authentication'      = '2.20.0'
+    'Microsoft.Graph.Identity.Governance' = '2.20.0'
     'powershell-yaml'                     = '0.4.7'
     VSTeam                                = '7.15.2'
     AutomatedLab                          = 'latest'
