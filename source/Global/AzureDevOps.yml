@@ -6,4 +6,4 @@ BuildAgents:
   UserName: worker
   Password: <Password>
   AzureLocation: West Europe
-  AzureRoleSize: Standard_D4ds_v5
+  AzureRoleSize: Standard_D4ls_v5
