@@ -13,6 +13,12 @@ if ($datum.Global.AzureDevOps.OrganizationName -eq '<OrganizationName>' -or $nul
     $datum.Global.AzureDevOps | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\AzureDevOps.yml
 }
 
+if ($datum.Global.AzureDevOps.ProjectName -eq '<ProjectName>' -or $null -eq $datum.Global.AzureDevOps.ProjectName)
+{
+    $datum.Global.AzureDevOps.ProjectName = Read-Host -Prompt 'Enter the name of your Azure DevOps project'
+    $datum.Global.AzureDevOps | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\AzureDevOps.yml
+}
+
 if ($datum.Global.AzureDevOps.PersonalAccessToken -eq '<PersonalAccessToken>' -or $null -eq $datum.Global.AzureDevOps.PersonalAccessToken)
 {
     $pat = Read-Host -Prompt 'Enter your Azure DevOps Personal Access Token'
