@@ -114,7 +114,7 @@ ProjectName: Microsoft365DscWorkshop
 AgentPoolName: DSC
 ```
 
-If you project has the name `Microsoft365DscWorkshop` and you are ok with the name of the new agent pool, you don't have to change anything here. The script [30 Setup AzDo Project.ps1](../lab/30%20Setup%20AzDo%20Project.ps1) will ask for the required information and update the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml) for you.
+If you are ok with the name of the new agent pool, you don't have to change anything here. The script [30 Setup AzDo Project.ps1](../lab/30%20Setup%20AzDo%20Project.ps1) will ask for the required information and update the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml) for you.
 
 1. Please create an Personal Access Token (PAT) for your Azure DevOps organization with the required access level to manage / create the project. Copy the PAT to the clipboard.
 
@@ -126,8 +126,10 @@ If you project has the name `Microsoft365DscWorkshop` and you are ok with the na
 
 The script will:
 
-- Ask for the Azure DevOps organization name and PAT.
-- Update the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml).
+- Ask for Azure DevOps organization name.
+- Ask for the Azure DevOps project name.
+- Ask for the Azure DevOps personal access token.
+- Update the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml) according to the data you provided.
 - Creates an agent pool named `DSC`.
 - Disables non-required features in the project.
 - Creates build environments as defined in [Azure.yml](../source/Global//Azure.yml) file.
@@ -152,3 +154,14 @@ The script [31 Agent Setup.ps1](../lab//31%20Agent%20Setup.ps1) connects to each
 Please check the DSC Azure DevOps Agent Pool to see if the new worker appears there. Please also check its capabilities. There should be a capability named `BuildEnvironment` with the value of the respective environment.
 
 ## 1.6. Running the Pipeline
+
+The script [30 Setup AzDo Project.ps1](../lab//30%20Setup%20AzDo%20Project.ps1) has created these pipelines:
+
+- M365DSC push
+
+  Only this pipeline has triggers for continuous integration and is executed every time something is committed to the main branch. The pipeline creates the artifacts, applies them to the configured tenants and tests whether the configuration could be applied successfully. The next three pipelines are these steps individually.
+
+
+- M365DSC test
+- M365DSC apply
+- M365DSC build
