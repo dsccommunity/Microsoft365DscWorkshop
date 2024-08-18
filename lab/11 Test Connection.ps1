@@ -21,7 +21,7 @@ if ($EnvironmentName)
     Write-Host "Filtering environments to: $($EnvironmentName -join ', ')" -ForegroundColor Magenta
     $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
 }
-Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
+Write-Host "Testing environments: $($environments -join ', ')" -ForegroundColor Magenta
 
 foreach ($envName in $environments)
 {
