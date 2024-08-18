@@ -1,15 +1,4 @@
-trigger:
-  branches:
-    include:
-    - main
-  paths:
-    exclude:
-    - CHANGELOG.md
-  tags:
-    include:
-    - "v*"
-    exclude:
-    - "*-*"
+trigger: none
 
 pool:
   vmImage: windows-latest
@@ -34,12 +23,13 @@ parameters:
     default: DSC
 
 stages:
-  - template: buildTemplate.yml
+
+  - template: initTemplate.yml
     parameters:
       buildEnvironments: ${{ parameters.buildEnvironments }}
       poolName: ${{ parameters.poolName }}
 
-  - template: startDscTemplate.yml
+  - template: startExistingDscTemplate.yml
     parameters:
       buildEnvironments: ${{ parameters.buildEnvironments }}
       poolName: ${{ parameters.poolName }}

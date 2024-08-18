@@ -1,0 +1,39 @@
+parameters:
+- name: buildEnvironments
+  type: object
+  default: {}
+- name: poolName
+  type: string
+
+stages:
+  - ${{ each buildEnvironment in parameters.buildEnvironments }}:
+    - stage: Build${{ buildEnvironment.Name }}
+      displayName: Build of environment ${{ buildEnvironment.Name }}
+      pool:
+        name: ${{ parameters.poolName }}
+        demands:
+          - buildEnvironment -equals ${{ buildEnvironment.Name }}
+      dependsOn: []
+
+      jobs:
+        - job: Build${{ buildEnvironment.Name }}
+          displayName: Build of environment ${{ buildEnvironment.Name }}
+
+          steps:
+
+            - task: PowerShell@2
+              name: displayEnvVariables
+              displayName: 'Display Environment Variables'
+              inputs:
+                targetType: inline
+                pwsh: true
+                script: |
+                  dir -Path env: | Format-Table -Property Name, Value -AutoSize | Out-String | Write-Host
+
+            - task: PowerShell@2
+              name: InitializeModuleFolder
+              displayName: 'Initialize Program Files Modules'
+              inputs:
+                pwsh: true
+                filePath: './build.ps1'
+                arguments: '-UseModuleFast -ResolveDependency -Tasks InitializeModuleFolder'

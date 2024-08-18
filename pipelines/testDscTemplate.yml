@@ -13,8 +13,9 @@ stages:
         name: ${{ parameters.poolName }}
         demands:
           - buildEnvironment -equals ${{ buildEnvironment.Name }}
-      dependsOn:
-      - StartConfig${{ buildEnvironment.Name }}
+      ${{ if endsWith(variables['Build.DefinitionName'], 'push') }}:
+        dependsOn:
+        - StartConfig${{ buildEnvironment.Name }}
 
       jobs:
         - deployment: ${{ buildEnvironment.Name }}

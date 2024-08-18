@@ -13,10 +13,8 @@ stages:
         name: ${{ parameters.poolName }}
         demands:
           - buildEnvironment -equals ${{ buildEnvironment.Name }}
-      #dependsOn:
-      #- Build${{ buildEnvironment.Name }}
-      #- ${{ if buildEnvironment.DependsOn }}:
-      #  - TestConfig${{ buildEnvironment.DependsOn }}
+      dependsOn:
+      - Build${{ buildEnvironment.Name }}
 
       jobs:
         - deployment: ${{ buildEnvironment.Name }}
@@ -45,5 +43,5 @@ stages:
                   displayName: 'Deploy DSC Configuration'
                   inputs:
                     filePath: './build.ps1'
-                    arguments: '-Tasks startConfiguration'
+                    arguments: '-Tasks startExistingDscConfiguration'
                     pwsh: false
