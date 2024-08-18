@@ -10,24 +10,15 @@ task StartDscConfiguration {
 
     Wait-DscLocalConfigurationManager
 
-    $MofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
-    $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
-    $modulesToKeep = 'Microsoft.PowerShell.Operation.Validation', 'PackageManagement', 'Pester', 'PowerShellGet', 'PSReadline'
-
-    Write-Host "Cleaning PowerShell module folder '$programFileModulePath'"
-    Get-ChildItem -Path $programFileModulePath | Where-Object { $_.BaseName -notin $modulesToKeep } | ForEach-Object {
-
-        Write-Host "Removing module '$($_.BaseName)'"
-        $_ | Remove-Item -Recurse -Force
-    }
-
-    Write-Host "Copying modules from '$requiredModulesPath' to '$programFileModulePath'"
-    Get-ChildItem -Path $requiredModulesPath | ForEach-Object {
-        Write-Host "Copying module '$($_.BaseName)'"
-        $_ | Copy-Item -Destination $programFileModulePath -Recurse -Force
-    }
-
     Start-DscConfiguration -Path "$MofOutputDirectory\$environment" -Wait -Verbose -Force -ErrorAction Stop
+
+}
+
+task StartExistingDscConfiguration {
+
+    Wait-DscLocalConfigurationManager
+
+    Start-DscConfiguration -UseExisting -Wait -Verbose -Force -ErrorAction Stop
 
 }
 
@@ -48,7 +39,7 @@ task TestDscConfiguration {
     }
 }
 
-task InitializeModuleFolder {
+task CleanModuleFolder {
 
     $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
     $modulesToKeep = 'Microsoft.PowerShell.Operation.Validation', 'PackageManagement', 'Pester', 'PowerShellGet', 'PSReadline'
@@ -58,5 +49,34 @@ task InitializeModuleFolder {
     dir -Path $programFileModulePath |
         Where-Object { $_.BaseName -notin $modulesToKeep } |
             Remove-Item -Recurse -Force
+
+}
+
+task InitializeModuleFolder {
+
+    $environment = $env:buildEnvironment
+    if (-not $environment)
+    {
+        Write-Error 'The build environment is not set'
+    }
+
+    Wait-DscLocalConfigurationManager
+
+    $MofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
+    $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
+    $modulesToKeep = 'Microsoft.PowerShell.Operation.Validation', 'PackageManagement', 'Pester', 'PowerShellGet', 'PSReadline'
+
+    Write-Host "Cleaning PowerShell module folder '$programFileModulePath'"
+    Get-ChildItem -Path $programFileModulePath | Where-Object { $_.BaseName -notin $modulesToKeep } | ForEach-Object {
+
+        Write-Host "Removing module '$($_.BaseName)'"
+        $_ | Remove-Item -Recurse -Force
+    }
+
+    Write-Host "Copying modules from '$requiredModulesPath' to '$programFileModulePath'"
+    Get-ChildItem -Path $requiredModulesPath | ForEach-Object {
+        Write-Host "Copying module '$($_.BaseName)'"
+        $_ | Copy-Item -Destination $programFileModulePath -Recurse -Force
+    }
 
 }
