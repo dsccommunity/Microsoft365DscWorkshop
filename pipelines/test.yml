@@ -21,7 +21,6 @@ parameters:
     default: DSC
 
 stages:
-  #- checkout: self
 
   - template: initTemplate.yml
     parameters:
