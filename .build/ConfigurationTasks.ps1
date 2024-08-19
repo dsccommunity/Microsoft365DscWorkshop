@@ -10,7 +10,8 @@ task StartDscConfiguration {
 
     Wait-DscLocalConfigurationManager
 
-    Start-DscConfiguration -Path "$MofOutputDirectory\$environment" -Wait -Verbose -Force -ErrorAction Stop
+    $mofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
+    Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Verbose -Force -ErrorAction Stop
 
 }
 
@@ -62,7 +63,6 @@ task InitializeModuleFolder {
 
     Wait-DscLocalConfigurationManager
 
-    $MofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
     $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
     $modulesToKeep = 'Microsoft.PowerShell.Operation.Validation', 'PackageManagement', 'Pester', 'PowerShellGet', 'PSReadline'
 
