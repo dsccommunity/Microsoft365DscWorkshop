@@ -13,10 +13,10 @@ stages:
         name: ${{ parameters.poolName }}
         demands:
           - buildEnvironment -equals ${{ buildEnvironment.Name }}
-      #dependsOn:
-      #- Build${{ buildEnvironment.Name }}
-      #- ${{ if buildEnvironment.DependsOn }}:
-      #  - TestConfig${{ buildEnvironment.DependsOn }}
+      dependsOn:
+      - Build${{ buildEnvironment.Name }}
+      - ${{ if buildEnvironment.DependsOn }}:
+        - TestConfig${{ buildEnvironment.DependsOn }}
 
       jobs:
         - deployment: ${{ buildEnvironment.Name }}
