@@ -37,6 +37,7 @@ function New-M365DSCSelfSignedCertificate
 {
 	[CmdletBinding()]
 	param (
+		#TODO Change subject
 		[Parameter()]
 		[string]
 		$Subject = 'DscEncryptionCert',
