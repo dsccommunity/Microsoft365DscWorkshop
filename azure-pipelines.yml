@@ -45,7 +45,7 @@ stages:
             displayName: 'Build DSC Artifacts'
             inputs:
               filePath: './build.ps1'
-              arguments: '-ResolveDependency -Tasks build'
+              arguments: '-ResolveDependency -Tasks build -UseModuleFast'
               pwsh: true
             env:
               ModuleVersion: $(NuGetVersionV2)
