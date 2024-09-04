@@ -8,7 +8,7 @@ Connect-M365Dsc -TenantId b246c1af-87ab-41d8-9812-83cd5ff534cb -TenantName MngEn
 3. $permissions = Get-M365DSCCompiledPermissionList2 -AccessType Read
 4. $id = Get-M365DscIdentity -Name Export
 5. Set-ServicePrincipalAppPermissions -DisplayName Export -Permissions $permissions
-6. Export-M365DSCConfiguration -Components @("AADConditionalAccessPolicy") -ApplicationId 1279affe-7506-4b42-ae23-f6f025fb692d -TenantId MngEnvMCAP576786.onmicrosoft.com -CertificateThumbprint 0769225665d722caba154ae32c3894678ddc7cc7 -Path .
+6. Export-M365DSCConfiguration -Components AADApplication -ApplicationId 1279affe-7506-4b42-ae23-f6f025fb692d -TenantId MngEnvMCAP576786.onmicrosoft.com -CertificateThumbprint 0769225665d722caba154ae32c3894678ddc7cc7 -Path .\temp\
 
 Create a 
 
