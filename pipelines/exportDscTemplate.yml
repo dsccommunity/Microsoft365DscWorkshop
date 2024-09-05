@@ -1,0 +1,53 @@
+parameters:
+  - name: buildEnvironments
+    type: object
+    default: {}
+  - name: poolName
+    type: string
+
+stages:
+  - ${{ each buildEnvironment in parameters.buildEnvironments }}:
+      - stage: Export${{ buildEnvironment.Name }}
+        displayName: Export of environment ${{ buildEnvironment.Name }}
+        pool:
+          name: ${{ parameters.poolName }}
+          demands:
+            - buildEnvironment -equals ${{ buildEnvironment.Name }}
+
+        jobs:
+          - job: Export${{ buildEnvironment.Name }}
+            displayName: Export of environment ${{ buildEnvironment.Name }}
+
+            steps:
+              - task: PowerShell@2
+                name: displayEnvVariables
+                displayName: Display Environment Variables
+                inputs:
+                  targetType: inline
+                  pwsh: true
+                  script: |
+                    dir -Path env: | Format-Table -Property Name, Value -AutoSize | Out-String | Write-Host
+
+              - task: PowerShell@2
+                name: CleanModuleFolder
+                displayName: "Clean Program Files Modules"
+                inputs:
+                  pwsh: true
+                  filePath: ./build.ps1
+                  arguments: -UseModuleFast -ResolveDependency -Tasks CleanModuleFolder
+
+              - task: PowerShell@2
+                name: ExportTenantConfig
+                displayName: Export Tenant Configuration
+                inputs:
+                  pwsh: true
+                  filePath: ./build.ps1
+                  arguments: -UseModuleFast -ResolveDependency -Tasks export
+
+              - task: PublishPipelineArtifact@1
+                displayName: Publish Exported Data
+                inputs:
+                  targetPath: "$(buildFolderName)/Export"
+                  artifact: TenantConfig-$(BuildEnvironment)
+                  publishLocation: pipeline
+                  parallel: true
