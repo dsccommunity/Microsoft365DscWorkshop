@@ -1,0 +1,4 @@
+DscResources:
+- AADApplication
+- AADSecurityDefaults
+- AADGroupSettings

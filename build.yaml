@@ -29,6 +29,13 @@ BuildWorkflow:
     - LoadDatumConfigData
     - AzureInit
 
+  export:
+    - Clean
+    - labinit
+    - ExportTenantData
+    - InvokingDscExportConfiguration
+    - ConvertMofToYaml
+
   build:
     - Init7
     - Clean
