@@ -7,8 +7,8 @@ parameters:
 
 stages:
   - ${{ each buildEnvironment in parameters.buildEnvironments }}:
-    - stage: Build${{ buildEnvironment.Name }}
-      displayName: Build of environment ${{ buildEnvironment.Name }}
+    - stage: Init${{ buildEnvironment.Name }}
+      displayName: Initialization of environment ${{ buildEnvironment.Name }}
       pool:
         name: ${{ parameters.poolName }}
         demands:
