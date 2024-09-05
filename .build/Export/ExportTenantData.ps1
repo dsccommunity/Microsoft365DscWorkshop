@@ -3,7 +3,16 @@ task ExportTenantData {
     $configPath = "$ProjectPath\export\ExportConfiguration.yml"
     $exportConfig = Get-Content -Path $configPath -Raw | ConvertFrom-Yaml
 
-    foreach ($env in $datum.Global.Azure.Environments.GetEnumerator())
+    $environments = if ($env:BuildEnvironment)
+    {
+        $datum.Global.Azure.Environments.GetEnumerator().Where({ $_.Name -eq $env:BuildEnvironment })
+    }
+    else
+    {
+        $datum.Global.Azure.Environments.GetEnumerator()
+    }
+
+    foreach ($env in $environments)
     {
         Write-Host "Exporting configuration for environment $($env.Name)" -ForegroundColor Yellow
         if (-not $env.Value.AzTenantId)
