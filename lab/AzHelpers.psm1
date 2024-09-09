@@ -555,7 +555,16 @@ function Get-M365DscIdentity
         [string]$Name
     )
 
-    if ($appRegistration = Get-MgApplication -Filter "displayName eq '$Name'" -ErrorAction SilentlyContinue)
+    try
+    {
+        $appRegistration = Get-MgApplication -Filter "displayName eq '$Name'" -ErrorAction Stop
+    }
+    catch [Microsoft.Graph.PowerShell.AuthenticationException]
+    {
+        Write-Error -Message "You are not connected to the Microsoft Graph. Please run 'Connect-M365Dsc'." -Exception $_.Exception -ErrorAction Stop
+    }
+
+    if ($appRegistration)
     {
         Write-Verbose "Found application '$Name' with Id '$($appRegistration.Id)' and AppId '$($appRegistration.AppId)'."
         $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue
@@ -1052,7 +1061,7 @@ function Remove-M365DscIdentityPermission
 
     Write-Host 'Removing identity to required roles Exchange Roles' -ForegroundColor Magenta
 
-    $requiredRoles =         $requiredRoles = 'Organization Management',
+    $requiredRoles = $requiredRoles = 'Organization Management',
     'Security Administrator',
     'Recipient Management',
     'Compliance Administrator',
