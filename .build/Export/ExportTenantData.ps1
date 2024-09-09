@@ -59,9 +59,14 @@ task InvokingDscExportConfiguration {
 
 task ConvertMofToYaml {
 
-    $data = Convert-MofToYaml -Path "$OutputDirectory\export"
+    $tenants = Get-ChildItem -Path "$OutputDirectory\export" -Directory
 
-    Write-Host 'Exporting tenant configuration to the output folder as YAML' -ForegroundColor Yellow
-    $data | ConvertTo-Yaml | Out-File "$OutputDirectory\export\TenantConfiguration.yml"
+    foreach ($tenant in $tenants)
+    {
+        $data = Convert-MofToYaml -Path "$OutputDirectory\export\$($tenant.Name)\*.mof"
+
+        Write-Host 'Exporting tenant configuration to the output folder as YAML' -ForegroundColor Yellow
+        $data | ConvertTo-Yaml | Out-File "$OutputDirectory\export\$($tenant.Name)\Configuration.yml" -Force
+    }
 
 }
