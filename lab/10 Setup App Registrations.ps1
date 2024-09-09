@@ -75,7 +75,7 @@ $datum.Global.Azure | ConvertTo-Yaml | Out-File -FilePath $PSScriptRoot\..\sourc
 
 Write-Host "Committing and pushing the changes to the repository '$(git config --get remote.origin.url)'."
 $currentBranchName = git rev-parse --abbrev-ref HEAD
-git add ../source/Global/Azure.yml
+git add $PSScriptRoot/../source/Global/Azure.yml
 git commit -m 'Tenant Update' | Out-Null
 git push --set-upstream origin $currentBranchName | Out-Null
 
