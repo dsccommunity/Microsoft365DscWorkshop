@@ -44,7 +44,7 @@ git clone https://github.com/raandree/Microsoft365DscWorkshop.git C:\Git
 
 ## 1.2. Configuring the Azure Tenant
 
-1. In order to read from the Azure tenant, you need to create an application. In order to do that, you need to connect to it with a global administrator:
+1. In order to read from the Azure tenant, you need to create an application. In order to do that, you need to connect to it with a global administrator. Please change the arguments according to you environment.
 
 ```powershell
 Connect-M365Dsc -TenantId b246c1af-87ab-41d8-9812-83cd5ff534cb -TenantName MngEnvMCAP576786.onmicrosoft.com -SubscriptionId 9522bd96-d34f-4910-9667-0517ab5dc595
@@ -53,7 +53,7 @@ Connect-M365Dsc -TenantId b246c1af-87ab-41d8-9812-83cd5ff534cb -TenantName MngEn
 1. Create a app registration in the tenant you want to export with this command:
 
 ```powershell
-$id = New-M365DscIdentity -Name M365DscExportCertApplication -PassThru
+$id = New-M365DscIdentity -Name M365DscExportApplication -PassThru
 ```
 
 2. Create a certificate and upload it to the app registration.
@@ -64,7 +64,7 @@ $id = New-M365DscIdentity -Name M365DscExportCertApplication -PassThru
    $cert = New-M365DSCSelfSignedCertificate -Store LocalMachine -Subject 'M365DSC Export' -PassThru
    ```
 
-   2. The public part of the certificate must be added to the previously created application in order to be able authenticate with it. The previous command exported the public key to the file `AuthCert.cer`. Please add the public key from that file to the application in Azure.
+   2. The public part of the certificate must be added to the previously created application in order to be able authenticate with it. Please add the public key to the application in Azure with the following commands.
 
    ```powershell
    $certParam = @{
@@ -73,17 +73,17 @@ $id = New-M365DscIdentity -Name M365DscExportCertApplication -PassThru
          Key = $cert.RawData
    }
 
-   Update-MgApplication -ApplicationId $Application.Id -KeyCredentials @($CertCredential)
+   Update-MgApplication -ApplicationId $id.Id -KeyCredentials $certParam
    ```
 
    3. The application does not yet have the necessary permissions to access all resource in Azure. the following commands will add the permissions.
 
    ```powershell
    $permissions = Get-M365DSCCompiledPermissionList2 -AccessType Read
-   Set-ServicePrincipalAppPermissions -DisplayName M365DscExportCertApplication -Permissions $permissions
+   Set-ServicePrincipalAppPermissions -DisplayName M365DscExportApplication -Permissions $permissions
    ```
 
-Now everything should be setup to run the export. To test this, please run the following command. Change the tenant ID, certificate thumprint and application ID according to your environment.
+Now everything should be setup to run the export. To test this, please run the following command to test the export of applications. Change the tenant ID, certificate thumbprint and application ID according to your environment.
 
 >Note: If you have closed the PowerShell session in the meantime and PowerShell does not find the cmdlet `Export-M365DSCConfiguration` anymore, please run `.\build.ps1 -Tasks noop`  to initialize the environment. The will amend the `PSModulePath` to include `$ProjectPath\output\RequiredModules\`.
 
@@ -91,4 +91,4 @@ Now everything should be setup to run the export. To test this, please run the f
 Export-M365DSCConfiguration -Components AADApplication -ApplicationId 40642b84-0d13-43ac-951e-8700d5be1131 -TenantId MngEnvMCAP576786.onmicrosoft.com -CertificateThumbprint FBA23F11CD8F78A17B9E2105D9BE3EE15BA04165 -Path .\temp\
 ```
 
-## 1.3. If you want the data in a different more transportable format, please refer to [Export your Azure Tenant Configuration to Yaml or Json](./ExportToYaml.md).
+## 1.3. If you want the data in a different more transportable format, please refer to [Export your Azure Tenant Configuration to Yaml or Json](./ExportToYaml.md)
