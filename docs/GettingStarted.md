@@ -1,5 +1,7 @@
 # 1. Getting started
 
+> Note: If you are only intersted in exporting your Microsoft Azure tenant configuration with [Microsoft365DSC](https://microsoft365dsc.com/) and you do not want to configure your tenants, please refer to [Export your Azure Tenant Configuration](../export/readme.md).
+
 ### 1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on.
 
 ## 1.1. Forking or importing the Project
