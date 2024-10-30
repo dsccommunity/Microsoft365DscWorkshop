@@ -55,8 +55,8 @@
     'Az.Resources'                                         = '7.2.0'
     'Az.Accounts'                                          = '3.0.2'
     'Az.ManagedServiceIdentity'                            = '1.2.1'
-    'Microsoft.Graph.Identity.Governance'                  = '2.24.0'
-    'Microsoft.Graph.Identity.DirectoryManagement'         = '2.24.0'
+    'Microsoft.Graph.Identity.Governance'                  = '2.23.0'
+    'Microsoft.Graph.Identity.DirectoryManagement'         = '2.23.0'
 
     # Microsoft365DSC
     Microsoft365DSC                                        = '1.24.1016.1'
