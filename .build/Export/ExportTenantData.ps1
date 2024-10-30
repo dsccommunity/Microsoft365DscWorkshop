@@ -27,11 +27,22 @@ task ExportTenantData {
         }
 
         $exportParams = @{
-            Components            = $exportConfig.DscResources
-            ApplicationId         = $exportApp.ApplicationId
-            CertificateThumbprint = $exportApp.CertificateThumbprint
-            TenantId              = $env.Value.AzTenantName
-            Path                  = "$OutputDirectory\Export\$($env.Value.AzTenantName)"
+            Components    = $exportConfig.DscResources
+            ApplicationId = $exportApp.ApplicationId
+            TenantId      = $env.Value.AzTenantName
+            Path          = "$OutputDirectory\Export\$($env.Value.AzTenantName)"
+        }
+        if ($null -ne $exportApp.CertificateThumbprint)
+        {
+            $exportParams.CertificateThumbprint = $exportApp.CertificateThumbprint
+        }
+        elseif ($null -ne $exportApp.ApplicationSecret)
+        {
+            $exportParams.ApplicationSecret = $exportApp.applicationSecret
+        }
+        else
+        {
+            Write-Error "Export application 'M365DscExportApplication' does not have a certificate thumbprint or application secret defined for environment $($env.Name)" -ErrorAction Stop
         }
 
         Export-M365DSCConfiguration @exportParams
