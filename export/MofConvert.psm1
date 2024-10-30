@@ -67,7 +67,14 @@ function Convert-MofToYaml
                     $kvp = ($selectedInstance.Properties.Where({ $_.Name -eq $key }))[0]
                     if ($null -ne $kvp -or $kvp.Count -gt 0)
                     {
-                        Write-Verbose "Adding key: $key, value: $($kvp.Value)"
+                        if ($kvp.Value -is [Kingsland.MofParser.Models.Values.StringValue])
+                        {
+                            Write-Verbose "Adding key: $key, value: $($kvp.Value.Value)"
+                        }
+                        else
+                        {
+                            Write-Verbose "Adding key: $key, value: $($kvp.Value)"
+                        }
                         $properties.Add($kvp.Name, $kvp.Value)
                     }
                 }
