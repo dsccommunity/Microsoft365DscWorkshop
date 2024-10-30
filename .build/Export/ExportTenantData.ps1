@@ -14,7 +14,7 @@ task ExportTenantData {
 
     foreach ($env in $environments)
     {
-        Write-Host "Exporting configuration for environment $($env.Name)" -ForegroundColor Yellow
+        Write-Host "Exporting configuration for environment '$($env.Name)'" -ForegroundColor Yellow
         if (-not $env.Value.AzTenantId)
         {
             Write-Error "AzTenantId is not defined for environment $($env.Name)" -ErrorAction Stop
