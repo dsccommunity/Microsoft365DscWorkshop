@@ -1,0 +1,33 @@
+Items:
+- Identity: '[x={ "$(($datum.Global.Azure.Environments.Test.AzTenantName -split "\.")[0]) Outbound Connector" }=]'
+  AllAcceptedDomains: false
+  CloudServicesMailEnabled: true
+  Comment: Outbound connector to partner 1
+  ConnectorSource: Default
+  ConnectorType: OnPremises
+  Enabled: true
+  IsTransportRuleScoped: true
+  #RecipientDomains: contoso.com
+  RouteAllMessagesViaOnPremises: false
+  TlsDomain: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
+  TlsSettings: DomainValidation
+  UseMxRecord: false
+  SmartHost: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
+  SenderRewritingEnabled: true
+  Ensure: Present
+- Identity: '[x={ "$(($datum.Global.Azure.Environments.Prod.AzTenantName -split "\.")[0]) Outbound Connector" }=]'
+  AllAcceptedDomains: false
+  CloudServicesMailEnabled: true
+  Comment: Outbound connector to partner 1
+  ConnectorSource: Default
+  ConnectorType: OnPremises
+  Enabled: true
+  IsTransportRuleScoped: true
+  #RecipientDomains: contoso.com
+  RouteAllMessagesViaOnPremises: false
+  TlsDomain: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
+  TlsSettings: DomainValidation
+  UseMxRecord: false
+  SmartHost: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
+  SenderRewritingEnabled: true
+  Ensure: Present

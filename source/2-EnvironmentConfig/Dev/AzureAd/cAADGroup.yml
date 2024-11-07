@@ -20,10 +20,3 @@ Items:
     SecurityEnabled: true
     TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
     ManagedIdentity: true
-  - MailNickname: TestGroup500
-    DisplayName: Test Group 500
-    Description: Test Group 500
-    MailEnabled: false
-    SecurityEnabled: true
-    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
-    ManagedIdentity: true
