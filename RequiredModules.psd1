@@ -36,8 +36,8 @@
     'DscResource.Test'                                     = 'latest'
 
     # Composites
-    'DscConfig.M365'                                       = '0.3.2'
-    'DscConfig.Demo'                                       = '0.8.2'
+    'DscConfig.M365'                                       = 'latest'
+    'DscConfig.Demo'                                       = 'latest'
 
     #DSC Resources
     xPSDesiredStateConfiguration                           = '9.1.0'
