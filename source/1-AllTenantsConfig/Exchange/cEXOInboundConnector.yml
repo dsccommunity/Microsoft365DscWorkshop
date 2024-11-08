@@ -1,7 +1,7 @@
 Items:
 - Identity: Inbound from mailhub
   CloudServicesMailEnabled: true
-  SenderIpAddressees:
+  SenderIpAddresses:
     - 81.200.198.246
   Comment: Inbound connector for Integration1
   ConnectorSource: Default
