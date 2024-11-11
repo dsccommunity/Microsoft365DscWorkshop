@@ -70,14 +70,20 @@ task InvokingDscExportConfiguration {
 
 task ConvertMofToYaml {
 
+    $allModules = Get-ModuleFromFolder -ModuleFolder .\output\RequiredModules\
+    $m365dscModule = $allModules | Where-Object { $_.Name -eq 'Microsoft365DSC' }
+    $modulesWithDscResources = Get-DscResourceFromModuleInFolder -ModuleFolder .\output\RequiredModules\ -Modules $m365dscModule
+    $resourceTypes = $modulesWithDscResources | Select-Object -ExpandProperty ResourceType
+
     $tenants = Get-ChildItem -Path "$OutputDirectory\export" -Directory
 
     foreach ($tenant in $tenants)
     {
-        $data = Convert-MofToYaml -Path "$OutputDirectory\export\$($tenant.Name)\*.mof"
+        $tenantData = Convert-MofToYaml -Path "$OutputDirectory\export\$($tenant.Name)\*.mof"
+        $copiedData = Copy-YamlData -Data $tenantData -AllData $tenantData -ResourceTypes $resourceTypes
 
         Write-Host 'Exporting tenant configuration to the output folder as YAML' -ForegroundColor Yellow
-        $data | ConvertTo-Yaml | Out-File "$OutputDirectory\export\$($tenant.Name)\Configuration.yml" -Force
+        $copiedData | ConvertTo-Yaml | Out-File "$OutputDirectory\export\$($tenant.Name)\Configuration.yml" -Force
     }
 
 }
