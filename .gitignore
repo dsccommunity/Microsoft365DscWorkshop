@@ -5,10 +5,6 @@ output/*
 
 output/RequiredModules/*
 
-!output/RequiredModules/ProtectedData
-output/RequiredModules/ProtectedData/*
-!output/RequiredModules/ProtectedData/9.9.9
-
 !output/RequiredModules/DscBuildHelpers
 output/RequiredModules/DscBuildHelpers/*
 !output/RequiredModules/DscBuildHelpers/9.9.9
