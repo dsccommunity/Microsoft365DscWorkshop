@@ -25,7 +25,12 @@
     }
     MarkdownLinkCheck                                      = 'latest'
     'DscResource.AnalyzerRules'                            = 'latest'
-    DscBuildHelpers                                        = 'latest'
+    DscBuildHelpers                                        = @{
+        Version    = 'latest'
+        Parameters = @{
+            AllowPrerelease = $true
+        }
+    }
     Datum                                                  = 'latest'
     ProtectedData                                          = 'latest'
     'Datum.ProtectedData'                                  = 'latest'
