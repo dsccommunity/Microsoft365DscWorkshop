@@ -72,6 +72,9 @@ lookup_options:
       tuple_keys:
         - MailNickname
 
+  cEXOTransportConfig:
+    merge_hash: deep
+
   DscTagging:
     merge_hash: deep
   DscTagging\Layers:
