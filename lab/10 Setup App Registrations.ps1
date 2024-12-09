@@ -23,8 +23,19 @@ foreach ($environmentName in $environments)
     Write-Host "Working in environment '$environmentName'" -ForegroundColor Magenta
     Write-Host "Connecting to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'"
 
-    Connect-M365Dsc -TenantId $environment.AzTenantId -TenantName $environment.AzTenantName -SubscriptionId $environment.AzSubscriptionId
-    if (-not (Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId))
+    $param = @{
+        TenantId   = $environment.AzTenantId
+        TenantName = $environment.AzTenantName
+    }
+    if (-not [string]::IsNullOrEmpty($environment.AzSubscriptionId))
+    {
+        $param.SubscriptionId = $environment.AzSubscriptionId
+    }
+
+    Connect-M365Dsc @param
+
+    $param.Remove('TenantName')
+    if (-not (Test-M365DscConnection @param))
     {
         Write-Error "Failed to connect to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'" -ErrorAction Stop
     }
