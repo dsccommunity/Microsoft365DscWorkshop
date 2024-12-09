@@ -30,11 +30,18 @@ foreach ($envName in $environments)
     Write-Host "Testing connection to environment '$envName'" -ForegroundColor Magenta
 
     $param = @{
-        TenantId               = $environment.AzTenantId
-        TenantName             = $environment.AzTenantName
-        SubscriptionId         = $environment.AzSubscriptionId
-        ServicePrincipalId     = $setupIdentity.ApplicationId
-        ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
+        TenantId           = $environment.AzTenantId
+        TenantName         = $environment.AzTenantName
+        SubscriptionId     = $environment.AzSubscriptionId
+        ServicePrincipalId = $setupIdentity.ApplicationId
+    }
+    if ($setupIdentity.ApplicationSecret)
+    {
+        $param.ServicePrincipalSecret = $setupIdentity.ApplicationSecret
+    }
+    else
+    {
+        $param.CertificateThumbprint = $setupIdentity.CertificateThumbprint
     }
 
     Connect-M365Dsc @param -ErrorAction Stop

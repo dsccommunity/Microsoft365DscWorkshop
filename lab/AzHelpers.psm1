@@ -300,7 +300,7 @@ function Get-GraphPermission
 function Connect-Azure
 {
     [CmdletBinding()]
-    param(
+    param (
         [Parameter(Mandatory = $true)]
         [string]$TenantId,
 
@@ -352,7 +352,7 @@ function Connect-Azure
 function Connect-EXO
 {
     [CmdletBinding()]
-    param(
+    param (
         [Parameter(Mandatory = $true)]
         [string]$TenantId,
 
@@ -680,20 +680,26 @@ function Test-M365DscConnection
 function Connect-M365DscAzure
 {
     [CmdletBinding(DefaultParameterSetName = 'Interactive')]
-    param(
+    param (
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$TenantId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$SubscriptionId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [string]$ServicePrincipalId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
         [securestring]$ServicePrincipalSecret,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
+        [string]$CertificateThumbprint,
 
         [Parameter()]
         [string[]]$Scopes = ('RoleManagement.ReadWrite.Directory',
@@ -715,6 +721,10 @@ function Connect-M365DscAzure
         if ($PSCmdlet.ParameterSetName -eq 'AppSecret')
         {
             $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop -WarningAction Ignore *>&1 #| Write-Verbose
+        }
+        elseif ($PSCmdlet.ParameterSetName -eq 'Certificate')
+        {
+            $subscription = Connect-AzAccount -Tenant $TenantId -ApplicationId $ServicePrincipalId -CertificateThumbprint $CertificateThumbprint -SubscriptionId $SubscriptionId -ErrorAction Stop -WarningAction Ignore *>&1 #| Write-Verbose
         }
         else
         {
@@ -762,20 +772,26 @@ function Connect-M365DscAzure
 function Connect-M365DscExchangeOnline
 {
     [CmdletBinding(DefaultParameterSetName = 'Interactive')]
-    param(
+    param (
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$TenantId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$TenantName,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [string]$ServicePrincipalId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
-        [securestring]$ServicePrincipalSecret
+        [securestring]$ServicePrincipalSecret,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
+        [string]$CertificateThumbprint
     )
 
     try
@@ -792,6 +808,10 @@ function Connect-M365DscExchangeOnline
             $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token" -Method POST -Body $tokenBody
 
             Connect-ExchangeOnline -AccessToken $tokenResponse.access_token -Organization $TenantName -ShowBanner:$false
+        }
+        elseif ($PSCmdlet.ParameterSetName -eq 'Certificate')
+        {
+            Connect-ExchangeOnline -CertificateThumbprint $CertificateThumbprint -AppId $ServicePrincipalId -Organization $TenantName -ShowBanner:$false
         }
         else
         {
@@ -821,22 +841,29 @@ function Connect-M365Dsc
     [CmdletBinding(DefaultParameterSetName = 'Interactive')]
     param (
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$TenantId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$TenantName,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$SubscriptionId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
         [string]$ServicePrincipalId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
-        [securestring]$ServicePrincipalSecret
+        [securestring]$ServicePrincipalSecret,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
+        [string]$CertificateThumbprint
     )
 
     Disconnect-M365Dsc -ErrorAction SilentlyContinue
