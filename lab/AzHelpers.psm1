@@ -686,9 +686,9 @@ function Connect-M365DscAzure
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$TenantId,
 
-        [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
-        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
-        [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
+        [Parameter(ParameterSetName = 'AppSecret')]
+        [Parameter(ParameterSetName = 'Certificate')]
+        [Parameter(ParameterSetName = 'Interactive')]
         [string]$SubscriptionId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
@@ -720,15 +720,15 @@ function Connect-M365DscAzure
     {
         if ($PSCmdlet.ParameterSetName -eq 'AppSecret')
         {
-            $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop -WarningAction Ignore *>&1 #| Write-Verbose
+            $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop -WarningAction Ignore *>&1
         }
         elseif ($PSCmdlet.ParameterSetName -eq 'Certificate')
         {
-            $subscription = Connect-AzAccount -Tenant $TenantId -ApplicationId $ServicePrincipalId -CertificateThumbprint $CertificateThumbprint -SubscriptionId $SubscriptionId -ErrorAction Stop -WarningAction Ignore *>&1 #| Write-Verbose
+            $subscription = Connect-AzAccount -Tenant $TenantId -ApplicationId $ServicePrincipalId -CertificateThumbprint $CertificateThumbprint -ErrorAction Stop -WarningAction Ignore *>&1
         }
         else
         {
-            $subscription = Connect-AzAccount -Tenant $TenantId -SubscriptionId $SubscriptionId -ErrorAction Stop -WarningAction Ignore *>&1 #| Write-Verbose
+            $subscription = Connect-AzAccount -Tenant $TenantId -SubscriptionId $SubscriptionId -ErrorAction Stop -WarningAction Ignore *>&1
         }
         Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name)' ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
     }
@@ -850,9 +850,9 @@ function Connect-M365Dsc
         [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
         [string]$TenantName,
 
-        [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
-        [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
-        [Parameter(Mandatory = $true, ParameterSetName = 'Interactive')]
+        [Parameter(ParameterSetName = 'AppSecret')]
+        [Parameter(ParameterSetName = 'Certificate')]
+        [Parameter(ParameterSetName = 'Interactive')]
         [string]$SubscriptionId,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'AppSecret')]
