@@ -29,11 +29,16 @@ foreach ($envName in $environments)
     $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
     Write-Host "Testing connection to environment '$envName'" -ForegroundColor Magenta
 
+    if (-not $setupIdentity.ApplicationId)
+    {
+        Write-Error "The setup identity 'M365DscSetupApplication' for environment '$envName' is not defined. Please run the 'Setup App Registrations' script first." -ErrorAction Stop
+    }
+
     $param = @{
-        TenantId           = $environment.AzTenantId
-        TenantName         = $environment.AzTenantName
-        SubscriptionId     = $environment.AzSubscriptionId
-        ServicePrincipalId = $setupIdentity.ApplicationId
+        TenantId               = $environment.AzTenantId
+        TenantName             = $environment.AzTenantName
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $setupIdentity.ApplicationId
     }
     if ($setupIdentity.ApplicationSecret)
     {
