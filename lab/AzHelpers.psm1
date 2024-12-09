@@ -601,7 +601,7 @@ function Test-M365DscConnection
         [Parameter(Mandatory = $true)]
         [string]$TenantId,
 
-        [Parameter(Mandatory = $true)]
+        [Parameter()]
         [string]$SubscriptionId
     )
 
@@ -644,7 +644,11 @@ function Test-M365DscConnection
         Write-Host "Azure context tenant ID '$($azContext.Tenant.Id)' matches the provided tenant ID."
     }
 
-    if ($azContext.Subscription.Id -ne $SubscriptionId)
+    if ([string]::IsNullOrEmpty($SubscriptionId))
+    {
+        Write-Host "Azure context subscription ID is not set."
+    }
+    elseif ($azContext.Subscription.Id -ne $SubscriptionId)
     {
         Write-Error "Azure context subscription ID '$($azContext.Subscription.Id)' does not match the provided subscription ID '$SubscriptionId'."
         $isConnected = $false
@@ -720,15 +724,47 @@ function Connect-M365DscAzure
     {
         if ($PSCmdlet.ParameterSetName -eq 'AppSecret')
         {
-            $subscription = Connect-AzAccount -ServicePrincipal -Credential $cred -Tenant $TenantId -ErrorAction Stop -WarningAction Ignore *>&1
+            $param = @{
+                ServicePrincipal = $true
+                Credential       = $cred
+                Tenant           = $TenantId
+                ErrorAction      = 'Stop'
+                WarningAction    = 'Ignore'
+            }
+            $subscription = Connect-AzAccount @param *>&1
         }
         elseif ($PSCmdlet.ParameterSetName -eq 'Certificate')
         {
-            $subscription = Connect-AzAccount -Tenant $TenantId -ApplicationId $ServicePrincipalId -CertificateThumbprint $CertificateThumbprint -ErrorAction Stop -WarningAction Ignore *>&1
+            $param = @{
+                Tenant                = $TenantId
+                ApplicationId         = $ServicePrincipalId
+                CertificateThumbprint = $CertificateThumbprint
+                ErrorAction           = 'Stop'
+                WarningAction         = 'Ignore'
+            }
+            $subscription = Connect-AzAccount @param *>&1
         }
         else
         {
-            $subscription = Connect-AzAccount -Tenant $TenantId -SubscriptionId $SubscriptionId -ErrorAction Stop -WarningAction Ignore *>&1
+            $param = @{
+                Tenant         = $TenantId
+                ErrorAction    = 'Stop'
+                WarningAction  = 'Ignore'
+            }
+            if ($SubscriptionId)
+            {
+                $param.SubscriptionId = $SubscriptionId
+            }
+
+            $subscription = if ($SubscriptionId)
+            {
+                Connect-AzAccount @param *>&1
+            }
+            else
+            {
+                Connect-AzAccount @param
+            }
+
         }
         Write-Host "Successfully connected to Azure subscription '$($subscription.Context.Subscription.Name)' ($($subscription.Context.Subscription.Id))' with account '$($subscription.Context.Account.Id)'"
     }
