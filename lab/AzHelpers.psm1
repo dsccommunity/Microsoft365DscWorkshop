@@ -646,7 +646,7 @@ function Test-M365DscConnection
 
     if ([string]::IsNullOrEmpty($SubscriptionId))
     {
-        Write-Host "Azure context subscription ID is not set."
+        Write-Host 'Azure context subscription ID is not set.'
     }
     elseif ($azContext.Subscription.Id -ne $SubscriptionId)
     {
@@ -747,9 +747,9 @@ function Connect-M365DscAzure
         else
         {
             $param = @{
-                Tenant         = $TenantId
-                ErrorAction    = 'Stop'
-                WarningAction  = 'Ignore'
+                Tenant        = $TenantId
+                ErrorAction   = 'Stop'
+                WarningAction = 'Ignore'
             }
             if ($SubscriptionId)
             {
@@ -936,20 +936,29 @@ function Add-M365DscIdentityPermission
         [string]$AccessType = 'Update'
     )
 
-    Write-Host 'Adding Azure permissions' -ForegroundColor Magenta
-    if ($AccessType -eq 'Update')
+    $azureContext = Get-AzContext
+
+    if (-not $azureContext.SubscriptionId)
     {
-        if (-not (Get-AzRoleAssignment -ObjectId $Identity.AppPrincipalId -RoleDefinitionName Owner))
-        {
-            New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner | Out-Null
-            Write-Host "Assigning the application '$($Identity.DisplayName)' to the role 'Owner'."
-        }
-        else
-        {
-            Write-Host "The application '$($Identity.DisplayName)' is already assigned to the role 'Owner'."
-        }
+        Write-Host 'No Azure subscription available. Skipping Azure permissions.' -ForegroundColor Yellow
     }
-    Write-Host 'Done adding Azure permissions' -ForegroundColor Magenta
+    else
+    {
+        Write-Host 'Adding Azure permissions' -ForegroundColor Magenta
+        if ($AccessType -eq 'Update')
+        {
+            if (-not (Get-AzRoleAssignment -ObjectId $Identity.AppPrincipalId -RoleDefinitionName Owner))
+            {
+                New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner | Out-Null
+                Write-Host "Assigning the application '$($Identity.DisplayName)' to the role 'Owner'."
+            }
+            else
+            {
+                Write-Host "The application '$($Identity.DisplayName)' is already assigned to the role 'Owner'."
+            }
+        }
+        Write-Host 'Done adding Azure permissions' -ForegroundColor Magenta
+    }
 
     #------------------------------------------------------------------------------
 
