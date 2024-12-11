@@ -1,7 +1,7 @@
 Items:
-  - DisplayName: "SEC001-Block-Legacy-Authentication-All-App"
+  - DisplayName: SEC001-Block-Legacy-Authentication-All-App
     Id: d85efd15-44a8-4a08-ba18-4ef0b9d29bf7
-    State: "EnabledForReportingButNotEnforced"
+    State: EnabledForReportingButNotEnforced
     IncludeApplications:
       - All
     IncludeUsers:

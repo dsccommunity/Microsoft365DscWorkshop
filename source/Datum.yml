@@ -56,10 +56,10 @@ lookup_options:
   Configurations:
     merge_basetype_array: Unique
 
-  ADConditionalAccessPolicies:
+  cAADConditionalAccessPolicy:
     merge_hash: deep
-  ADConditionalAccessPolicies\Items:
-    merge_hash_array: UniqueKeyValTuples
+  cAADConditionalAccessPolicy\Items:
+    merge_hash_array: DeepTuple
     merge_options:
       tuple_keys:
         - DisplayName
