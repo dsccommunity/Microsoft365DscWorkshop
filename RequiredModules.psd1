@@ -17,12 +17,7 @@
     Sampler                                                = 'latest'
     'Sampler.GitHubTasks'                                  = 'latest'
     PowerShellForGitHub                                    = 'latest'
-    'Sampler.DscPipeline'                                  = @{
-        Version    = 'latest'
-        Parameters = @{
-            AllowPrerelease = $true
-        }
-    }
+    'Sampler.DscPipeline'                                  = 'latest'
     MarkdownLinkCheck                                      = 'latest'
     'DscResource.AnalyzerRules'                            = 'latest'
     DscBuildHelpers                                        = @{
