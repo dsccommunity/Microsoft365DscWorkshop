@@ -1,12 +1,3 @@
-!output/
-
-output/*
-!output/RequiredModules
-
-output/RequiredModules/*
-
-!output/RequiredModules/Sampler.DscPipeline
-output/RequiredModules/Sampler.DscPipeline/*
-!output/RequiredModules/Sampler.DscPipeline/9.9.9
+output
 
 lab/testResults.xml
