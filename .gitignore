@@ -5,10 +5,6 @@ output/*
 
 output/RequiredModules/*
 
-!output/RequiredModules/DscBuildHelpers
-output/RequiredModules/DscBuildHelpers/*
-!output/RequiredModules/DscBuildHelpers/9.9.9
-
 !output/RequiredModules/Sampler.DscPipeline
 output/RequiredModules/Sampler.DscPipeline/*
 !output/RequiredModules/Sampler.DscPipeline/9.9.9
