@@ -142,6 +142,12 @@ foreach ($lab in $labs)
     $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName" -PassThru
     Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$envName' in environment '$envName'"
     Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
+
+    $vm = Get-LabVM
+
+    Invoke-LabCommand -ComputerName $vm -ScriptBlock {
+        Set-Item -Path WSMan:\localhost\MaxEnvelopeSizekb -Value 8192
+    } -ActivityName 'Setting WSMan MaxEnvelopeSizekb to 8192 for VMs in environment'
 }
 
 Write-Host 'Finished assigning managed identity to VMs and setting permissions for Microsoft365DSC workloads' -ForegroundColor Green
