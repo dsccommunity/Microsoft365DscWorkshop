@@ -9,22 +9,22 @@ BuildWorkflow:
     - build
     - pack
 
-  init5: |
+  test5: |
     {
         if ($PSVersionTable.PSEdition -ne 'Desktop') {
             Write-Error "The build script required PowerShell 7+ to work"
         }
     }
 
-  init7: |
+  test7: |
     {
         if ($PSVersionTable.PSEdition -ne 'Core') {
             Write-Error "The build script required PowerShell 7+ to work"
         }
     }
 
-  labinit:
-    - init7
+  lhellinit:
+    - test7
     - ShellInit
     - LoadDatumConfigData
     - AzureInit
@@ -37,7 +37,7 @@ BuildWorkflow:
     - ConvertMofToYaml
 
   build:
-    - Init7
+    - test7
     - Clean
     - Build_Module_ModuleBuilder
     - AzureInit
@@ -50,7 +50,7 @@ BuildWorkflow:
     - CompileRootMetaMof
 
   rsop:
-    - Init7
+    - test7
     - Clean
     - LoadDatumConfigData
     - AzureInit
@@ -58,7 +58,7 @@ BuildWorkflow:
     - CompileDatumRsop
 
   pack:
-    - Init7
+    - test7
     - LoadDatumConfigData
     - NewMofChecksums
     - CompressModulesWithChecksum
@@ -66,11 +66,11 @@ BuildWorkflow:
     - TestBuildAcceptance
 
   startConfiguration:
-    - Init5
+    - test5
     - StartDscConfiguration
 
   testConfiguration:
-    - Init5
+    - test5
     - TestDscConfiguration
 
 ####################################################

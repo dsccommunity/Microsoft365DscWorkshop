@@ -1,4 +1,4 @@
-task ShellInit {
+task Init {
 
     Write-Host 'Importing module 'AzHelpers' from path '$ProjectPath\lab\AzHelpers.psm1'.' -ForegroundColor Yellow
     Import-Module -Name $ProjectPath\lab\AzHelpers.psm1 -Force
