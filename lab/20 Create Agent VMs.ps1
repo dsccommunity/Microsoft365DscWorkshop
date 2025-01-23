@@ -69,9 +69,9 @@ foreach ($envName in $environments)
     Write-Host "Creating lab for environment '$envName' in the subscription."
     New-LabDefinition -Name "$($datum.Global.ProjectSettings.Name)$($envName)" -DefaultVirtualizationEngine Azure -Notes $notes
 
-    Add-LabAzureSubscription -SubscriptionId $environment.AzSubscriptionId -DefaultLocation $datum.Global.AzureDevOps.BuildAgents.AzureLocation
+    Add-LabAzureSubscription -SubscriptionId $environment.AzSubscriptionId -DefaultLocation $datum.Global.ProjectSettings.BuildAgents.AzureLocation
 
-    Set-LabInstallationCredential -Username $datum.Global.AzureDevOps.BuildAgents.UserName -Password $datum.Global.AzureDevOps.BuildAgents.Password
+    Set-LabInstallationCredential -Username $datum.Global.ProjectSettings.BuildAgents.UserName -Password $datum.Global.ProjectSettings.BuildAgents.Password
 
     $PSDefaultParameterValues = @{
         'Add-LabMachineDefinition:ToolsPath'       = "$labSources\Tools"
@@ -80,7 +80,7 @@ foreach ($envName in $environments)
 
     Add-LabDiskDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($envName)Data1" -DiskSizeInGb 250 -Label Data
 
-    Add-LabMachineDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($envName)" -AzureRoleSize $datum.Global.AzureDevOps.BuildAgents.AzureRoleSize -DiskName "Lcm$($datum.Global.ProjectSettings.Name)$($envName)Data1"
+    Add-LabMachineDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($envName)" -AzureRoleSize $datum.Global.ProjectSettings.BuildAgents.AzureRoleSize -DiskName "Lcm$($datum.Global.ProjectSettings.Name)$($envName)Data1"
 
     Install-Lab
 

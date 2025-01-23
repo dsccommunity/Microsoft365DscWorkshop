@@ -88,8 +88,8 @@ foreach ($lab in $labs)
         if (-not (Get-Service -Name vstsagent*))
         {
             Expand-Archive -Path $vstsAgenZip.FullName -DestinationPath C:\Agent -Force
-            "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName) --auth pat --token $($datum.Global.AzureDevOps.PersonalAccessToken) --pool $($datum.Global.AzureDevOps.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
-            C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.AzureDevOps.OrganizationName) --auth pat --token $($datum.Global.AzureDevOps.PersonalAccessToken) --pool $($datum.Global.AzureDevOps.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
+            "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName) --auth pat --token $($datum.Global.ProjectSettings.PersonalAccessToken) --pool $($datum.Global.ProjectSettings.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
+            C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName) --auth pat --token $($datum.Global.ProjectSettings.PersonalAccessToken) --pool $($datum.Global.ProjectSettings.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
         }
 
     } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, datum)
