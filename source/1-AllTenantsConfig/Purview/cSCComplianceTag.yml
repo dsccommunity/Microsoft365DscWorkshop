@@ -13,8 +13,8 @@ Items:
       FilePlanPropertySubcategory: DemoSub
     Ensure: Present
     TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
-    CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).CertificateThumbprint }=]'
-    ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).ApplicationId }=]'
+    CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).CertificateThumbprint }=]'
+    ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).ApplicationId }=]'
   - Name: DemoTag 2
     Comment: This is a Demo Tag 2
     RetentionAction: Keep
@@ -29,5 +29,5 @@ Items:
       FilePlanPropertySubcategory: DemoSub
     Ensure: Present
     TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
-    CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).CertificateThumbprint }=]'
-    ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).ApplicationId }=]'
+    CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).CertificateThumbprint }=]'
+    ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).ApplicationId }=]'

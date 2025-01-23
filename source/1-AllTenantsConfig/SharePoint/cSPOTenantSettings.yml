@@ -18,5 +18,5 @@ SignInAccelerationDomain: ""
 UseFindPeopleInPeoplePicker: False
 UsePersistentCookiesForExplorerView: True
 TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
-CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).CertificateThumbprint }=]'
-ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).ApplicationId }=]'
+CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).CertificateThumbprint }=]'
+ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).ApplicationId }=]'

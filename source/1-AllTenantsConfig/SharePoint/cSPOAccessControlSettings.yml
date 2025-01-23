@@ -9,5 +9,5 @@ IPAddressEnforcement: False
 IPAddressWACTokenLifetime: 15
 IsSingleInstance: Yes
 TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
-CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).CertificateThumbprint }=]'
-ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmCertApplication).ApplicationId }=]'
+CertificateThumbprint: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).CertificateThumbprint }=]'
+ApplicationId: '[x={ ($azBuildParameters."$($Node.Environment)".Identities | Where-Object Name -eq M365DscLcmApplication).ApplicationId }=]'
