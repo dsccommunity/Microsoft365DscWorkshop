@@ -48,6 +48,19 @@ foreach ($envName in $environments)
         Write-Host "Removing the application '$($identity.Name)' for environment '$envName'."
         Remove-M365DscIdentity -Identity $azIdentity
 
+        if ($null -ne $azIdentity.CertificateThumbprint)
+        {
+            $certPath = "Cert:\LocalMachine\My\$($azIdentity.CertificateThumbprint)"
+            if (Test-Path -Path $certPath)
+            {
+                Remove-Item -Path "Cert:\LocalMachine\My\$($azIdentity.CertificateThumbprint)" -Force
+            }
+            else
+            {
+                Write-Host "The certificate with thumbprint '$($azIdentity.CertificateThumbprint)' does not exist or has already been removed."
+            }
+        }
+
     }
 
     Disconnect-M365Dsc
