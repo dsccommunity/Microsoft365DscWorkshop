@@ -10,13 +10,22 @@ $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 if ($datum.Global.ProjectSettings.OrganizationName -eq '<OrganizationName>' -or $null -eq $datum.Global.ProjectSettings.OrganizationName)
 {
     $datum.Global.ProjectSettings.OrganizationName = Read-Host -Prompt 'Enter the name of your Azure DevOps organization'
-    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\AzureDevOps.yml
+    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\ProjectSettings.yml
 }
 
 if ($datum.Global.ProjectSettings.ProjectName -eq '<ProjectName>' -or $null -eq $datum.Global.ProjectSettings.ProjectName)
 {
-    $datum.Global.ProjectSettings.ProjectName = Read-Host -Prompt 'Enter the name of your Azure DevOps project'
-    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\AzureDevOps.yml
+    $guessedProjectName = $PSScriptRoot.Split('\')[-2]
+    $choice = Read-Host -Prompt "Enter the name of your Azure DevOps project or press <Enter> to use the default ($guessedProjectName)"
+    if ($choice -eq '')
+    {
+        $datum.Global.ProjectSettings.ProjectName = $guessedProjectName
+    }
+    else
+    {
+        $datum.Global.ProjectSettings.ProjectName = $choice
+    }
+    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\ProjectSettings.yml
 }
 
 if ($datum.Global.ProjectSettings.PersonalAccessToken -eq '<PersonalAccessToken>' -or $null -eq $datum.Global.ProjectSettings.PersonalAccessToken)
@@ -25,12 +34,12 @@ if ($datum.Global.ProjectSettings.PersonalAccessToken -eq '<PersonalAccessToken>
     $pass = $datum.__Definition.DatumHandlers.'Datum.ProtectedData::ProtectedDatum'.CommandOptions.PlainTextPassword | ConvertTo-SecureString -AsPlainText -Force
     $datum.Global.ProjectSettings.PersonalAccessToken = $pat | Protect-Datum -Password $pass -MaxLineLength 9999
 
-    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\AzureDevOps.yml
+    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\ProjectSettings.yml
 }
 
-if ((git status -s) -like '*source/Global/AzureDevOps.yml')
+if ((git status -s) -like '*source/Global/ProjectSettings.yml')
 {
-    git add $PSScriptRoot\..\source\Global\AzureDevOps.yml
+    git add $PSScriptRoot\..\source\Global\ProjectSettings.yml
     git commit -m 'Updated Azure DevOps Organization Data' | Out-Null
     git push | Out-Null
 }
