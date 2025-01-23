@@ -97,7 +97,7 @@ The script [20 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) crea
 
 For creating the VMs, we use [AutomatedLab](https://automatedlab.org/en/latest/). All the complexity of that task is handled by that AutomatedLab. The script should run 20 to 30 minutes.
 
-> :warning: Before running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please set a password for the build workers in the file [AzureDevOps.yml](../source/Global/AzureDevOps.yml) by replacing the placeholder `<Password>` with your desired password. If you forget this or your chosen password does not have the necessary complexity, you will get an error later.
+> :warning: Before running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please set a password for the build workers in the file [ProjectSettings.yml](../source/Global/ProjectSettings.yml) by replacing the placeholder `<Password>` with your desired password. If you forget this or your chosen password does not have the necessary complexity, you will get an error later.
 
 ```yml
 BuildAgents:
@@ -109,7 +109,7 @@ Running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps
 
 ### 1.5.5. `30 Setup AzDo Project.ps1`
 
-This script prepares the Azure DevOps project. The parameters are in the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml).
+This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml).
 
 ```yml
 OrganizationName: <OrganizationName>
@@ -118,7 +118,7 @@ ProjectName: Microsoft365DscWorkshop
 AgentPoolName: DSC
 ```
 
-If you are ok with the name of the new agent pool, you don't have to change anything here. The script [30 Setup AzDo Project.ps1](../lab/30%20Setup%20AzDo%20Project.ps1) will ask for the required information and update the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml) for you.
+If you are ok with the name of the new agent pool, you don't have to change anything here. The script [30 Setup AzDo Project.ps1](../lab/30%20Setup%20AzDo%20Project.ps1) will ask for the required information and update the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml) for you.
 
 1. Please create an Personal Access Token (PAT) for your Azure DevOps organization with the required access level to manage / create the project. Copy the PAT to the clipboard.
 
@@ -133,7 +133,7 @@ The script will:
 - Ask for Azure DevOps organization name.
 - Ask for the Azure DevOps project name.
 - Ask for the Azure DevOps personal access token.
-- Update the file [AzureDevOps.yml](../source//Global//AzureDevOps.yml) according to the data you provided.
+- Update the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml) according to the data you provided.
 - Creates an agent pool named `DSC`.
 - Disables non-required features in the project.
 - Creates build environments as defined in [Azure.yml](../source/Global//Azure.yml) file.

@@ -105,4 +105,4 @@ Finally you can use the script [11 Test Connection.ps1](../lab//11%20Test%20Conn
 
 ## Update Remaining Credentials
 
-Finally, update all other credentials in the same way. Very likely you have an encrypted personal access token for Azure DevOps in the file [AzureDevOps.yml](../source/Global/AzureDevOps.yml). In the same file, there is also a password used for configuring the Azure DevOps build workers.
+Finally, update all other credentials in the same way. Very likely you have an encrypted personal access token for Azure DevOps in the file [ProjectSettings.yml](../source/Global/ProjectSettings.yml). In the same file, there is also a password used for configuring the Azure DevOps build workers.
