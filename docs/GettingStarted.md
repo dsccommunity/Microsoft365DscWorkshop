@@ -4,13 +4,15 @@
 
 ### 1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on.
 
-## 1.1. Forking or importing the Project
+## 1.1. Impport the Project into Azure DevOps
 
 For this project to work it is required to change the content of some files. Hence, it is required to create yourself a
-writable copy of the project. Either you do a fork on GitHub or you import the content of this project into a project
-you host on a developer platform or code management solution of your choice.
+writable copy of the project. Please import the content of this project into a project hosted on Azure DevOps.
 
 This guide expects you have created a new project on Azure DevOps and imported the content from here. Alternatively, you can create a fork on GitHub, but then some scripts won't work and you have to make the required tasks manually.
+
+> :warning: You can run the project on any code management / automation platform of your choice, but for the standard setup to work, it is expected
+> to host it on Azure DevOps.
 
 ## 1.2. Cloning the Project
 
