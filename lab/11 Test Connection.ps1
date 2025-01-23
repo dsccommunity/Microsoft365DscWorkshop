@@ -45,7 +45,7 @@ foreach ($envName in $environments)
     }
     if ($setupIdentity.ApplicationSecret)
     {
-        $param.ServicePrincipalSecret = $setupIdentity.ApplicationSecret
+        $param.ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
     else
     {
