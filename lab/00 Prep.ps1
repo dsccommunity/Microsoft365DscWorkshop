@@ -1,6 +1,30 @@
+Write-Host 'Checking if the script is running in a git repository...' -NoNewline
+$projectUrl = git remote get-url origin *>&1
+
+if ($projectUrl -like '*fatal: not a git repository*' -and $LASTEXITCODE -eq 128)
+{
+    Write-Host 'Not working in a git repository. Please run the script in a git repository.'
+    return
+}
+else
+{
+    Write-Host 'ok.'
+}
+
+Write-Host 'Checking if the script is running in an Azure DevOps repository...' -NoNewline
+if ($projectUrl -notmatch 'https:\/\/(?<OrgName>[\w-]+@)dev.azure.com')
+{
+    Write-Host 'The script is not running in an Azure DevOps repository. Please run the script in an Azure DevOps repository.'
+    return
+}
+else
+{
+    Write-Host 'ok.'
+}
+
 $requiredModules = @{
-    VSTeam                                = '7.15.2'
-    AutomatedLab                          = 'latest'
+    VSTeam       = '7.15.2'
+    AutomatedLab = 'latest'
 }
 
 foreach ($module in $requiredModules.GetEnumerator())
