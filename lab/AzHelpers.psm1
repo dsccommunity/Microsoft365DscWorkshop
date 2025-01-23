@@ -623,8 +623,7 @@ function Get-M365DscIdentity
         $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue
         $exchangeServicePrincipal = Get-ServicePrincipal -Identity $Name -ErrorAction SilentlyContinue
 
-
-        elseif ($appRegistration.KeyCredentials.Count -gt 0)
+        if ($appRegistration.KeyCredentials.Count -gt 0)
         {
             if ($appRegistration.KeyCredentials.Count -ne 1)
             {
