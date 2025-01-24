@@ -179,7 +179,7 @@ Please check the DSC Azure DevOps Agent Pool to see if the new worker appears th
 
 ## 1.6. Running the Pipeline
 
-The script [30 Setup AzDo Project.ps1](../lab//30%20Setup%20AzDo%20Project.ps1) has created these pipelines:
+The script [20 Configure AzDo Project.ps1](../lab//30%20Setup%20AzDo%20Project.ps1) has created these pipelines:
 
 - M365DSC push
 
