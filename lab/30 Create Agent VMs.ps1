@@ -86,6 +86,10 @@ foreach ($envName in $environments)
 
     Write-Host "Finished creating lab for environment '$envName'."
 
+    Checkpoint-LabVM -All -SnapshotName AfterInstall
+
+    Write-Host "Created snapshot 'AfterInstall' for lab '$($datum.Global.ProjectSettings.ProjectName)$($envName)'."
+
 }
 
 Write-Host "Finished creating all labs VMs for the project '$($datum.Global.ProjectSettings.ProjectName)'" -ForegroundColor Green
