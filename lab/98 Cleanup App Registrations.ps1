@@ -30,7 +30,7 @@ foreach ($envName in $environments)
     }
 
     $environment.Identities += @{
-        Name = "Lcm$($datum.Global.ProjectSettings.Name)$envName"
+        Name = "Lcm$($datum.Global.ProjectSettings.ProjectName)$envName"
     }
     foreach ($identity in $environment.Identities.GetEnumerator())
     {

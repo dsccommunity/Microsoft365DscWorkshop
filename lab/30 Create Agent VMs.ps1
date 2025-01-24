@@ -67,7 +67,7 @@ foreach ($envName in $environments)
     Write-Host "Successfully connected to Azure environment '$envName'."
 
     Write-Host "Creating lab for environment '$envName' in the subscription."
-    New-LabDefinition -Name "$($datum.Global.ProjectSettings.Name)$($envName)" -DefaultVirtualizationEngine Azure -Notes $notes
+    New-LabDefinition -Name "$($datum.Global.ProjectSettings.ProjectName)$($envName)" -DefaultVirtualizationEngine Azure -Notes $notes
 
     Add-LabAzureSubscription -SubscriptionId $environment.AzSubscriptionId -DefaultLocation $datum.Global.ProjectSettings.BuildAgents.AzureLocation
 
@@ -78,9 +78,9 @@ foreach ($envName in $environments)
         'Add-LabMachineDefinition:OperatingSystem' = 'Windows Server 2022 Datacenter (Desktop Experience)'
     }
 
-    Add-LabDiskDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($envName)Data1" -DiskSizeInGb 250 -Label Data
+    Add-LabDiskDefinition -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Data1" -DiskSizeInGb 250 -Label Data
 
-    Add-LabMachineDefinition -Name "Lcm$($datum.Global.ProjectSettings.Name)$($envName)" -AzureRoleSize $datum.Global.ProjectSettings.BuildAgents.AzureRoleSize -DiskName "Lcm$($datum.Global.ProjectSettings.Name)$($envName)Data1"
+    Add-LabMachineDefinition -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$($envName)" -AzureRoleSize $datum.Global.ProjectSettings.BuildAgents.AzureRoleSize -DiskName "Lcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Data1"
 
     Install-Lab
 
@@ -88,15 +88,15 @@ foreach ($envName in $environments)
 
 }
 
-Write-Host "Finished creating all labs VMs for the project '$($datum.Global.ProjectSettings.Name)'" -ForegroundColor Green
+Write-Host "Finished creating all labs VMs for the project '$($datum.Global.ProjectSettings.ProjectName)'" -ForegroundColor Green
 
 # ------------------------------------------------------------------------------------------------------------
 
 Write-Host 'Starting to assign managed identity to VMs and set permissions for Microsoft365DSC workloads' -ForegroundColor Green
-$labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
+$labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.ProjectName)*" }
 foreach ($lab in $labs)
 {
-    $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
+    $lab -match "(?:$($datum.Global.ProjectSettings.ProjectName))(?<Environment>\w+)" | Out-Null
     $envName = $Matches.Environment
     if ($EnvironmentName -and $envName -notin $EnvironmentName)
     {
@@ -122,25 +122,25 @@ foreach ($lab in $labs)
     $resourceGroupName = $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName
     Write-Host "Working in lab '$($lab.Name)' with environment '$envName'"
 
-    if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
+    if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$envName" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
     {
-        Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.Name)$($envName)'"
-        $id = New-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
+        Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.ProjectName)$($envName)'"
+        $id = New-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
     }
 
-    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName"
+    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$envName"
     if ($vm.Identity.UserAssignedIdentities.Keys -eq $id.Id)
     {
-        Write-Host "Managed Identity already assigned to VM 'Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)' in environment '$envName'"
+        Write-Host "Managed Identity already assigned to VM 'Lcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)' in environment '$envName'"
     }
     else
     {
-        Write-Host "Assigning Managed Identity to VM 'Lcm$($datum.Global.ProjectSettings.Name)$($lab.Notes.Environment)' in environment '$envName'"
+        Write-Host "Assigning Managed Identity to VM 'Lcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)' in environment '$envName'"
         Update-AzVM -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -VM $vm -IdentityType UserAssigned -IdentityId $id.Id | Out-Null
     }
 
-    $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.Name)$envName" -PassThru
-    Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.Name)$envName' in environment '$envName'"
+    $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$envName" -PassThru
+    Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.ProjectName)$envName' in environment '$envName'"
     Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
 
     $vm = Get-LabVM

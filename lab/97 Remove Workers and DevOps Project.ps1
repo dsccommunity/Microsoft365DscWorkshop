@@ -12,11 +12,11 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
-$labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.Name)*" }
+$labs = Get-Lab -List | Where-Object { $_ -Like "$($datum.Global.ProjectSettings.ProjectName)*" }
 
 foreach ($lab in $labs)
 {
-    $lab -match "(?:$($datum.Global.ProjectSettings.Name))(?<Environment>\w+)" | Out-Null
+    $lab -match "(?:$($datum.Global.ProjectSettings.ProjectName))(?<Environment>\w+)" | Out-Null
     $envName = $Matches.Environment
     if ($EnvironmentName -and $envName -notin $EnvironmentName)
     {
