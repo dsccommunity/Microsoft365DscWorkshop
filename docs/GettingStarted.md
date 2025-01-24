@@ -109,6 +109,42 @@ In the last task we have created some applications and stored the credentials fo
 
 Please call the script [11 Test Connection.ps1](../lab/11%20Test%20Connection.ps1). The last line of the output should be `Connection test completed`.
 
+### 1.5.4. `20 Setup AzDo Project.ps1`
+
+This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml).
+
+```yml
+OrganizationName: <OrganizationName>
+PersonalAccessToken: <PersonalAccessToken>
+ProjectName: Microsoft365DscWorkshop
+AgentPoolName: DSC
+```
+
+If you are ok with the name of the new agent pool, you don't have to change anything here. The script [20 Setup AzDo Project.ps1](../lab/20%20Setup%20AzDo%20Project.ps1) will ask for the required information and update the file [ProjectSettings.yml](../source//Global/ProjectSettings.yml) for you.
+
+1. Please create an Personal Access Token (PAT) for your Azure DevOps organization with the required access level to manage / create the project. Copy the PAT to the clipboard.
+
+2. Then call the script [20 Setup AzDo Project.ps1](../lab/20%20Setup%20AzDo%20Project.ps1)
+
+```powershell
+& '.\20 Setup AzDo Project.ps1'
+```
+
+The script will:
+
+- Ask for Azure DevOps organization name.
+- Ask for the Azure DevOps project name.
+- Ask for the Azure DevOps personal access token.
+- Update the file [ProjectSettings.yml](../source/Global/ProjectSettings.yml) according to the data you provided.
+- Creates an agent pool named `DSC`.
+- Disables non-required features in the project.
+- Creates build environments as defined in [Azure.yml](../source/Global/Azure.yml) file.
+- Creates the pipelines for full build, apply and test.
+
+Please inspect the project. You should see the new environments as well as the new agent pool and the pipelines now.
+
+---
+
 ### 1.5.4. `20 Create Agent VMs.ps1`
 
 The script [20 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
@@ -124,40 +160,6 @@ BuildAgents:
 ```
 
 Running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1) takes about half an hour, depending on how many tenants you have configured. Time to grab a coffee.
-
-### 1.5.5. `30 Setup AzDo Project.ps1`
-
-This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml).
-
-```yml
-OrganizationName: <OrganizationName>
-PersonalAccessToken: <PersonalAccessToken>
-ProjectName: Microsoft365DscWorkshop
-AgentPoolName: DSC
-```
-
-If you are ok with the name of the new agent pool, you don't have to change anything here. The script [30 Setup AzDo Project.ps1](../lab/30%20Setup%20AzDo%20Project.ps1) will ask for the required information and update the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml) for you.
-
-1. Please create an Personal Access Token (PAT) for your Azure DevOps organization with the required access level to manage / create the project. Copy the PAT to the clipboard.
-
-2. Then call the script [30 Setup AzDo Project.ps1](../lab/30%20Setup%20AzDo%20Project.ps1)
-
-```powershell
-& '.\30 Setup AzDo Project.ps1'
-```
-
-The script will:
-
-- Ask for Azure DevOps organization name.
-- Ask for the Azure DevOps project name.
-- Ask for the Azure DevOps personal access token.
-- Update the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml) according to the data you provided.
-- Creates an agent pool named `DSC`.
-- Disables non-required features in the project.
-- Creates build environments as defined in [Azure.yml](../source/Global//Azure.yml) file.
-- Creates the pipelines for full build, apply and test.
-
-Please inspect the project. You should see the new environments as well as the new agent pool and the pipelines now.
 
 ---
 
