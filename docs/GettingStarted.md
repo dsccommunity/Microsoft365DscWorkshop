@@ -203,9 +203,9 @@ The script [20 Configure AzDo Project.ps1](../lab//30%20Setup%20AzDo%20Project.p
 
 - M365DSC push
 
-  Only this pipeline has triggers for continuous integration and is executed every time something is committed to the main branch. The pipeline creates the artifacts, applies them to the configured tenants and tests whether the configuration could be applied successfully. The next three pipelines are these steps individually.
+Only this pipeline has triggers for continuous integration and is executed to run every time something is committed to the main branch. The pipeline creates the artifacts, applies them to the configured tenants and tests whether the configuration has been applied successfully.
 
-
+If you want to trigger these steps in individually, you can start one of these pipelines manually:
 - M365DSC test
 - M365DSC apply
 - M365DSC build
