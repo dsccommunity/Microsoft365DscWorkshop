@@ -22,6 +22,14 @@ else
     Write-Host 'ok.'
 }
 
+$projectSettings = Get-Content -Path $PSScriptRoot\..\source\Global\ProjectSettings.yml
+if ($projectSettings -contains 'ProjectName: <ProjectName>')
+{
+    Write-Host "Updating the project name in the 'ProjectSettings.yml' file"
+    $projectSettings = $projectSettings -replace '<ProjectName>', (Split-Path -Path (git rev-parse --show-toplevel) -Leaf)
+    $projectSettings | Out-File -FilePath $PSScriptRoot\..\source\Global\ProjectSettings.yml
+}
+
 $requiredModules = @{
     VSTeam       = '7.15.2'
     AutomatedLab = 'latest'
