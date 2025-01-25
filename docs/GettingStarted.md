@@ -26,8 +26,20 @@ Clone the project in Visual Studio Code Source Control Activity Bar or use the c
 > :information_source: By clicking on the clone button in your repository on Azure DevOps you get the HTTPS link to clone from. The git command could look like this:
 
 ```powershell
-git clone https://MyOrg@dev.azure.com/MyOrg/M365Test/_git/M365Test C:\Git
+git clone <Link to you Azure DevOps project> <The local path of your choice>
 ```
+
+### 1.5.1. `00 Prep.ps1`
+
+> :information_source: This script may kill the PowerShell session when setting local policies required for AutomatedLab. In this case, just restart it.
+
+Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It installs required modules on your machine.
+
+This script set the project name in the [ProjectSettings.yml](../source/Global//ProjectSettings.yml) file to the name of your Azure DevOps project.
+
+It then installs the following modules to your machine:
+- [VSTeam](https://github.com/MethodsAndPractices/vsteam)
+- [AutomatedLab](https://automatedlab.org/en/latest/)
 
 ## 1.3. Test the Build and Download Dependencies
 
@@ -37,9 +49,9 @@ After having cloned the project to your development machine, please open the sol
 .\build.ps1 -UseModuleFast
 ```
 
-This build process takes around 5 minutes to complete. Most of the time is used to download the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1).
+This build process takes around 15 to 20 minutes to complete the first time. Downloading all the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1) takes time and discovering the many DSC resources in [Microsoft365DSC](https://microsoft365dsc.com/).
 
-Please verify the artifacts created by the build pipeline, for example the MOF files in the [./output/MOF](../output/MOF/).
+After the build finished, please verify the artifacts created by the build pipeline, for example the MOF files in the [MOF](../output/MOF/).
 
 > :information_source: The [MOF](../output/MOF/) folder is not part of the project. It is created by the build process. If your don't find it after having run the build, something went wrong and you probably see errors in the console output of the build process.
 
@@ -47,11 +59,17 @@ Please verify the artifacts created by the build pipeline, for example the MOF f
 
 This solution can configure as many Azure tenants as you want. You configure the tenants you want to control in the [.\source\Azure.yml](../source//Global/Azure.yml) file. The file contains a usual setup, a dev, test and prod tenant.
 
-For each environment / tenant, please update the settings `AzTenantId`, `AzTenantName` and `AzSubscriptionId`. The `AzApplicationId`, `AzApplicationSecret` and `CertificateThumbprint` will be handled by the setup scripts you are going to run next. 
+For each environment / tenant, please update the settings `AzTenantId`, `AzTenantName` and `AzSubscriptionId`. The `AzApplicationId`, `AzApplicationSecret` and `CertificateThumbprint` will be handled by the setup scripts you are going to run next.
 
-Also remove the environments you do not need.
+Remove the environments you don't want from the [Azure.yml](../source/Global//Azure.yml) file. For this introduction, only the Dev environment is needed.
 
-> :information_source: Note: For getting used with the project it is recommended to focus on one tenant only. This reduces the runtime of your tests and the complexity.
+Please also remove the build agent yaml-definition including the folders:
+  - [Test](../source//BuildAgents/Test/)
+  - [Prod](../source//BuildAgents/Prod/)
+
+> :warning: Please don't forget to remove the environments you do not need.
+> 
+> :information_source: For getting used with the project it is recommended to focus on one tenant only. This reduces the runtime of your tests and the complexity.
 
 The file can look like this for example if you want to configure only one tenant:
 
@@ -87,7 +105,7 @@ Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It installs required
 
 ### 1.5.2. Initialize the session (Init task)
 
-After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just for initializing the shell:
+After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the shell:
 
 ```powershell
 .\build.ps1 -Tasks init
@@ -103,15 +121,17 @@ The App ID and the encrypted secrets are shown on the console in case you want t
 
 > :warning: The password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
 
-### 1.5.3 `\11 Test Connection.ps1`
+### 1.5.3 `11 Test Connection.ps1`
 
 In the last task we have created some applications and stored the credentials for authentication to the [Azure.yml](../source/Global/Azure.yml) file. Now it is time to test if the authentication with the new applications work.
 
 Please call the script [11 Test Connection.ps1](../lab/11%20Test%20Connection.ps1). The last line of the output should be `Connection test completed`.
 
-### 1.5.4. `20 Setup AzDo Project.ps1`
+--- 
 
-This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global//ProjectSettings.yml).
+### 1.5.5. `20 Setup AzDo Project.ps1`
+
+This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global/ProjectSettings.yml).
 
 ```yml
 OrganizationName: <OrganizationName>
@@ -122,9 +142,9 @@ AgentPoolName: DSC
 
 If you are ok with the name of the new agent pool, you don't have to change anything here. The script [20 Setup AzDo Project.ps1](../lab/20%20Setup%20AzDo%20Project.ps1) will ask for the required information and update the file [ProjectSettings.yml](../source//Global/ProjectSettings.yml) for you.
 
-1. Please create an Personal Access Token (PAT) for your Azure DevOps organization with the required access level to manage / create the project. Copy the PAT to the clipboard.
+1. Please create an Personal Access Token (PAT) for your Azure DevOps organization with the required access level to manage the project. Copy the PAT to the clipboard.
 
-2. Then call the script [20 Setup AzDo Project.ps1](../lab/20%20Setup%20AzDo%20Project.ps1)
+2. Then call the script [20 Setup AzDo Project.ps1](../lab/20%20Setup%20AzDo%20Project.ps1) and provide the required information the script asks for.
 
 ```powershell
 & '.\20 Setup AzDo Project.ps1'
@@ -145,13 +165,13 @@ Please inspect the project. You should see the new environments as well as the n
 
 ---
 
-### 1.5.4. `20 Create Agent VMs.ps1`
+### 1.5.4. `30 Create Agent VMs.ps1`
 
-The script [20 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
+The script [30 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
 
 For creating the VMs, we use [AutomatedLab](https://automatedlab.org/en/latest/). All the complexity of that task is handled by that AutomatedLab. The script should run 20 to 30 minutes.
 
-> :warning: Before running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please set a password for the build workers in the file [ProjectSettings.yml](../source/Global/ProjectSettings.yml) by replacing the placeholder `<Password>` with your desired password. If you forget to do this or your chosen password does not have the necessary complexity, you will get an error later.
+> :warning: Before running the script [30 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please set a password for the build workers in the file [AzureDevOps.yml](../source/Global/AzureDevOps.yml) by replacing the placeholder `<Password>` with your desired password. If you forget this or your chosen password does not have the necessary complexity, you will get an error later.
 
 ```yml
 BuildAgents:
@@ -159,7 +179,7 @@ BuildAgents:
   Password: Somepass1
 ```
 
-Running the script [20 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1) takes about half an hour, depending on how many tenants you have configured. Time to grab a coffee.
+Running the script [30 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1) takes about half an hour, depending on how many tenants you have configured. Time to grab a coffee.
 
 ---
 
