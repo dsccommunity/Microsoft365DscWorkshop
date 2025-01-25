@@ -167,6 +167,22 @@ Please inspect the project. You should see the new environments as well as the n
 
 ---
 
+### Create and Sync the Azure LabSources Share
+
+> :information_source: If you have never used AutomatedLab in your tenant, the AutomatedLab LabSources share is missing in your Azure subscription. If you have used it successfully before, you can skip this task.
+
+AutomatedLab uses a predefined folder structure as a script and software repository.
+
+Please run [New-LabSourcesFolder](https://automatedlab.org/en/latest/AutomatedLabCore/en-us/New-LabSourcesFolder/) to download the LabSources content to your machine.
+
+```powershell
+New-LabSourcesFolder -DriveLetter <DriveLetter>
+```
+
+As machines in Azure cannot access this share, it needs to be synchronized into an Azure storage account. This can be done with the command [Sync-LabAzureLabSources](https://automatedlab.org/en/latest/AutomatedLabCore/en-us/Sync-LabAzureLabSources/).
+
+---
+
 ### 1.5.5. `30 Create Agent VMs.ps1`
 
 The script [30 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
