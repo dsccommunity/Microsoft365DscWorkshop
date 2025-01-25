@@ -29,11 +29,11 @@ Clone the project in Visual Studio Code Source Control Activity Bar or use the c
 git clone <Link to you Azure DevOps project> <The local path of your choice>
 ```
 
-## 1.5. Run the Lab Setup Scripts
+## 1.3. Run the Lab Setup Scripts
 
 All the scripts to setup the environment are in the folder [lab](../lab/).
 
-### 1.5.1. `00 Prep.ps1`
+### 1.3.1. `00 Prep.ps1`
 
 > :information_source: This script may kill the PowerShell session when setting local policies required for AutomatedLab. In this case, just restart it.
 
@@ -47,7 +47,7 @@ It then installs the following modules to your machine:
 
 ---
 
-## 1.3. Test the Build and Download Dependencies
+## 1.4. Test the Build and Download Dependencies
 
 After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the build script:
 
@@ -63,7 +63,7 @@ After the build finished, please verify the artifacts created by the build pipel
 
 ---
 
-## 1.4. Set your Azure Tenant Details
+## 1.5. Set your Azure Tenant Details
 
 This solution can configure as many Azure tenants as you want. You configure the tenants you want to control in the [.\source\Azure.yml](../source//Global/Azure.yml) file. The file contains a usual setup, a dev, test and prod tenant.
 
@@ -101,7 +101,7 @@ Environments:
 
 ---
 
-### 1.5.2. Initialize the session (Init task)
+### 1.5.1. Initialize the session (Init task)
 
 After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the shell:
 
@@ -111,7 +111,7 @@ After the preparation script finished, we have all modules and dependencies on t
 
 ---
 
-### 1.5.3. `10 Setup App Registrations.ps1`
+### 1.5.2. `10 Setup App Registrations.ps1`
 
 The script `10 Setup App Registrations.ps1` creates all the applications in each Azure tenant defined in the [Azure.yml](../source/Global/Azure.yml) file. Then it assigns these apps very high privileges as they are used to control and export the tenant. The app `M365DscLcmApplication` will be used by the Azure DevOps build agent(s) to put your tenant into the desired state. For each app, a service principal is created in Exchange Online.
 
@@ -123,7 +123,7 @@ The App ID and the encrypted secrets are shown on the console in case you want t
 
 ---
 
-### 1.5.3 `11 Test Connection.ps1`
+### 1.5.3. 1.5.3 `11 Test Connection.ps1`
 
 In the last task we have created some applications and stored the credentials for authentication to the [Azure.yml](../source/Global/Azure.yml) file. Now it is time to test if the authentication with the new applications work.
 
@@ -131,7 +131,7 @@ Please call the script [11 Test Connection.ps1](../lab/11%20Test%20Connection.ps
 
 --- 
 
-### 1.5.5. `20 Setup AzDo Project.ps1`
+### 1.5.4. `20 Setup AzDo Project.ps1`
 
 This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global/ProjectSettings.yml).
 
@@ -167,7 +167,7 @@ Please inspect the project. You should see the new environments as well as the n
 
 ---
 
-### 1.5.4. `30 Create Agent VMs.ps1`
+### 1.5.5. `30 Create Agent VMs.ps1`
 
 The script [30 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
 
