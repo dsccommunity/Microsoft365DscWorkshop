@@ -27,6 +27,11 @@ if ($datum.Global.ProjectSettings.BuildAgents.Password -eq '<Password>' -or $nul
     {
         $datum.Global.ProjectSettings.BuildAgents.Password = $password
     }
+    if ($datum.Global.ProjectSettings.PersonalAccessToken -ne '<PersonalAccessToken>')
+    {
+        $pass = $datum.__Definition.DatumHandlers.'Datum.ProtectedData::ProtectedDatum'.CommandOptions.PlainTextPassword | ConvertTo-SecureString -AsPlainText -Force
+        $datum.Global.ProjectSettings.PersonalAccessToken = $datum.Global.ProjectSettings.PersonalAccessToken | Protect-Datum -Password $pass -MaxLineLength 9999
+    }
     $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\ProjectSettings.yml
 }
 
