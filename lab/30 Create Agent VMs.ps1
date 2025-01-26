@@ -14,17 +14,35 @@ Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
+if ($datum.Global.ProjectSettings.BuildAgents.Password -eq '<Password>' -or $null -eq $datum.Global.BuildAgents.Password)
+{
+    $defaultPassword = 'Somepass1'
+    $password = Read-Host -Prompt 'Enter the password for the build agents or press <Enter> to use the default password (Somepass1)'
+
+    if ($password -eq '')
+    {
+        $datum.Global.ProjectSettings.BuildAgents.Password = $defaultPassword
+    }
+    else
+    {
+        $datum.Global.ProjectSettings.BuildAgents.Password = $password
+    }
+    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\ProjectSettings.yml
+}
+
+if ((git status -s) -like '*source/Global/ProjectSettings.yml')
+{
+    git add $PSScriptRoot\..\source\Global\ProjectSettings.yml
+    git commit -m 'Updated Azure DevOps Build Agent Data' | Out-Null
+    git push | Out-Null
+}
+
 if ($EnvironmentName)
 {
     Write-Host "Filtering environments to: $($EnvironmentName -join ', ')" -ForegroundColor Magenta
     $environments = $environments | Where-Object { $EnvironmentName -contains $_ }
 }
 Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
-
-if (-not (Test-LabAzureModuleAvailability))
-{
-    Install-LabAzureRequiredModule -Scope AllUsers
-}
 
 foreach ($envName in $environments)
 {
