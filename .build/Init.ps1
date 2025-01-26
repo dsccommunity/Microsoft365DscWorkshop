@@ -19,4 +19,15 @@ task Init {
         Write-Host 'Module 'AutomatedLab' is not installed, module will not be imported.' -ForegroundColor Yellow
     }
 
+    Write-Host ''
+
+    $azAccountsModule = Import-Module -Name Az.Accounts -Force -PassThru
+    Write-Host "'Az.Accounts' module version $($azAccountsModule.Version) is imported to make sure the highest version is used." -ForegroundColor Yellow
+
+    $azResourceModule = Get-Module -Name Az.Resources -ListAvailable |
+        Sort-Object -Property Version -Descending |
+            Select-Object -First 1 |
+                Import-Module -PassThru
+    Write-Host "'Az.Resources' module version $($azResourceModule.Version) is imported to make sure the highest version is used." -ForegroundColor Yellow
+
 }
