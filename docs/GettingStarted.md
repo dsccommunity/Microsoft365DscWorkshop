@@ -9,10 +9,10 @@
 For this project to work it is required to change the content of some files. Hence, it is required to create yourself a
 writable copy of the project. Please import the content of this project into a project hosted on Azure DevOps.
 
-1. Create a new project in your Azure DevOps Organization
-2. In the new project, click on 'Repos'
+1. Create a new project in your Azure DevOps Organization with the name of your choice.
+2. In the new project, click on 'Repos'.
 3. As there is no content yet, you are asked to add some code. Please press the 'Import' button.
-4. You are aske for a 'Clone URL'. Please provide the URL `https://github.com/raandree/Microsoft365DscWorkshop.git` and click on 'Import' (it may take a view seconds to copy the content).
+4. Please use the URL `https://github.com/raandree/Microsoft365DscWorkshop.git` as the 'Clone URL' and click on 'Import' (it may take a view seconds to copy the content).
 
 This guide expects you have created a new project on Azure DevOps and imported the content from here. Alternatively, you can create a fork on GitHub, but then some scripts won't work and you have to make the required tasks manually.
 
@@ -42,8 +42,9 @@ Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It installs required
 This script set the project name in the [ProjectSettings.yml](../source/Global//ProjectSettings.yml) file to the name of your Azure DevOps project.
 
 It then installs the following modules to your machine:
+
 - [VSTeam](https://github.com/MethodsAndPractices/vsteam)
-- [AutomatedLab](https://automatedlab.org/en/latest/)
+- [AutomatedLab](https://automatedlab.org/en/latest/) and dependencies
 
 ---
 
@@ -52,8 +53,10 @@ It then installs the following modules to your machine:
 After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the build script:
 
 ```powershell
-.\build.ps1 -UseModuleFast
+.\build.ps1 -UseModuleFast -ResolveDependency
 ```
+
+> :information_source: [ModuleFast](https://github.com/JustinGrote/ModuleFast)sometimes has a problem and does not download all the modules it should. If something is missing and you see error messages, please close the PowerShell session and try again. Usually everything works after the second time.
 
 This build process takes around 15 to 20 minutes to complete the first time. Downloading all the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1) takes time and discovering the many DSC resources in [Microsoft365DSC](https://microsoft365dsc.com/).
 
@@ -67,11 +70,11 @@ After the build finished, please verify the artifacts created by the build pipel
 
 This solution can configure as many Azure tenants as you want. You configure the tenants you want to control in the [.\source\Azure.yml](../source//Global/Azure.yml) file. The file contains a usual setup, a dev, test and prod tenant.
 
-For each environment / tenant, please update the settings `AzTenantId`, `AzTenantName` and `AzSubscriptionId`. The `AzApplicationId`, `AzApplicationSecret` and `CertificateThumbprint` will be handled by the setup scripts you are going to run next.
+- For each environment / tenant, please update the settings `AzTenantId`, `AzTenantName` and `AzSubscriptionId`. The `AzApplicationId`, `AzApplicationSecret` and `CertificateThumbprint` will be handled by the setup scripts you are going to run next.
 
-Remove the environments you don't want from the [Azure.yml](../source/Global//Azure.yml) file. For this introduction, only the Dev environment is needed.
+- Remove the environments you don't want from the [Azure.yml](../source/Global//Azure.yml) file. For this introduction, only the Dev environment is needed.
 
-Please also remove the build agent yaml-definition including the folders:
+- Please also remove the build agent yaml-definition including the folders:
   - [Test](../source//BuildAgents/Test/)
   - [Prod](../source//BuildAgents/Prod/)
 
@@ -103,6 +106,10 @@ Environments:
 
 ### 1.5.1. Initialize the session (Init task)
 
+> :warning: Please start a new PowerShell session and do not use the old one. This is because there is a kind of Azure PowerShell module hell (Déjà vu of [Dll Hell](https://en.wikipedia.org/wiki/DLL_hell)) and usually at this point in the process a module is loaded that prevents a newer version from being loaded.
+>
+> And don't forget: Sometimes just retrying a failed task is the best and easiest solution.
+
 After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the shell:
 
 ```powershell
@@ -117,7 +124,7 @@ The script `10 Setup App Registrations.ps1` creates all the applications in each
 
 > :information_source: To clean up the tenant if you don't want to continue the project, use the script [98 Cleanup App Registrations.ps1](../lab//98%20Cleanup%20App%20Registrations.ps1).
 
-The App ID and the encrypted secrets are shown on the console in case you want to copy them and also written encrypted to the [Azure.yml](../source/Global/Azure.yml) file. The file is then committed and pushed to the code repository.
+The App ID and the plain-text secrets are shown on the console in case you want to copy them. They are also written encrypted to the [Azure.yml](../source/Global/Azure.yml) file. The file is then committed and pushed to the code repository.
 
 > :warning: The password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
 
@@ -163,7 +170,7 @@ The script will:
 - Creates build environments as defined in [Azure.yml](../source/Global/Azure.yml) file.
 - Creates the pipelines for full build, apply and test.
 
-Please inspect the project. You should see the new environments as well as the new agent pool and the pipelines now.
+Please inspect the project. You should see the new environment(s) as well as the new agent pool and the pipelines now.
 
 ---
 
@@ -185,7 +192,9 @@ As machines in Azure cannot access this share, it needs to be synchronized into 
 
 ### 1.5.5. `30 Create Agent VMs.ps1`
 
-The script [30 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC. Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
+The script [30 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC.
+
+Later we connect that VM to Azure DevOps as a build agent. It will be used later to build the DSC configuration and push it to the respective Azure tenant.
 
 For creating the VMs, we use [AutomatedLab](https://automatedlab.org/en/latest/). All the complexity of that task is handled by that AutomatedLab. The script should run 20 to 30 minutes.
 
