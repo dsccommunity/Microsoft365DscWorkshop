@@ -48,7 +48,7 @@ It then installs the following modules to your machine:
 
 ---
 
-## 1.4. Test the Build and Download Dependencies
+### 1.3.3. Test the Build and Download Dependencies
 
 After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the build script:
 
@@ -66,7 +66,7 @@ After the build finished, please verify the artifacts created by the build pipel
 
 ---
 
-## 1.5. Set your Azure Tenant Details
+## 1.4. Set your Azure Tenant Details
 
 This solution can configure as many Azure tenants as you want. You configure the tenants you want to control in the [.\source\Azure.yml](../source//Global/Azure.yml) file. The file contains a usual setup, a dev, test and prod tenant.
 
@@ -104,7 +104,7 @@ Environments:
 
 ---
 
-### 1.5.1. Initialize the session (Init task)
+### 1.4.1. Initialize the session (Init task)
 
 > :warning: Please start a new PowerShell session and do not use the old one. This is because there is a kind of Azure PowerShell module hell (Déjà vu of [Dll Hell](https://en.wikipedia.org/wiki/DLL_hell)) and usually at this point in the process a module is loaded that prevents a newer version from being loaded.
 >
@@ -118,9 +118,9 @@ After the preparation script finished, we have all modules and dependencies on t
 
 ---
 
-### 1.5.2. `10 Setup App Registrations.ps1`
+### 1.4.2. `10 Setup App Registrations.ps1`
 
-The script `10 Setup App Registrations.ps1` creates all the applications in each Azure tenant defined in the [Azure.yml](../source/Global/Azure.yml) file. Then it assigns these apps very high privileges as they are used to control and export the tenant. The app `M365DscLcmApplication` will be used by the Azure DevOps build agent(s) to put your tenant into the desired state. For each app, a service principal is created in Exchange Online.
+Please run the script [10 Setup App Registrations.ps1](../lab/10%20Setup%20App%20Registrations.ps1). It creates all the applications in each Azure tenant defined in the [Azure.yml](../source/Global/Azure.yml) file. Then it assigns these apps very high privileges as they are used to control and export the tenant. The app `M365DscLcmApplication` will be used by the Azure DevOps build agent(s) to put your tenant into the desired state. For each app, a service principal is created in Exchange Online.
 
 > :information_source: To clean up the tenant if you don't want to continue the project, use the script [98 Cleanup App Registrations.ps1](../lab//98%20Cleanup%20App%20Registrations.ps1).
 
@@ -128,9 +128,11 @@ The App ID and the plain-text secrets are shown on the console in case you want 
 
 > :warning: The password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
 
+After the script has created the applications and added the information to the [Azure.yml](../source/Global/Azure.yml) file, it will commit and push the changes to the Git repository.
+
 ---
 
-### 1.5.3. 1.5.3 `11 Test Connection.ps1`
+### 1.4.3. 1.5.3 `11 Test Connection.ps1`
 
 In the last task we have created some applications and stored the credentials for authentication to the [Azure.yml](../source/Global/Azure.yml) file. Now it is time to test if the authentication with the new applications work.
 
@@ -138,7 +140,7 @@ Please call the script [11 Test Connection.ps1](../lab/11%20Test%20Connection.ps
 
 --- 
 
-### 1.5.4. `20 Setup AzDo Project.ps1`
+### 1.4.4. `20 Setup AzDo Project.ps1`
 
 This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global/ProjectSettings.yml).
 
@@ -174,23 +176,7 @@ Please inspect the project. You should see the new environment(s) as well as the
 
 ---
 
-### Create and Sync the Azure LabSources Share
-
-> :information_source: If you have never used AutomatedLab in your tenant, the AutomatedLab LabSources share is missing in your Azure subscription. If you have used it successfully before, you can skip this task.
-
-AutomatedLab uses a predefined folder structure as a script and software repository.
-
-Please run [New-LabSourcesFolder](https://automatedlab.org/en/latest/AutomatedLabCore/en-us/New-LabSourcesFolder/) to download the LabSources content to your machine.
-
-```powershell
-New-LabSourcesFolder -DriveLetter <DriveLetter>
-```
-
-As machines in Azure cannot access this share, it needs to be synchronized into an Azure storage account. This can be done with the command [Sync-LabAzureLabSources](https://automatedlab.org/en/latest/AutomatedLabCore/en-us/Sync-LabAzureLabSources/).
-
----
-
-### 1.5.5. `30 Create Agent VMs.ps1`
+### 1.4.5. `30 Create Agent VMs.ps1`
 
 The script [30 Create Agent VMs.ps1](../lab//20%20Create%20Agent%20VMs.ps1) creates one VM in each tenant. It then assigns a Managed Identity to each VM and gives that managed identity the required permissions to control the Azure tenant with Microsoft365DSC.
 
@@ -210,7 +196,7 @@ Running the script [30 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps
 
 ---
 
-### 1.5.6. `31 Agent Setup.ps1`
+### 1.4.6. `31 Agent Setup.ps1`
 
 The script [31 Agent Setup.ps1](../lab//31%20Agent%20Setup.ps1) connects to each build worker VM created in the previous step. It installs
 
@@ -226,7 +212,7 @@ Please check the DSC Azure DevOps Agent Pool to see if the new worker appears th
 
 ---
 
-## 1.6. Running the Pipeline
+## 1.5. Running the Pipeline
 
 The script [20 Configure AzDo Project.ps1](../lab//30%20Setup%20AzDo%20Project.ps1) has created these pipelines:
 
