@@ -94,6 +94,8 @@ foreach ($envName in $environments)
 
     Add-LabAzureSubscription -SubscriptionId $environment.AzSubscriptionId -DefaultLocation $datum.Global.ProjectSettings.BuildAgents.AzureLocation
 
+    Sync-LabAzureLabSources
+
     Set-LabInstallationCredential -Username $datum.Global.ProjectSettings.BuildAgents.UserName -Password $datum.Global.ProjectSettings.BuildAgents.Password
 
     $PSDefaultParameterValues = @{
