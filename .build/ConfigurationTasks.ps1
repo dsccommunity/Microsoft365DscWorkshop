@@ -31,8 +31,10 @@ task TestDscConfiguration {
 
     if (-not $dscState.InDesiredState)
     {
-        Write-Host "The following $($dscState.ResourcesNotInDesiredState.Count) resource(s) are not in the desired state:" -ForegroundColor Magenta
-        $dscState.ResourcesNotInDesiredState | ConvertTo-Yaml | Write-Host
+        Write-Host "The following $($dscState.ResourcesNotInDesiredState.Count) resource(s) are not in the desired state:" -ForegroundColor Red
+        $dscState.ResourcesNotInDesiredState | ConvertTo-Yaml | Write-Host -ForegroundColor Yellow
+
+        Write-Error -Message "Test failed, $($dscState.ResourcesNotInDesiredState.Count) resource(s) are not in the desired state. Please see the output above for more details."
     }
     else
     {
