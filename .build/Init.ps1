@@ -11,8 +11,18 @@ task Init {
 
     if (Get-Module -Name AutomatedLab -ListAvailable)
     {
-        Write-Host 'Importing module 'AutomatedLab'.' -ForegroundColor Yellow
-        Import-Module -Name AutomatedLab -Force
+        Write-Host 'Importing module 'AutomatedLab'...' -NoNewline -ForegroundColor Yellow
+
+        try
+        {
+            Import-Module -Name AutomatedLab -Force -ErrorAction Stop
+        }
+        catch
+        {
+            Write-Host 'failed, retrying...' -NoNewline -ForegroundColor Yellow
+            Import-Module -Name AutomatedLab -Force -ErrorAction Stop
+            Write-Host 'succeeded.' -ForegroundColor Yellow
+        }
     }
     else
     {
@@ -22,9 +32,9 @@ task Init {
     Write-Host ''
 
     $azAccountsModule = Get-Module -Name Az.Accounts -ListAvailable |
-    Sort-Object -Property Version -Descending |
-        Select-Object -First 1 |
-            Import-Module -PassThru
+        Sort-Object -Property Version -Descending |
+            Select-Object -First 1 |
+                Import-Module -PassThru
     Write-Host "'Az.Accounts' module version $($azAccountsModule.Version) is imported to make sure the highest available version is used." -ForegroundColor Yellow
 
     $azResourceModule = Get-Module -Name Az.Resources -ListAvailable |
