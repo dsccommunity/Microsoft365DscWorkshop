@@ -47,20 +47,6 @@ if ((git status -s) -like '*source/Global/ProjectSettings.yml')
     git push | Out-Null
 }
 
-$buildAgendChanges = (git status -s) -like '*source/BuildAgents/*.yml'
-if ($null -ne $buildAgendChanges)
-{
-    foreach ($changedFile in $buildAgendChanges)
-    {
-        Write-Host "Adding change '$changedFile' to git."
-        git add $changedFile.Substring(3)
-    }
-
-    Write-Host 'Committing changes to build agents.'
-    git commit -m 'Updated build agents' | Out-Null
-    git push | Out-Null
-}
-
 Set-VSTeamAccount -Account "https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName)/" -PersonalAccessToken $datum.Global.ProjectSettings.PersonalAccessToken
 Write-Host "Connected to Azure DevOps organization '$($datum.Global.ProjectSettings.OrganizationName)' with PAT."
 

@@ -111,4 +111,19 @@ git add $PSScriptRoot/../source/Global/Azure.yml
 git commit -m 'Tenant Update' | Out-Null
 git push --set-upstream origin $currentBranchName | Out-Null
 
+Write-Host "Checking if there are any changes in the build agents and committing them to the git repository."
+$buildAgendChanges = (git status -s) -like '*source/BuildAgents/*.yml'
+if ($null -ne $buildAgendChanges)
+{
+    foreach ($changedFile in $buildAgendChanges)
+    {
+        Write-Host "  Adding change '$changedFile' to git."
+        git add $changedFile.Substring(3)
+    }
+
+    Write-Host 'Committing changes to build agents.'
+    git commit -m 'Updated build agents' | Out-Null
+    git push | Out-Null
+}
+
 Write-Host Done. -ForegroundColor Green
