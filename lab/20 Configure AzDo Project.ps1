@@ -7,6 +7,9 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 
+# ----------------------------------------------------------
+#            Setting project parameters
+# ----------------------------------------------------------
 if ($datum.Global.ProjectSettings.OrganizationName -eq '<OrganizationName>' -or $null -eq $datum.Global.ProjectSettings.OrganizationName)
 {
     $datum.Global.ProjectSettings.OrganizationName = Read-Host -Prompt 'Enter the name of your Azure DevOps organization'
@@ -47,6 +50,9 @@ if ((git status -s) -like '*source/Global/ProjectSettings.yml')
 Set-VSTeamAccount -Account "https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName)/" -PersonalAccessToken $datum.Global.ProjectSettings.PersonalAccessToken
 Write-Host "Connected to Azure DevOps organization '$($datum.Global.ProjectSettings.OrganizationName)' with PAT."
 
+# ----------------------------------------------------------
+#            Creating agent pool and project
+# ----------------------------------------------------------
 try
 {
     Get-VSTeamPool | Out-Null
@@ -118,6 +124,9 @@ foreach ($featureToDisable in $featuresToDisable)
     Invoke-VSTeamRequest -Method Patch -ContentType 'application/json' -Body $buildFeature -Area FeatureManagement -Resource FeatureStates -Id $id -Version '7.1-preview.1' | Out-Null
 }
 
+# ----------------------------------------------------------
+#            Creating environments in project
+# ----------------------------------------------------------
 Write-Host ''
 Write-Host "Creating environments in project '$($datum.Global.ProjectSettings.ProjectName)'."
 
@@ -140,6 +149,66 @@ foreach ($environment in $environments)
         Write-Host "Environment '$environment' already exists in project '$($datum.Global.ProjectSettings.ProjectName)'."
     }
 }
+
+# ----------------------------------------------------------
+#            Setting environments for pipelines
+# ----------------------------------------------------------
+Write-Host 'Changing build pipelines to use only the configured environments' -ForegroundColor Yellow
+
+$environments = 'dev' #, 'test', 'prod'
+$pipelinesToAdapt = 'build.yml', 'export.yml', 'pull.yml', 'push.yml', 'reapply.yml', 'test.yml'
+$pipelinesToAdapt = Get-ChildItem -Path ..\pipelines | Where-Object Name -In $pipelinesToAdapt
+
+Write-Host "Known environments: $($environments -join ', ')"
+Write-Host 'Pipelines to adapt:'
+$pipelinesToAdapt | ForEach-Object { Write-Host "  - $($_.Name)" }
+Write-Host ''
+
+foreach ($pipeline in $pipelinesToAdapt)
+{
+    Write-Host "Adapting pipeline $($pipeline.FullName)"
+    $pipelineYaml = Get-Content $pipeline.FullName -Raw | ConvertFrom-Yaml
+    $buildEnvironments = $pipelineYaml.parameters | Where-Object Name -EQ buildEnvironments
+
+    $environmentsToRemove = $buildEnvironments.default | Where-Object Name -NotIn $environments
+    if ($environmentsToRemove.Count -eq 0)
+    {
+        Write-Host "  No environments to remove for pipeline '$($pipeline.Name)'"
+        continue
+    }
+    else
+    {
+        Write-Host "  Removing $($environmentsToRemove.Count) environments from pipeline '$($pipeline.Name)'"
+        foreach ($environment in $environmentsToRemove)
+        {
+            Write-Host "    Removing environment $($environment.Name)"
+            [void]$buildEnvironments.default.Remove($environment)
+        }
+    }
+
+    $pipelineYaml | ConvertTo-Yaml | Out-File -FilePath $pipeline.FullName
+}
+
+$changedFiles = git diff --name-only | Where-Object { $_ -like 'pipelines/*.yml' }
+if ($changedFiles.Count -gt 0)
+{
+    Write-Host 'Committing changes to pipelines.'
+    foreach ($changedFile in $changedFiles)
+    {
+        $path = Join-Path -Path .. -ChildPath $changedFile
+        git add $path
+    }
+    git commit -m 'Updated pipelines to use only the configured environments' | Out-Null
+    git push | Out-Null
+}
+else
+{
+    Write-Host 'No changes to commit, no pipeline was changed.'
+}
+
+# ----------------------------------------------------------
+#                  Creating pipelines
+# ----------------------------------------------------------
 
 Write-Host 'Creating pipelines in project.'
 $pipelineNames = 'apply', 'build', 'push', 'test'
