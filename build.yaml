@@ -12,26 +12,26 @@ BuildWorkflow:
   test5: |
     {
         if ($PSVersionTable.PSEdition -ne 'Desktop') {
-            Write-Error "The build script required PowerShell 7+ to work"
+            Write-Error "The selected task requires Windows PowerShell 5.1 to work"
         }
     }
 
   test7: |
     {
         if ($PSVersionTable.PSEdition -ne 'Core') {
-            Write-Error "The build script required PowerShell 7+ to work"
+            Write-Error "The selected task requires PowerShell 7+ to work"
         }
     }
 
-  lhellinit:
+  shellinit:
     - test7
-    - ShellInit
+    - Init
     - LoadDatumConfigData
     - AzureInit
 
   export:
     - Clean
-    - labinit
+    - Init
     - ExportTenantData
     - InvokingDscExportConfiguration
     - ConvertMofToYaml
