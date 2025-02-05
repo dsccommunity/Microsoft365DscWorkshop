@@ -57,14 +57,14 @@
     'Microsoft.Graph.Identity.DirectoryManagement'         = '2.25.0'
 
     # Microsoft365DSC
-    Microsoft365DSC                                        = '1.25.115.1'
+    Microsoft365DSC                                        = '1.25.129.3'
 
     <#
         To update Microsoft365DSC and its dependencies, do the following steps:
         1. Update the Microsoft365DSC version in the RequiredModules.psd1 file.
         2. Restart the PowerShell session to close all possible open handles to the modules.
         3. Remove the output folder using the command 'del -Path .\output\ -Recurse -Force'.
-        4. Discard all the delete changes reported by git for the output folder.
+        4. Discard all the delete changes reported by git for the output folder if there are any.
         5. Run the build script to download all the required modules: .\build.ps1 -UseModuleFast -ResolveDependency -Tasks noop
         6. Run 'Update-M365DSCDependencies -ValidateOnly' to get the differences between the old and new dependencies and update the RequiredModules.psd1 file accordingly.
         7. Commit the changes to the RequiredModules.psd1 file.
@@ -103,9 +103,9 @@
     'Microsoft.Graph.Sites'                                = '2.25.0'
     'Microsoft.Graph.Users'                                = '2.25.0'
     'Microsoft.Graph.Users.Actions'                        = '2.25.0'
-    'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.203'
-    'MicrosoftTeams'                                       = '6.7.0'
-    'MSCloudLoginAssistant'                                = '1.1.34'
+    'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.205'
+    'MicrosoftTeams'                                       = '6.8.0'
+    'MSCloudLoginAssistant'                                = '1.1.35'
     'ReverseDSC'                                           = '2.0.0.22'
     'PnP.PowerShell'                                       = '1.12.0'
 
