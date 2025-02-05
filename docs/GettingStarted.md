@@ -1,8 +1,27 @@
-# 1. Getting started
+# The quick guide to the Microsoft365DscWorkshop
+
+- [The quick guide to the Microsoft365DscWorkshop](#the-quick-guide-to-the-microsoft365dscworkshop)
+  - [1. Getting started](#1-getting-started)
+    - [1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on](#101-warning-you-must-be-a-local-administrator-one-the-machine-you-run-the-setup-scripts-on)
+  - [1.1. Import the Project into Azure DevOps](#11-import-the-project-into-azure-devops)
+  - [1.2. Cloning the Project](#12-cloning-the-project)
+  - [1.3. Run the Lab Setup Scripts](#13-run-the-lab-setup-scripts)
+    - [1.3.1. `00 Prep.ps1`](#131-00-prepps1)
+    - [1.3.2. Test the Build and Download Dependencies](#132-test-the-build-and-download-dependencies)
+  - [1.4. Set your Azure Tenant Details](#14-set-your-azure-tenant-details)
+    - [1.4.1. Initialize the session (Init task)](#141-initialize-the-session-init-task)
+    - [1.4.2. `10 Setup App Registrations.ps1`](#142-10-setup-app-registrationsps1)
+    - [1.4.3. 1.5.3 `11 Test Connection.ps1`](#143-153-11-test-connectionps1)
+    - [1.4.4. `20 Setup AzDo Project.ps1`](#144-20-setup-azdo-projectps1)
+    - [1.4.5. `30 Create Agent VMs.ps1`](#145-30-create-agent-vmsps1)
+    - [1.4.6. `31 Agent Setup.ps1`](#146-31-agent-setupps1)
+  - [1.5. Running the Pipeline](#15-running-the-pipeline)
+
+## 1. Getting started
 
 > Note: If you are only intersted in exporting your Microsoft Azure tenant configuration with [Microsoft365DSC](https://microsoft365dsc.com/) and you do not want to configure your tenants, please refer to [Export your Azure Tenant Configuration](../export/readme.md).
 
-### 1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on.
+### 1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on
 
 ## 1.1. Import the Project into Azure DevOps
 
@@ -79,7 +98,7 @@ This solution can configure as many Azure tenants as you want. You configure the
   - [Prod](../source//BuildAgents/Prod/)
 
 > :warning: Please don't forget to remove the environments you do not need.
-> 
+>
 > :information_source: For getting used with the project it is recommended to focus on one tenant only. This reduces the runtime of your tests and the complexity.
 
 The file can look like this for example if you want to configure only one tenant:
@@ -138,7 +157,7 @@ In the last task we have created some applications and stored the credentials fo
 
 Please call the script [11 Test Connection.ps1](../lab/11%20Test%20Connection.ps1). The last line of the output should be `Connection test completed`.
 
---- 
+---
 
 ### 1.4.4. `20 Setup AzDo Project.ps1`
 
@@ -221,6 +240,7 @@ The script [20 Configure AzDo Project.ps1](../lab//30%20Setup%20AzDo%20Project.p
 Only this pipeline has triggers for continuous integration and is executed to run every time something is committed to the main branch. The pipeline creates the artifacts, applies them to the configured tenants and tests whether the configuration has been applied successfully.
 
 If you want to trigger these steps in individually, you can start one of these pipelines manually:
+
 - M365DSC test
 - M365DSC apply
 - M365DSC build
