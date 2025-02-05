@@ -45,7 +45,11 @@ task ExportTenantData {
             Write-Error "Export application 'M365DscExportApplication' does not have a certificate thumbprint or application secret defined for environment $($env.Name)" -ErrorAction Stop
         }
 
-        Export-M365DSCConfiguration @exportParams
+        Write-Host '------------------ Export Parameters ------------------' -ForegroundColor Yellow
+        $exportParams | Out-String | Write-Host -ForegroundColor DarkGray
+        Write-Host '-------------------------------------------------------' -ForegroundColor Yellow
+
+        Export-M365DSCConfiguration @exportParam
 
     }
 
