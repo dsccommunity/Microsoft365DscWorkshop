@@ -4,7 +4,6 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
-Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 
 # ----------------------------------------------------------
@@ -151,11 +150,11 @@ foreach ($environment in $environments)
 }
 
 # ----------------------------------------------------------
-#            Setting environments for pipelines
+#        Setting environments in pipeline parameters
 # ----------------------------------------------------------
 Write-Host 'Changing build pipelines to use only the configured environments' -ForegroundColor Yellow
 
-$environments = 'dev' #, 'test', 'prod'
+$environments = $datum.Global.Azure.Environments.Keys
 $pipelinesToAdapt = 'build.yml', 'export.yml', 'pull.yml', 'push.yml', 'reapply.yml', 'test.yml'
 $pipelinesToAdapt = Get-ChildItem -Path ..\pipelines | Where-Object Name -In $pipelinesToAdapt
 
@@ -167,7 +166,7 @@ Write-Host ''
 foreach ($pipeline in $pipelinesToAdapt)
 {
     Write-Host "Adapting pipeline $($pipeline.FullName)"
-    $pipelineYaml = Get-Content $pipeline.FullName -Raw | ConvertFrom-Yaml
+    $pipelineYaml = Get-Content $pipeline.FullName -Raw | ConvertFrom-Yaml -Ordered
     $buildEnvironments = $pipelineYaml.parameters | Where-Object Name -EQ buildEnvironments
 
     $environmentsToRemove = $buildEnvironments.default | Where-Object Name -NotIn $environments
