@@ -43,6 +43,7 @@ stages:
                   pwsh: true
                   filePath: ./build.ps1
                   arguments: -UseModuleFast -ResolveDependency -Tasks export
+                continueOnError: true
 
               - task: PublishPipelineArtifact@1
                 displayName: Publish Exported Data
