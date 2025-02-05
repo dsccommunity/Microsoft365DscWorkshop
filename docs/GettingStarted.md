@@ -48,7 +48,7 @@ It then installs the following modules to your machine:
 
 ---
 
-### 1.3.3. Test the Build and Download Dependencies
+### 1.3.2. Test the Build and Download Dependencies
 
 After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the build script:
 
