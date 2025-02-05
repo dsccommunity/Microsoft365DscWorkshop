@@ -50,20 +50,20 @@ git clone <Link to you Azure DevOps project> <The local path of your choice>
 
 ## 1.3. Run the Lab Setup Scripts
 
-All the scripts to setup the environment are in the folder [lab](../lab/).
+After having cloned the project to your development machine, please open the solution in Visual Studio Code.
 
 ### 1.3.1. `00 Prep.ps1`
 
-> :information_source: This script may kill the PowerShell session when setting local policies required for AutomatedLab. In this case, just restart it.
+In the PowerShell prompt, please call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). All script except the build script are in the folder [lab](../lab/), so you have to jump between the lab folder and the project root folder from time to time.
 
-Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It installs required modules on your machine.
+> :information_source: This script may kill the PowerShell session when setting local policies required for AutomatedLab. In this case, just try again.
 
-This script set the project name in the [ProjectSettings.yml](../source/Global//ProjectSettings.yml) file to the name of your Azure DevOps project.
+Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It does the following steps:
 
-It then installs the following modules to your machine:
-
-- [VSTeam](https://github.com/MethodsAndPractices/vsteam)
-- [AutomatedLab](https://automatedlab.org/en/latest/) and dependencies
+- It then installs the following modules to your machine:
+  - [VSTeam](https://github.com/MethodsAndPractices/vsteam)
+  - [AutomatedLab](https://automatedlab.org/en/latest/) and dependencies
+- This script set the project name in the [ProjectSettings.yml](../source/Global//ProjectSettings.yml) file to the name of your Azure DevOps project. You should see the change to the file in the source control panel. It will be committed later to the Git repository.
 
 ---
 
@@ -79,21 +79,21 @@ After having cloned the project to your development machine, please open the sol
 
 This build process takes around 15 to 20 minutes to complete the first time. Downloading all the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1) takes time and discovering the many DSC resources in [Microsoft365DSC](https://microsoft365dsc.com/).
 
-After the build finished, please verify the artifacts created by the build pipeline, for example the MOF files in the [MOF](../output/MOF/).
+After the build finished, please verify the artifacts created by the build pipeline, for example the MOF files in the [MOF](../output/MOF/) folder.
 
-> :information_source: The [MOF](../output/MOF/) folder is not part of the project. It is created by the build process. If your don't find it after having run the build, something went wrong and you probably see errors in the console output of the build process.
+> :information_source: The [MOF](../output/MOF/) folder is not part of the project. It is created by the build process. If you don't find it after having run the build, something went wrong and you probably see errors in the console output of the build process.
 
 ---
 
 ## 1.4. Set your Azure Tenant Details
 
-This solution can configure as many Azure tenants as you want. You configure the tenants you want to control in the [.\source\Azure.yml](../source//Global/Azure.yml) file. The file contains a usual setup, a dev, test and prod tenant.
+This solution can configure as many Azure tenants as you want. You configure the tenants you want to control in the [.\source\Azure.yml](../source//Global/Azure.yml) file. The file contains a usual environment setup, a dev, test and prod tenant.
 
 - For each environment / tenant, please update the settings `AzTenantId`, `AzTenantName` and `AzSubscriptionId`. The `AzApplicationId`, `AzApplicationSecret` and `CertificateThumbprint` will be handled by the setup scripts you are going to run next.
 
 - Remove the environments you don't want from the [Azure.yml](../source/Global//Azure.yml) file. For this introduction, only the Dev environment is needed.
 
-- Please also remove the build agent yaml-definition including the folders:
+- Please also remove the build agent yaml-definition including the folders that are not required for this introduction:
   - [Test](../source//BuildAgents/Test/)
   - [Prod](../source//BuildAgents/Prod/)
 
@@ -129,7 +129,7 @@ Environments:
 >
 > And don't forget: Sometimes just retrying a failed task is the best and easiest solution.
 
-After the preparation script finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the shell:
+After the preparation script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1) and the [build.ps1](../build.ps1) finished, we have all modules and dependencies on the machine to get going. Please run the build script again, but this time just only for initializing the new shell:
 
 ```powershell
 .\build.ps1 -Tasks init
@@ -139,13 +139,17 @@ After the preparation script finished, we have all modules and dependencies on t
 
 ### 1.4.2. `10 Setup App Registrations.ps1`
 
-Please run the script [10 Setup App Registrations.ps1](../lab/10%20Setup%20App%20Registrations.ps1). It creates all the applications in each Azure tenant defined in the [Azure.yml](../source/Global/Azure.yml) file. Then it assigns these apps very high privileges as they are used to control and export the tenant. The app `M365DscLcmApplication` will be used by the Azure DevOps build agent(s) to put your tenant into the desired state. For each app, a service principal is created in Exchange Online.
+Please run the script [10 Setup App Registrations.ps1](../lab/10%20Setup%20App%20Registrations.ps1). It creates all the required applications in each Azure tenant defined in the [Azure.yml](../source/Global/Azure.yml) file. Then it assigns these apps very high privileges as they are used to control and export the tenant later.
+
+- The app `M365DscSetupApplication` is used to do the initial setup of the environment. In theory it is also possible to do this with a Entra ID user but usually authentication requirements interfere or stop the automation process.
+- The app `M365DscLcmApplication` will be used by the Azure DevOps build agent(s) to put your tenant into the desired state. For each app, a service principal is created in Exchange Online as well.
+- The `M365DscExportApplication` application will be only used by the export pipeline. Exporting will be explained in #TODO.
 
 > :information_source: To clean up the tenant if you don't want to continue the project, use the script [98 Cleanup App Registrations.ps1](../lab//98%20Cleanup%20App%20Registrations.ps1).
 
-The App ID and the plain-text secrets are shown on the console in case you want to copy them. They are also written encrypted to the [Azure.yml](../source/Global/Azure.yml) file. The file is then committed and pushed to the code repository.
+The App ID and the plain-text secrets are shown on the console in case you want to copy them. They are also written to the [Azure.yml](../source/Global/Azure.yml) file but  encrypted. The file is then committed and pushed to the code repository.
 
-> :warning: The password for encrypting the app secret is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
+> :warning: The password for encrypting the app secrets is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.
 
 After the script has created the applications and added the information to the [Azure.yml](../source/Global/Azure.yml) file, it will commit and push the changes to the Git repository.
 
@@ -161,7 +165,7 @@ Please call the script [11 Test Connection.ps1](../lab/11%20Test%20Connection.ps
 
 ### 1.4.4. `20 Setup AzDo Project.ps1`
 
-This script prepares the Azure DevOps project. The parameters are in the file [ProjectSettings.yml](../source//Global/ProjectSettings.yml).
+This script prepares the Azure DevOps project and stores the information in the [ProjectSettings.yml](../source//Global/ProjectSettings.yml) file. The script will sak for data if there are placeholders in the config file.
 
 ```yml
 OrganizationName: <OrganizationName>
@@ -203,15 +207,15 @@ Later we connect that VM to Azure DevOps as a build agent. It will be used later
 
 For creating the VMs, we use [AutomatedLab](https://automatedlab.org/en/latest/). All the complexity of that task is handled by that AutomatedLab. The script should run 20 to 30 minutes.
 
-> :warning: Before running the script [30 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1), please set a password for the build workers in the file [AzureDevOps.yml](../source/Global/AzureDevOps.yml) by replacing the placeholder `<Password>` with your desired password. If you forget this or your chosen password does not have the necessary complexity, you will get an error later.
-
 ```yml
 BuildAgents:
   UserName: worker
   Password: Somepass1
 ```
 
-Running the script [30 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1) takes about half an hour, depending on how many tenants you have configured. Time to grab a coffee.
+Please run the script [30 Create Agent VMs.ps1](../lab/20%20Create%20Agent%20VMs.ps1). You will be prompted to chose a password for the build worker VMs. Time to grab a coffee...
+
+> :warning: Please make sure the password meets the Windows standard complexity.
 
 ---
 
