@@ -246,13 +246,10 @@ The script [20 Configure AzDo Project.ps1](../lab//30%20Setup%20AzDo%20Project.p
 
 Only the pipeline `M365DSC push` has triggers for continuous integration and is executed every time something is committed to the main branch. The pipeline creates the artifacts required for DSC, applies them to the configured tenants and tests whether the configuration has been applied successfully.
 
-Before testing the continuous integration, start the pipeline `M365DSC push` manually. To do that
+The pipeline `M365DSC push` should have been triggered by now but cannot continue as some permissions are missing.
 
 - Go to the pipelines panel in your Azure DevOps project.
-- Click on the  `M365DSC push` pipeline and then
-- Click on the button `Run Pipeline` and then in the 'Run pipeline' dialog click on the button `Run`.
-
-You should now see the details of the pipeline run you have triggered. After some seconds you should see the message 'This pipeline needs permission to access a resource before this run can continue to Build of environment Dev'. If you don't see this message, please refresh the browser.
+- You should now see the details of the pipeline run that was automatically triggered. You should see the message 'This pipeline needs permission to access a resource before this run can continue to Build of environment Dev'.
 
 Click the `View` button next to the message `This pipeline needs permission to access a resource before this run can continue to Build of environment Dev` and then the button `Permit` in the `Waiting for review` dialog.
 
@@ -264,4 +261,6 @@ After the first stage (`Build of environment Dev`) is finished, please go to the
 
 Please click on the `View` button next to the message `This pipeline needs permission to access a resource before this run can continue to Start DSC Configuration of environment Dev` and then on `Permit` like you did in the stage before.
 
-The stage `Deployment in Dev` is the one that compares the current state of your Azure tenant with the desired state defined in the yaml files.For each setting that is not in the desired state, Microsoft365DSC will try to move it into the desired state.
+The stage `Deployment in Dev` does the actual job: It compares the current state of your Azure tenant with the desired state defined in the yaml files.For each setting that is not in the desired state, Microsoft365DSC will try to move it into the desired state.
+
+The last statge is 
