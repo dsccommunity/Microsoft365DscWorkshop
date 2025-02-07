@@ -50,7 +50,7 @@ foreach ($lab in $labs)
     }
     else
     {
-        Write-Host "Identity 'Lcm$($datum.Global.ProjectSettings.ProjectName)$envName' does not exists."
+        Write-Host "Identity 'M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity' does not exists."
     }
 
     $environment = $datum.Global.Azure.Environments.$envName

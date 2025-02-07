@@ -169,7 +169,7 @@ foreach ($lab in $labs)
     }
 
     $azIdentity = New-M365DscIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity" -PassThru
-    Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.ProjectName)$envName' in environment '$envName'"
+    Write-Host "Setting permissions for managed identity 'M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity' in environment '$envName'"
     Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
 
     $vm = Get-LabVM
