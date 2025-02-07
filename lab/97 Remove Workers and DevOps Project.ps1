@@ -18,10 +18,39 @@ foreach ($lab in $labs)
 {
     $lab -match "(?:$($datum.Global.ProjectSettings.ProjectName))(?<Environment>\w+)" | Out-Null
     $envName = $Matches.Environment
+    $environment = $datum.Global.Azure.Environments.$envName
+
     if ($EnvironmentName -and $envName -notin $EnvironmentName)
     {
         Write-Host "Skipping lab '$lab' for environment '$envName'." -ForegroundColor Yellow
         continue
+    }
+
+    $setupIdentity = $environment.Identities | Where-Object Name -EQ M365DscSetupApplication
+    Write-Host "Testing connection to environment '$envName'" -ForegroundColor Magenta
+
+    $param = @{
+        TenantId               = $environment.AzTenantId
+        TenantName             = $environment.AzTenantName
+        SubscriptionId         = $environment.AzSubscriptionId
+        ServicePrincipalId     = $setupIdentity.ApplicationId
+        ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
+    }
+
+    Connect-M365Dsc @param -ErrorAction Stop
+
+    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction Stop
+
+    $identity = Get-M365DscIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity"
+    if ($null -ne $identity)
+    {
+        Remove-M365DscIdentityPermission -Identity $identity -SkipGraphApiPermissions
+        Remove-M365DscIdentity -Name $identity.DisplayName
+        Write-Host "Successfully removed identity '$($identity.DisplayName)' for environment '$envName'."
+    }
+    else
+    {
+        Write-Host "Identity 'Lcm$($datum.Global.ProjectSettings.ProjectName)$envName' does not exists."
     }
 
     $environment = $datum.Global.Azure.Environments.$envName

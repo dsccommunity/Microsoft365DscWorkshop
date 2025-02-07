@@ -151,13 +151,13 @@ foreach ($lab in $labs)
     $resourceGroupName = $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName
     Write-Host "Working in lab '$($lab.Name)' with environment '$envName'"
 
-    if (-not ($id = Get-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$envName" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
+    if (-not ($id = Get-AzUserAssignedIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
     {
         Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.ProjectName)$($envName)'"
         $id = New-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
     }
 
-    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$envName"
+    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity"
     if ($vm.Identity.UserAssignedIdentities.Keys -eq $id.Id)
     {
         Write-Host "Managed Identity already assigned to VM 'Lcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)' in environment '$envName'"
@@ -168,7 +168,7 @@ foreach ($lab in $labs)
         Update-AzVM -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -VM $vm -IdentityType UserAssigned -IdentityId $id.Id | Out-Null
     }
 
-    $azIdentity = New-M365DscIdentity -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$envName" -PassThru
+    $azIdentity = New-M365DscIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity" -PassThru
     Write-Host "Setting permissions for managed identity 'Lcm$($datum.Global.ProjectSettings.ProjectName)$envName' in environment '$envName'"
     Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
 
