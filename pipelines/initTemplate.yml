@@ -16,8 +16,8 @@ stages:
       dependsOn: []
 
       jobs:
-        - job: Build${{ buildEnvironment.Name }}
-          displayName: Build of environment ${{ buildEnvironment.Name }}
+        - job: Initialize${{ buildEnvironment.Name }}
+          displayName: Initialize of environment ${{ buildEnvironment.Name }}
 
           steps:
 
