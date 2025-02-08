@@ -154,10 +154,10 @@ foreach ($lab in $labs)
     if (-not ($id = Get-AzUserAssignedIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity" -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue))
     {
         Write-Host "Managed Identity not found, creating it named 'Lcm$($datum.Global.ProjectSettings.ProjectName)$($envName)'"
-        $id = New-AzUserAssignedIdentity -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
+        $id = New-AzUserAssignedIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)Identity" -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -Location $lab.AzureSettings.DefaultLocation.Location
     }
 
-    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity"
+    $vm = Get-AzVM -ResourceGroupName $resourceGroupName -Name "Lcm$($datum.Global.ProjectSettings.ProjectName)$($envName)"
     if ($vm.Identity.UserAssignedIdentities.Keys -eq $id.Id)
     {
         Write-Host "Managed Identity already assigned to VM 'Lcm$($datum.Global.ProjectSettings.ProjectName)$($lab.Notes.Environment)' in environment '$envName'"
