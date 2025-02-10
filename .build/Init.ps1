@@ -1,17 +1,17 @@
 task Init {
 
-    Write-Host 'Importing module 'AzHelpers' from path '$ProjectPath\lab\AzHelpers.psm1'.' -ForegroundColor Yellow
+    Write-Host "Importing module 'AzHelpers' from path '$ProjectPath\lab\AzHelpers.psm1'." -ForegroundColor Yellow
     Import-Module -Name $ProjectPath\lab\AzHelpers.psm1 -Force
 
-    Write-Host 'Importing module 'CertHelpers' from path '$ProjectPath\lab\CertHelpers.psm1'.' -ForegroundColor Yellow
+    Write-Host "Importing module 'CertHelpers' from path '$ProjectPath\lab\CertHelpers.psm1'." -ForegroundColor Yellow
     Import-Module -Name $ProjectPath\lab\CertHelpers.psm1 -Force
 
-    Write-Host 'Importing module 'MofConvert' from path '$ProjectPath\export\MofConvert.psm1'.' -ForegroundColor Yellow
+    Write-Host "Importing module 'MofConvert' from path '$ProjectPath\export\MofConvert.psm1'." -ForegroundColor Yellow
     Import-Module -Name $ProjectPath\export\MofConvert.psm1 -Force
 
     if (Get-Module -Name AutomatedLab -ListAvailable)
     {
-        Write-Host 'Importing module 'AutomatedLab'...' -NoNewline -ForegroundColor Yellow
+        Write-Host "Importing module 'AutomatedLab'..." -NoNewline -ForegroundColor Yellow
 
         try
         {
@@ -26,7 +26,7 @@ task Init {
     }
     else
     {
-        Write-Host 'Module 'AutomatedLab' is not installed, module will not be imported.' -ForegroundColor Yellow
+        Write-Host "Module 'AutomatedLab' is not installed, module will not be imported." -ForegroundColor Yellow
     }
 
     Write-Host ''
@@ -42,5 +42,8 @@ task Init {
             Select-Object -First 1 |
                 Import-Module -PassThru
     Write-Host "'Az.Resources' module version $($azResourceModule.Version) is imported to make sure the highest available version is used." -ForegroundColor Yellow
+
+    Write-Host "Importing module 'Microsoft365DSC' from path '$RequiredModulesDirectory'." -ForegroundColor Yellow
+    Import-Module -Name Microsoft365DSC -Force
 
 }
