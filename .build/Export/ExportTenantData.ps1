@@ -32,6 +32,7 @@ task ExportTenantData {
             TenantId      = $env.Value.AzTenantName
             Path          = "$OutputDirectory\Export\$($env.Value.AzTenantName)"
         }
+
         if ($null -ne $exportApp.CertificateThumbprint)
         {
             $exportParams.CertificateThumbprint = $exportApp.CertificateThumbprint
@@ -49,7 +50,7 @@ task ExportTenantData {
         $exportParams | Out-String | Write-Host -ForegroundColor DarkGray
         Write-Host '-------------------------------------------------------' -ForegroundColor Yellow
 
-        Export-M365DSCConfiguration @exportParam
+        Export-M365DSCConfiguration @exportParams
 
     }
 
