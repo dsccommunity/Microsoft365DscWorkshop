@@ -114,6 +114,7 @@ foreach ($lab in $labs)
     $certificate = Get-Item -Path Cert:\LocalMachine\My\$certificateThumbprint
     $certificateBytes = $certificate.Export('Pfx', 'Somepass1')
 
+    Write-Host "Installing certificate on $($vms.Count) machines ($($vms.Name -join ', '))."
     Remove-LabPSSession -All
     $s = New-LabPSSession -ComputerName $vms
     $m = Get-Module -Name AutomatedLab.Common -ListAvailable
@@ -126,6 +127,18 @@ foreach ($lab in $labs)
 
     Write-Host "Restarting $($vms.Count) machines."
     Restart-LabVM -ComputerName $vms -Wait
+
+    #Retrying as sometimes after the restart the private key of the certificate is not accessible
+    Write-Host "Repeating installing certificate on $($vms.Count) machines ($($vms.Name -join ', '))."
+    Remove-LabPSSession -All
+    $s = New-LabPSSession -ComputerName $vms
+    $m = Get-Module -Name AutomatedLab.Common -ListAvailable
+    Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
+    Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
+
+    Invoke-LabCommand -ActivityName 'Install Certificate for M365DscLcmApplication' -ScriptBlock {
+        Add-Certificate2 -RawContentBytes $certificateBytes -Location CERT_SYSTEM_STORE_LOCAL_MACHINE -CertificateType PFX -Store My -Password Somepass1
+    } -ComputerName $vms -ArgumentList (,$certificateBytes) -PassThru
 
     Write-Host "Finished installing AzDo Build Agent on $($vms.Count) machines in environment '$envName'"
 
