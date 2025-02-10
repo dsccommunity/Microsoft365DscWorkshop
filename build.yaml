@@ -32,6 +32,7 @@ BuildWorkflow:
   export:
     - Clean
     - Init
+    - LoadDatumConfigData
     - ExportTenantData
     - InvokingDscExportConfiguration
     - ConvertMofToYaml
@@ -139,8 +140,6 @@ Sampler.DscPipeline:
   - PSDesiredStateConfiguration
   - DscConfig.M365
   - DscConfig.Demo
-  #- Name: CommonTasks
-  #  Version: 0.3.259
 
 SetPSModulePath:
   RemovePersonal: true
