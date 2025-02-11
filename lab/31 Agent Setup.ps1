@@ -127,6 +127,7 @@ foreach ($lab in $labs)
         $s = New-LabPSSession -ComputerName $vms
         $m = Get-Module -Name AutomatedLab.Common -ListAvailable
         Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
+        Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name pfxPassword)
         Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
 
         Invoke-LabCommand -ActivityName "Install certificate '$certificateToInstall'" -ScriptBlock {
