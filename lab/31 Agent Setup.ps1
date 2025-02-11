@@ -123,31 +123,19 @@ foreach ($lab in $labs)
         $certificateBytes = $certificate.Export('Pfx', $pfxPassword)
 
         Write-Host "Installing certificate '$certificateToInstall' on $($vms.Count) machines ($($vms.Name -join ', '))."
-        Remove-LabPSSession -All
         $s = New-LabPSSession -ComputerName $vms
         $m = Get-Module -Name AutomatedLab.Common -ListAvailable
         Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
         Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name pfxPassword)
-        Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
 
         Invoke-LabCommand -ActivityName "Install certificate '$certificateToInstall'" -ScriptBlock {
-            Add-Certificate2 -RawContentBytes $certificateBytes -Location CERT_SYSTEM_STORE_LOCAL_MACHINE -CertificateType PFX -Store My -Password $pfxPassword
+            [System.IO.File]::WriteAllBytes('C:\Cert.pfx', $certificateBytes)
+            Import-PfxCertificate -FilePath C:\Cert.pfx -Password ($pfxPassword | ConvertTo-SecureString -AsPlainText -Force) -CertStoreLocation Cert:\LocalMachine\My
+            Remove-Item -Path C:\Cert.pfx -Force
         } -ComputerName $vms -ArgumentList (, $certificateBytes) -PassThru
 
         Write-Host "Restarting $($vms.Count) machines, ($($vms.Name -join ', '))."
         Restart-LabVM -ComputerName $vms -Wait
-
-        #Retrying as sometimes after the restart the private key of the certificate is not accessible
-        Write-Host "Repeating installing certificate '$certificateToInstall' on $($vms.Count) machines ($($vms.Name -join ', '))."
-        Remove-LabPSSession -All
-        $s = New-LabPSSession -ComputerName $vms
-        $m = Get-Module -Name AutomatedLab.Common -ListAvailable
-        Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
-        Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
-
-        Invoke-LabCommand -ActivityName "Install certificate '$certificateToInstall'" -ScriptBlock {
-            Add-Certificate2 -RawContentBytes $certificateBytes -Location CERT_SYSTEM_STORE_LOCAL_MACHINE -CertificateType PFX -Store My -Password $pfxPassword
-        } -ComputerName $vms -ArgumentList (, $certificateBytes) -PassThru
     }
 
     # ------------------------------------------------------------------------------------------------------------
