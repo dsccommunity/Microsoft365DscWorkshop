@@ -109,36 +109,47 @@ foreach ($lab in $labs)
 
     } -ComputerName $vms -ArgumentList $lab.Notes.Environment
 
-    #Upload certificate for authentication with Azure
-    $certificateThumbprint = ($environment.Identities | Where-Object Name -EQ M365DscLcmApplication).CertificateThumbprint
-    $certificate = Get-Item -Path Cert:\LocalMachine\My\$certificateThumbprint
-    $certificateBytes = $certificate.Export('Pfx', 'Somepass1')
+    # ---------------------------------------------------------------------------
+    #   Upload M365DscLcmApplication certificate for authentication with Azure
+    # ---------------------------------------------------------------------------
 
-    Write-Host "Installing certificate on $($vms.Count) machines ($($vms.Name -join ', '))."
-    Remove-LabPSSession -All
-    $s = New-LabPSSession -ComputerName $vms
-    $m = Get-Module -Name AutomatedLab.Common -ListAvailable
-    Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
-    Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
+    $certificatesToInstall = 'M365DscLcmApplication', 'M365DscExportApplication'
+    $pfxPassword = 'Somepass1'
 
-    Invoke-LabCommand -ActivityName 'Install Certificate for M365DscLcmApplication' -ScriptBlock {
-        Add-Certificate2 -RawContentBytes $certificateBytes -Location CERT_SYSTEM_STORE_LOCAL_MACHINE -CertificateType PFX -Store My -Password Somepass1
-    } -ComputerName $vms -ArgumentList (,$certificateBytes) -PassThru
+    foreach ($certificateToInstall in $certificatesToInstall)
+    {
+        $certificateThumbprint = ($environment.Identities | Where-Object Name -EQ $certificateToInstall).CertificateThumbprint
+        $certificate = Get-Item -Path Cert:\LocalMachine\My\$certificateThumbprint
+        $certificateBytes = $certificate.Export('Pfx', $pfxPassword)
 
-    Write-Host "Restarting $($vms.Count) machines."
-    Restart-LabVM -ComputerName $vms -Wait
+        Write-Host "Installing certificate '$certificateToInstall' on $($vms.Count) machines ($($vms.Name -join ', '))."
+        Remove-LabPSSession -All
+        $s = New-LabPSSession -ComputerName $vms
+        $m = Get-Module -Name AutomatedLab.Common -ListAvailable
+        Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
+        Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
 
-    #Retrying as sometimes after the restart the private key of the certificate is not accessible
-    Write-Host "Repeating installing certificate on $($vms.Count) machines ($($vms.Name -join ', '))."
-    Remove-LabPSSession -All
-    $s = New-LabPSSession -ComputerName $vms
-    $m = Get-Module -Name AutomatedLab.Common -ListAvailable
-    Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
-    Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
+        Invoke-LabCommand -ActivityName "Install certificate '$certificateToInstall'" -ScriptBlock {
+            Add-Certificate2 -RawContentBytes $certificateBytes -Location CERT_SYSTEM_STORE_LOCAL_MACHINE -CertificateType PFX -Store My -Password $pfxPassword
+        } -ComputerName $vms -ArgumentList (, $certificateBytes) -PassThru
 
-    Invoke-LabCommand -ActivityName 'Install Certificate for M365DscLcmApplication' -ScriptBlock {
-        Add-Certificate2 -RawContentBytes $certificateBytes -Location CERT_SYSTEM_STORE_LOCAL_MACHINE -CertificateType PFX -Store My -Password Somepass1
-    } -ComputerName $vms -ArgumentList (,$certificateBytes) -PassThru
+        Write-Host "Restarting $($vms.Count) machines, ($($vms.Name -join ', '))."
+        Restart-LabVM -ComputerName $vms -Wait
+
+        #Retrying as sometimes after the restart the private key of the certificate is not accessible
+        Write-Host "Repeating installing certificate '$certificateToInstall' on $($vms.Count) machines ($($vms.Name -join ', '))."
+        Remove-LabPSSession -All
+        $s = New-LabPSSession -ComputerName $vms
+        $m = Get-Module -Name AutomatedLab.Common -ListAvailable
+        Add-VariableToPSSession -Session $s -PSVariable (Get-Variable -Name certificateBytes)
+        Send-ModuleToPSSession -Session $s -Module $m -Scope AllUsers -IncludeDependencies
+
+        Invoke-LabCommand -ActivityName "Install certificate '$certificateToInstall'" -ScriptBlock {
+            Add-Certificate2 -RawContentBytes $certificateBytes -Location CERT_SYSTEM_STORE_LOCAL_MACHINE -CertificateType PFX -Store My -Password $pfxPassword
+        } -ComputerName $vms -ArgumentList (, $certificateBytes) -PassThru
+    }
+
+    # ------------------------------------------------------------------------------------------------------------
 
     Write-Host "Finished installing AzDo Build Agent on $($vms.Count) machines in environment '$envName'"
 
