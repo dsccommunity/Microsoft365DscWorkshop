@@ -57,7 +57,7 @@
     'Microsoft.Graph.Identity.DirectoryManagement'         = '2.25.0'
 
     # Microsoft365DSC
-    Microsoft365DSC                                        = '1.25.129.3'
+    Microsoft365DSC                                        = '1.25.205.1'
 
     <#
         To update Microsoft365DSC and its dependencies, do the following steps:
@@ -105,7 +105,7 @@
     'Microsoft.Graph.Users.Actions'                        = '2.25.0'
     'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.205'
     'MicrosoftTeams'                                       = '6.8.0'
-    'MSCloudLoginAssistant'                                = '1.1.35'
+    'MSCloudLoginAssistant'                                = '1.1.36'
     'ReverseDSC'                                           = '2.0.0.22'
     'PnP.PowerShell'                                       = '1.12.0'
 
