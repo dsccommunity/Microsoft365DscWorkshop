@@ -41,8 +41,8 @@ BuildWorkflow:
     - test7
     - Clean
     - Build_Module_ModuleBuilder
-    - ConfigDataPreparation
     - LoadDatumConfigData
+    - ConfigDataPreparation
     - TestConfigData
     - CompileDatumRsop
     - Set_PSModulePath
