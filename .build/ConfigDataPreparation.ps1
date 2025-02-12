@@ -1,4 +1,4 @@
-Task ConfigDataPreparation {
+task ConfigDataPreparation {
 
     try
     {
@@ -26,5 +26,11 @@ Task ConfigDataPreparation {
             Identities   = $env.Value.Identities | Where-Object { $_.CertificateThumbprint }
         }
 
+    }
+
+    if ($datum.Global.ProjectSettings.ProjectName -eq '<ProjectName>')
+    {
+        Write-Host "The ProjectName placeholder will be replaced with 'Microsoft365DscWorkshopDemoTemplate' for the build to work." -ForegroundColor Yellow
+        $datum.Global.ProjectSettings.ProjectName = 'Microsoft365DscWorkshopDemoTemplate'
     }
 }
