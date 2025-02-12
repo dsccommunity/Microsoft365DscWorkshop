@@ -1,5 +1,5 @@
 Items:
-- Identity: '[x={ "$(($datum.Global.Azure.Environments.Test.AzTenantName -split "\.")[0]) Outbound Connector 1" }=]'
+- Identity: '[x={ "$(($datum.Global.Azure.Environments.Dev.AzTenantName -split "\.")[0]) Outbound Connector 1" }=]'
   AllAcceptedDomains: false
   CloudServicesMailEnabled: true
   Comment: Outbound connector to partner 1
@@ -7,27 +7,29 @@ Items:
   ConnectorType: OnPremises
   Enabled: true
   IsTransportRuleScoped: true
-  #RecipientDomains: contoso.com
   RouteAllMessagesViaOnPremises: false
-  TlsDomain: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
+  TlsDomain: '[x={ "mail.$($datum.Global.Azure.Environments.Dev.AzTenantName)" }=]'
   TlsSettings: DomainValidation
   UseMxRecord: false
-  SmartHosts: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
+  SmartHosts: '[x={ "mail.$($datum.Global.Azure.Environments.Dev.AzTenantName)" }=]'
   SenderRewritingEnabled: true
   Ensure: Present
-- Identity: '[x={ "$(($datum.Global.Azure.Environments.Prod.AzTenantName -split "\.")[0]) Outbound Connector 2" }=]'
-  AllAcceptedDomains: false
-  CloudServicesMailEnabled: true
-  Comment: Outbound connector to partner 2
-  ConnectorSource: Default
-  ConnectorType: OnPremises
-  Enabled: true
-  IsTransportRuleScoped: true
-  #RecipientDomains: contoso.com
-  RouteAllMessagesViaOnPremises: false
-  TlsDomain: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
-  TlsSettings: DomainValidation
-  UseMxRecord: false
-  SmartHosts: '[x={ "mail.$($datum.Global.Azure.Environments.Test.AzTenantName)" }=]'
-  SenderRewritingEnabled: true
-  Ensure: Present
+  TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+  ManagedIdentity: true
+#- Identity: '[x={ "$(($datum.Global.Azure.Environments.Prod.AzTenantName -split "\.")[0]) Outbound Connector 2" }=]'
+#  AllAcceptedDomains: false
+#  CloudServicesMailEnabled: true
+#  Comment: Outbound connector to partner 2
+#  ConnectorSource: Default
+#  ConnectorType: OnPremises
+#  Enabled: true
+#  IsTransportRuleScoped: true
+#  RouteAllMessagesViaOnPremises: false
+#  TlsDomain: '[x={ "mail.$($datum.Global.Azure.Environments.Dev.AzTenantName)" }=]'
+#  TlsSettings: DomainValidation
+#  UseMxRecord: false
+#  SmartHosts: '[x={ "mail.$($datum.Global.Azure.Environments.Dev.AzTenantName)" }=]'
+#  SenderRewritingEnabled: true
+#  Ensure: Present
+#  TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+#  ManagedIdentity: true

@@ -1,6 +1,6 @@
 #- cAADAdministrativeUnit
 - cAADNamedLocationPolicy
-- cAADConditionalAccessPolicy
+#- cAADConditionalAccessPolicy #Requires Microsoft Entra ID Premium
 - cAADGroup
 - cAADAuthorizationPolicy
 - cAADGroupsSettings

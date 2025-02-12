@@ -1,11 +1,11 @@
 Items:
-  - Identity: contoso.com
+  - Identity: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
     DomainType: Authoritative
     Ensure: Present
     TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
     ManagedIdentity: true
-  - Identity: tailspintoys.com
-    DomainType: InternalRelay
-    Ensure: Present
-    TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
-    ManagedIdentity: true
+  #- Identity: tailspintoys.com
+  #  DomainType: InternalRelay
+  #  Ensure: Present
+  #  TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
+  #  ManagedIdentity: true

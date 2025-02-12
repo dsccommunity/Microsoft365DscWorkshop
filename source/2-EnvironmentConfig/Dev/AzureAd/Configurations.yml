@@ -1,4 +1,4 @@
 - DscTagging
-- cAADTenantDetails
-- cAADRoleSetting
+#- cAADTenantDetails
+#- cAADRoleSetting #requires Microsoft Entra ID P2 or Microsoft Entra ID Governance license
 - cAADGroup
