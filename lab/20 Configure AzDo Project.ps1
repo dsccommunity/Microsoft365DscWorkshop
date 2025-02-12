@@ -50,7 +50,7 @@ Set-VSTeamAccount -Account "https://dev.azure.com/$($datum.Global.ProjectSetting
 Write-Host "Connected to Azure DevOps organization '$($datum.Global.ProjectSettings.OrganizationName)' with PAT."
 
 # ----------------------------------------------------------
-#            Creating agent pool and project
+#            Creating project and agent pool
 # ----------------------------------------------------------
 try
 {
@@ -95,8 +95,18 @@ if (-not ($queues.value.name -eq $datum.Global.ProjectSettings.AgentPoolName))
         poolType      = 'automation'
     } | ConvertTo-Json
 
-    Invoke-VSTeamRequest -Url $uri -Method POST -ContentType 'application/json' -Body $requestBodyAgentPool | Out-Null
+    $queue = Invoke-VSTeamRequest -Url $uri -Method POST -ContentType 'application/json' -Body $requestBodyAgentPool
     Write-Host "Agent pool '$($datum.Global.ProjectSettings.AgentPoolName)' created."
+
+    $url = "https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName)/$($datum.Global.ProjectSettings.ProjectName)/_apis/pipelines/pipelinePermissions/queue/$($queue.id)?api-version=7.1-preview.1"
+    $body = @{
+        allPipelines = @{
+            authorized = 'true'
+        }
+    } | ConvertTo-Json
+
+    Write-Host "Allowing all pipelines to use agent pool '$($datum.Global.ProjectSettings.AgentPoolName)' in project '$($datum.Global.ProjectSettings.ProjectName)'."
+    $response = Invoke-VSTeamRequest -Url $url -Body $body -ContentType application/json -Method PATCH
 }
 else
 {
@@ -141,7 +151,16 @@ foreach ($environment in $environments)
             name = $environment
         } | ConvertTo-Json
 
-        Invoke-VSTeamRequest -Method Post -ContentType application/json -Body $requestBodyEnvironment -ProjectName $datum.Global.ProjectSettings.ProjectName -Area distributedtask -Resource environments -Version 7.1 | Out-Null
+        $environment = Invoke-VSTeamRequest -Method Post -ContentType application/json -Body $requestBodyEnvironment -ProjectName $datum.Global.ProjectSettings.ProjectName -Area distributedtask -Resource environments -Version 7.1
+        $url = "https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName)/$($datum.Global.ProjectSettings.ProjectName)/_apis/pipelines/pipelinePermissions/environment/$($environment.id)?api-version=7.1-preview.1"
+        $body = @{
+            allPipelines = @{
+                authorized = 'true'
+            }
+        } | ConvertTo-Json
+
+        Write-Host "Allowing all pipelines to use environment '$environment' in project '$($datum.Global.ProjectSettings.ProjectName)'."
+        $response = Invoke-VSTeamRequest -Url $url -Body $body -ContentType application/json -Method PATCH
     }
     else
     {
