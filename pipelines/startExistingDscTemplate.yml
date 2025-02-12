@@ -14,7 +14,7 @@ stages:
         demands:
           - buildEnvironment -equals ${{ buildEnvironment.Name }}
       dependsOn:
-      - Build${{ buildEnvironment.Name }}
+      - Init${{ buildEnvironment.Name }}
 
       jobs:
         - deployment: ${{ buildEnvironment.Name }}
