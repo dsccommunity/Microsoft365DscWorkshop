@@ -14,16 +14,15 @@ if ($EnvironmentName)
 {
     Write-Host "Filtering environments to: $($EnvironmentName -join ', ')" -ForegroundColor Magenta
 }
-Write-Host "Setting up environments: $($environments -join ', ')" -ForegroundColor Magenta
 
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $projectSettings = Get-Content $PSScriptRoot\..\source\Global\ProjectSettings.yml | ConvertFrom-Yaml -ErrorAction Stop
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
-$labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.Name)*" }
+$labs = Get-Lab -List | Where-Object { $_ -Like "$($projectSettings.ProjectName)*" }
 
 foreach ($lab in $labs)
 {
-    $lab -match "(?:$($projectSettings.Name))(?<Environment>\w+)" | Out-Null
+    $lab -match "(?:$($projectSettings.ProjectName))(?<Environment>\w+)" | Out-Null
     $envName = $Matches.Environment
     if ($EnvironmentName -and $envName -notin $EnvironmentName)
     {
