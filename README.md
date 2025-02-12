@@ -1,4 +1,4 @@
-# M365DscWorkshop - Controlling your Azure AD and Microsoft 365 with DSC
+# M365DscWorkshop - Controlling your Entra ID and Microsoft 365 with DSC
 
 ## Where do we come from?
 
@@ -20,7 +20,7 @@ The concept supports managing one or multiple Azure tenants. The configuration d
 
 Most automation systems are supported, Azure DevOps is the preferred one for easy integration with Azure security. Supports self-hosted build agents with a user-assigned Managed Identity or Microsoft-hosted agents with certificate authentication.
 
-![Overview](doc/Overview-Push%20Mode.drawio.svg)
+![Overview](docs/Overview-Push%20Mode.drawio.svg)
 
 ### Getting Started
 
