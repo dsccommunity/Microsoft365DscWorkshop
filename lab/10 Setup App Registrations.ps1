@@ -113,7 +113,7 @@ git push --set-upstream origin $currentBranchName | Out-Null
 
 Write-Host "Checking if there are any changes in the build agents and committing them to the git repository."
 $buildAgendChanges = (git status -s) -like '*source/BuildAgents/*.yml'
-if ($null -ne $buildAgendChanges)
+if ($false -ne $buildAgendChanges -and $null -ne $buildAgendChanges)
 {
     foreach ($changedFile in $buildAgendChanges)
     {
@@ -124,6 +124,9 @@ if ($null -ne $buildAgendChanges)
     Write-Host 'Committing changes to build agents.'
     git commit -m 'Updated build agents' | Out-Null
     git push | Out-Null
+}
+else {
+    Write-Host 'No changes in build agents.'
 }
 
 Write-Host Done. -ForegroundColor Green
