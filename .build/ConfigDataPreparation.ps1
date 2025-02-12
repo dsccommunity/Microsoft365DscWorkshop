@@ -10,7 +10,6 @@ Task ConfigDataPreparation {
         Write-Build Yellow 'There were issues importing the Az modules.'
     }
 
-    $datum = New-DatumStructure -DefinitionFile $ProjectPath\source\Datum.yml
     $global:azBuildParameters = @{}
 
     foreach ($env in $datum.Global.Azure.Environments.GetEnumerator())
