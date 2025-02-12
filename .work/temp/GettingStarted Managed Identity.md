@@ -76,7 +76,7 @@ Name | description
 --- | ---
 Init | Prepare the current PowerShell session for the build.
 Clean | Remove previously created artifacts and temporary files form the [output](/output/) folder.
-TODO: AzureInit | Details required
+TODO: ConfigDataPreparation | Details required
 LoadDatumConfigData | Load the configuration data from [source](/source/).
 TestConfigData | Invoke the tests defined in the folder [tests](/tests/).
 CompileDatumRsop | Merge the configuration data into one large hash table.

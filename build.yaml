@@ -27,7 +27,7 @@ BuildWorkflow:
     - test7
     - Init
     - LoadDatumConfigData
-    - AzureInit
+    - ConfigDataPreparation
 
   export:
     - Clean
@@ -41,7 +41,7 @@ BuildWorkflow:
     - test7
     - Clean
     - Build_Module_ModuleBuilder
-    - AzureInit
+    - ConfigDataPreparation
     - LoadDatumConfigData
     - TestConfigData
     - CompileDatumRsop
@@ -54,7 +54,7 @@ BuildWorkflow:
     - test7
     - Clean
     - LoadDatumConfigData
-    - AzureInit
+    - ConfigDataPreparation
     - TestConfigData
     - CompileDatumRsop
 

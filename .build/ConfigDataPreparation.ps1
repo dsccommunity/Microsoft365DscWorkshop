@@ -1,4 +1,4 @@
-Task AzureInit {
+Task ConfigDataPreparation {
 
     try
     {
