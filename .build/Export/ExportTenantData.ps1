@@ -82,22 +82,23 @@ task InvokingDscExportConfiguration {
     {
         Write-Host "    Invoking DSC configuration for environment '$($env.Name)'" -ForegroundColor Yellow
 
-        $directory = dir -Path "$OutputDirectory\export" -Directory | Where-Object { $_.Name -eq $env.Value.AzTenantName }
+        $tenantExportDirectory = dir -Path "$OutputDirectory\export" -Directory |
+            Where-Object { $_.Name -eq $env.Value.AzTenantName }
 
-        $outputDirectories = dir -Path $directory -Directory
-        foreach ($outputDirectory in $outputDirectories)
+        $dscResourceDirectories = dir -Path $tenantExportDirectory -Directory
+        foreach ($dscResourceDirectory in $dscResourceDirectories)
         {
-            $outputDirectory | Set-Location
+            $dscResourceDirectory | Set-Location
 
-            Write-Host "Invoking DSC configuration in directory '$($outputDirectory.FullName)'" -ForegroundColor Yellow
+            Write-Host "Invoking DSC configuration in directory '$($dscResourceDirectory.FullName)'" -ForegroundColor Yellow
             try
             {
                 dir -Path $Path -Recurse -Filter *.ps1 | ForEach-Object { & $_.FullName }
-                Write-Host "        DSC configuration in folder '$($outputDirectory.BaseName)' was successfully compiled." -ForegroundColor Green
+                Write-Host "        DSC configuration in folder '$($dscResourceDirectory.BaseName)' was successfully compiled." -ForegroundColor Green
             }
             catch
             {
-                Write-Host "An exception occurred compiling the DSC configuration in folder '$($outputDirectory.BaseName)'. Please see the error above."
+                Write-Host "An exception occurred compiling the DSC configuration in folder '$($dscResourceDirectory.BaseName)'. Please see the error above."
             }
         }
     }
@@ -128,7 +129,7 @@ task ConvertMofToYaml {
                 $copiedData = Copy-YamlData -Data $tenantData -AllData $tenantData -ResourceTypes $resourceTypes
 
                 Write-Host 'Exporting tenant configuration to the output folder as YAML' -ForegroundColor Yellow
-                $copiedData | ConvertTo-Yaml | Out-File "$OutputDirectory\export\$($tenant.Name)\$($dscresource.Name)\$($dscresource.Name).yml" -Force
+                $copiedData | ConvertTo-Yaml | Out-File "$OutputDirectory\export\$($tenant.Name)\$($dscresource.Name).yml" -Force
             }
             else
             {
