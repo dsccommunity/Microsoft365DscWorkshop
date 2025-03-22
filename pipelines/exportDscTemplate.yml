@@ -13,6 +13,7 @@ stages:
           name: ${{ parameters.poolName }}
           demands:
             - buildEnvironment -equals ${{ buildEnvironment.Name }}
+        dependsOn: []
 
         jobs:
           - job: Export${{ buildEnvironment.Name }}
