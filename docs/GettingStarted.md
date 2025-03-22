@@ -70,13 +70,13 @@ Call the script [.\lab\00 Prep.ps1](../lab//00%20Prep.ps1). It does the followin
 
 ### 1.3.2. Test the Build and Download Dependencies
 
-After having cloned the project to your development machine, please open the solution in Visual Studio Code. In the PowerShell prompt, call the build script:
+Now test the build locally. In the PowerShell prompt, call the build script:
 
 ```powershell
 .\build.ps1 -UseModuleFast -ResolveDependency
 ```
 
-> :information_source: [ModuleFast](https://github.com/JustinGrote/ModuleFast)sometimes has a problem and does not download all the modules it should. If something is missing and you see error messages, please close the PowerShell session and try again. Usually everything works after the second time.
+> :information_source: [ModuleFast](https://github.com/JustinGrote/ModuleFast) sometimes has a problem and does not download all the modules it should. If something is missing and you see error messages, please close the PowerShell session and try again. Usually everything works after the second time.
 
 This build process takes around 15 to 20 minutes to complete the first time. Downloading all the required dependencies defined in the file [RequiredModules.psd1](../RequiredModules.psd1) takes time and discovering the many DSC resources in [Microsoft365DSC](https://microsoft365dsc.com/).
 
