@@ -71,7 +71,14 @@ foreach ($environmentName in $environments)
             Write-Error "Failed to generate certificate for application '$($identity.Name)' in environment '$environmentName'. Please run the script again." -ErrorAction Stop
         }
 
-        Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
+        if ($identity.Name -eq 'M365DscSetupApplication')
+        {
+            Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update -AddToGlobalAdminRole
+        }
+        else
+        {
+            Add-M365DscIdentityPermission -Identity $azIdentityy -AccessType Update
+        }
 
         Write-Host "Registered the application '$($identity.Name)' for environment '$environmentName'." -ForegroundColor Magenta
         Write-Host "  'AzApplicationId: $($azIdentity.AppId)'" -ForegroundColor Magenta
@@ -111,7 +118,7 @@ git add $PSScriptRoot/../source/Global/Azure.yml
 git commit -m 'Tenant Update' | Out-Null
 git push --set-upstream origin $currentBranchName | Out-Null
 
-Write-Host "Checking if there are any changes in the build agents and committing them to the git repository."
+Write-Host 'Checking if there are any changes in the build agents and committing them to the git repository.'
 $buildAgendChanges = (git status -s) -like '*source/BuildAgents/*.yml'
 if ($false -ne $buildAgendChanges -and $null -ne $buildAgendChanges)
 {
@@ -125,7 +132,8 @@ if ($false -ne $buildAgendChanges -and $null -ne $buildAgendChanges)
     git commit -m 'Updated build agents' | Out-Null
     git push | Out-Null
 }
-else {
+else
+{
     Write-Host 'No changes in build agents.'
 }
 

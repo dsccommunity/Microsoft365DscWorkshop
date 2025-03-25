@@ -1001,7 +1001,10 @@ function Add-M365DscIdentityPermission
 
         [Parameter()]
         [ValidateSet('Update', 'Read')]
-        [string]$AccessType = 'Update'
+        [string]$AccessType = 'Update',
+
+        [Parameter()]
+        [switch]$AddToGlobalAdminRole = $false
     )
 
     $azureContext = Get-AzContext
@@ -1069,6 +1072,10 @@ function Add-M365DscIdentityPermission
     if ($AccessType -eq 'Update')
     {
         $requiredRoles += 'Exchange Administrator'
+    }
+    if ($AddToGlobalAdminRole)
+    {
+        $requiredRoles += 'Global Administrator'
     }
 
     foreach ($requiredRole in $requiredRoles)
