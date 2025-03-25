@@ -30,6 +30,21 @@ if ($datum.Global.ProjectSettings.ProjectName -eq '<ProjectName>' -or $null -eq 
     $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\ProjectSettings.yml
 }
 
+if ($datum.Global.ProjectSettings.AgentPoolName -eq '<AgentPoolName>' -or $null -eq $datum.Global.ProjectSettings.AgentPoolName)
+{
+    $proposedAgentPoolName = "$($datum.Global.ProjectSettings.ProjectName)DSC"
+    $choice = Read-Host -Prompt "Enter the name of your Azure DevOps project or press <Enter> to use the default ($proposedAgentPoolName)"
+    if ($choice -eq '')
+    {
+        $datum.Global.ProjectSettings.AgentPoolName = $proposedAgentPoolName
+    }
+    else
+    {
+        $datum.Global.ProjectSettings.AgentPoolName = $choice
+    }
+    $datum.Global.ProjectSettings | ConvertTo-Yaml | Out-File $PSScriptRoot\..\source\Global\ProjectSettings.yml
+}
+
 if ($datum.Global.ProjectSettings.PersonalAccessToken -eq '<PersonalAccessToken>' -or $null -eq $datum.Global.ProjectSettings.PersonalAccessToken)
 {
     $pat = Read-Host -Prompt 'Enter your Azure DevOps Personal Access Token'

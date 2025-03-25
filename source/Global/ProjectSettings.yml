@@ -1,7 +1,7 @@
 OrganizationName: <OrganizationName>
 PersonalAccessToken: <PersonalAccessToken>
 ProjectName: <ProjectName>
-AgentPoolName: DSC
+AgentPoolName: <AgentPoolName>
 BuildAgents:
   UserName: worker
   Password: <Password>
