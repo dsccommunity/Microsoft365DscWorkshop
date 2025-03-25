@@ -77,7 +77,7 @@ foreach ($environmentName in $environments)
         }
         else
         {
-            Add-M365DscIdentityPermission -Identity $azIdentityy -AccessType Update
+            Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
         }
 
         Write-Host "Registered the application '$($identity.Name)' for environment '$environmentName'." -ForegroundColor Magenta
