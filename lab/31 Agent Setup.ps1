@@ -83,16 +83,26 @@ foreach ($lab in $labs)
 
     } -ComputerName $vms
 
-    Invoke-LabCommand -Activity 'Setup AzDo Build Agent' -ScriptBlock {
+    for ($i = 1; $i -le $datum.Global.ProjectSettings.NumbertOfBuildAgents; $i++)
+    {
+        Invoke-LabCommand -Activity 'Setup AzDo Build Agent' -ScriptBlock {
 
-        if (-not (Get-Service -Name vstsagent*))
-        {
-            Expand-Archive -Path $vstsAgenZip.FullName -DestinationPath C:\Agent -Force
-            "C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName) --auth pat --token $($datum.Global.ProjectSettings.PersonalAccessToken) --pool $($datum.Global.ProjectSettings.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Out-File C:\DeployDebug\AzDoAgentSetup.cmd -Force
-            C:\Agent\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName) --auth pat --token $($datum.Global.ProjectSettings.PersonalAccessToken) --pool $($datum.Global.ProjectSettings.AgentPoolName) --agent $env:COMPUTERNAME --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula
-        }
+            $vstsService = Get-CimInstance -ClassName Win32_Service | Where-Object { $_.Name -like 'vstsagent*' -and $_.PathName -like "*Agent$i*" }
+            if (-not $vstsService)
+            {
+                Write-Host "Installing AzDo Build Agent '$($env:COMPUTERNAME)-$i'"
+                Expand-Archive -Path Z:\SoftwarePackages\vsts-agent-win-x64-4.251.0.zip -DestinationPath "C:\Agent$i" -Force
+                "C:\Agent$i\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName) --auth pat --token $($datum.Global.ProjectSettings.PersonalAccessToken) --pool $($datum.Global.ProjectSettings.AgentPoolName) --agent '$($env:COMPUTERNAME)-$i' --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Set-Content -Path "C:\DeployDebug\AzDoAgentSetup$i.cmd" -Force
+                & "C:\DeployDebug\AzDoAgentSetup$i.cmd"
+            }
+            else
+            {
+                Write-Host "AzDo Build Agent '$($env:COMPUTERNAME)-$i' already installed."
+            }
 
-    } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, datum)
+        } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, datum, i)
+    }
+    return
 
     Invoke-LabCommand -Activity 'Installing NuGet and PowerShellGet' -ScriptBlock {
 

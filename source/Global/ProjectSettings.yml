@@ -2,6 +2,7 @@ OrganizationName: <OrganizationName>
 PersonalAccessToken: <PersonalAccessToken>
 ProjectName: <ProjectName>
 AgentPoolName: <AgentPoolName>
+NumbertOfBuildAgents: 4
 BuildAgents:
   UserName: worker
   Password: <Password>
