@@ -33,7 +33,7 @@ if ($datum.Global.ProjectSettings.ProjectName -eq '<ProjectName>' -or $null -eq 
 if ($datum.Global.ProjectSettings.AgentPoolName -eq '<AgentPoolName>' -or $null -eq $datum.Global.ProjectSettings.AgentPoolName)
 {
     $proposedAgentPoolName = "$($datum.Global.ProjectSettings.ProjectName)DSC"
-    $choice = Read-Host -Prompt "Enter the name of your Azure DevOps project or press <Enter> to use the default ($proposedAgentPoolName)"
+    $choice = Read-Host -Prompt "Enter the name of your Azure DevOps agent pool or press <Enter> to use the default ($proposedAgentPoolName)"
     if ($choice -eq '')
     {
         $datum.Global.ProjectSettings.AgentPoolName = $proposedAgentPoolName
