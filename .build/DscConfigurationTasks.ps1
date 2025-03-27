@@ -8,6 +8,7 @@ task StartDscConfiguration {
         Write-Error 'The build environment is not set'
     }
 
+    #TODO: Add some output to show the environment that is being used
     Wait-DscLocalConfigurationManager
 
     $mofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
@@ -57,6 +58,7 @@ task CleanModuleFolder {
 
 task InitializeModuleFolder {
 
+    #TODO: Check for required modules and if they are present, do not copy them again and do not fail
     $environment = $env:buildEnvironment
     if (-not $environment)
     {

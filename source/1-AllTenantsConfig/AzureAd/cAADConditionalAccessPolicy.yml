@@ -10,6 +10,7 @@ Items:
       - ExchangeActiveSync
       - Other
     GrantControlOperator: OR
+    #TODO: MonitorOnly
     BuiltInControls:
       - mfa
     TenantId: '[x={ $azBuildParameters."$($Node.Environment)".AzTenantName }=]'
