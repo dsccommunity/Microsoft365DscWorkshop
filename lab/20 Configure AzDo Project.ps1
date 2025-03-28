@@ -183,14 +183,14 @@ foreach ($environment in $environments)
     }
 }
 
-# ----------------------------------------------------------
-#        Setting environments in pipeline parameters
-# ----------------------------------------------------------
+# ------------------------------------------------------------------
+#        Setting environments and pool name in pipeline parameters
+# ------------------------------------------------------------------
 Write-Host 'Changing build pipelines to use only the configured environments' -ForegroundColor Yellow
 
 $environments = $datum.Global.Azure.Environments.Keys
 $pipelinesToAdapt = 'build.yml', 'export.yml', 'pull.yml', 'push.yml', 'reapply.yml', 'test.yml'
-$pipelinesToAdapt = Get-ChildItem -Path ..\pipelines | Where-Object Name -In $pipelinesToAdapt
+$pipelinesToAdapt = Get-ChildItem -Path $PSScriptRoot\..\pipelines | Where-Object Name -In $pipelinesToAdapt
 
 Write-Host "Known environments: $($environments -join ', ')"
 Write-Host 'Pipelines to adapt:'
@@ -199,15 +199,27 @@ Write-Host ''
 
 foreach ($pipeline in $pipelinesToAdapt)
 {
+    $pipelineChanged = $false
     Write-Host "Adapting pipeline $($pipeline.FullName)"
     $pipelineYaml = Get-Content $pipeline.FullName -Raw | ConvertFrom-Yaml -Ordered
     $buildEnvironments = $pipelineYaml.parameters | Where-Object Name -EQ buildEnvironments
+
+    Write-Host "  Setting agent pool name to '$($datum.Global.ProjectSettings.AgentPoolName)' in pipeline '$($pipeline.Name)'."
+    if (($pipelineYaml.parameters | Where-Object name -EQ poolName).default -ne $datum.Global.ProjectSettings.AgentPoolName)
+    {
+        Write-Host "  Setting agent pool name to '$($datum.Global.ProjectSettings.AgentPoolName)' in pipeline '$($pipeline.Name)'."
+        ($pipelineYaml.parameters | Where-Object name -EQ poolName).default = $datum.Global.ProjectSettings.AgentPoolName
+        $pipelineChanged = $true
+    }
+    else
+    {
+        Write-Host "  Agent pool name is already set to '$($datum.Global.ProjectSettings.AgentPoolName)' in pipeline '$($pipeline.Name)'."
+    }
 
     $environmentsToRemove = $buildEnvironments.default | Where-Object Name -NotIn $environments
     if ($environmentsToRemove.Count -eq 0)
     {
         Write-Host "  No environments to remove for pipeline '$($pipeline.Name)'"
-        continue
     }
     else
     {
@@ -217,9 +229,14 @@ foreach ($pipeline in $pipelinesToAdapt)
             Write-Host "    Removing environment $($environment.Name)"
             [void]$buildEnvironments.default.Remove($environment)
         }
+        $pipelineChanged = $true
     }
 
-    $pipelineYaml | ConvertTo-Yaml | Out-File -FilePath $pipeline.FullName
+    if ($pipelineChanged)
+    {
+        Write-Host "  Saving changes to pipeline '$($pipeline.Name)'."
+        $pipelineYaml | ConvertTo-Yaml | Out-File -FilePath $pipeline.FullName
+    }
 }
 
 $changedFiles = git diff --name-only | Where-Object { $_ -like 'pipelines/*.yml' }
