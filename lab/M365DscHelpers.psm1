@@ -693,7 +693,7 @@ function Wait-DscLocalConfigurationManager
         Write-Host 'LCM is busy, waiting until LCM has finished the job...' -NoNewline
         while ((Get-DscLocalConfigurationManager).LCMState -eq 'Busy')
         {
-            Start-Sleep -Seconds 1
+            Start-Sleep -Seconds 5
             Write-Host . -NoNewline
         }
         Write-Host 'done. LCM is no longer busy.'
