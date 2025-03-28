@@ -8,19 +8,44 @@ task StartDscConfiguration {
         Write-Error 'The build environment is not set'
     }
 
-    #TODO: Add some output to show the environment that is being used
-    Wait-DscLocalConfigurationManager
+    Wait-DscLocalConfigurationManager -DoNotWaitForProcessToFinish
 
     $mofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
-    Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Verbose -Force -ErrorAction Stop
+    try
+    {
+        Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Verbose -ErrorAction Stop
+    }
+    catch
+    {
+        $waitTimeInSeconds = Get-Random -Minimum 10 -Maximum 40
+        Write-Host "Failed to start DSC configuration. Will retry in $waitTimeInSeconds seconds." -ForegroundColor Yellow
+
+        Start-Sleep -Seconds $waitTimeInSeconds
+        Wait-DscLocalConfigurationManager -DoNotWaitForProcessToFinish
+
+        Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Verbose -ErrorAction Stop
+    }
 
 }
 
 task StartExistingDscConfiguration {
 
-    Wait-DscLocalConfigurationManager
+    Wait-DscLocalConfigurationManager -DoNotWaitForProcessToFinish
 
-    Start-DscConfiguration -UseExisting -Wait -Verbose -Force -ErrorAction Stop
+    try
+    {
+        Start-DscConfiguration -UseExisting -Wait -Verbose -ErrorAction Stop
+    }
+    catch
+    {
+        $waitTimeInSeconds = Get-Random -Minimum 10 -Maximum 40
+        Write-Host "Failed to start existing DSC configuration. Will retry in $waitTimeInSeconds seconds." -ForegroundColor Yellow
+
+        Start-Sleep -Seconds $waitTimeInSeconds
+        Wait-DscLocalConfigurationManager -DoNotWaitForProcessToFinish
+
+        Start-DscConfiguration -UseExisting -Wait -Verbose -ErrorAction Stop
+    }
 
 }
 
@@ -58,11 +83,23 @@ task CleanModuleFolder {
 
 task InitializeModuleFolder {
 
-    #TODO: Check for required modules and if they are present, do not copy them again and do not fail
     $environment = $env:buildEnvironment
     if (-not $environment)
     {
         Write-Error 'The build environment is not set'
+    }
+
+    $missingDependencies = Update-M365DSCDependencies -ValidateOnly
+    if (-not $missingDependencies)
+
+    {
+        Write-Host 'All dependencies are up to date, no need to copy modules' -ForegroundColor Green
+        return
+    }
+    else
+    {
+        Write-Host 'Some dependencies are missing' -ForegroundColor Yellow
+        $missingDependencies | Out-String | Write-Host -ForegroundColor Yellow
     }
 
     Wait-DscLocalConfigurationManager
