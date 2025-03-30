@@ -89,35 +89,19 @@ task InitializeModuleFolder {
         Write-Error 'The build environment is not set'
     }
 
-    $missingDependencies = Update-M365DSCDependencies -ValidateOnly
-    if (-not $missingDependencies)
-
-    {
-        Write-Host 'All dependencies are up to date, no need to copy modules' -ForegroundColor Green
-        return
-    }
-    else
-    {
-        Write-Host 'Some dependencies are missing' -ForegroundColor Yellow
-        $missingDependencies | Out-String | Write-Host -ForegroundColor Yellow
-    }
-
     Wait-DscLocalConfigurationManager
 
     $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
-    $modulesToKeep = 'Microsoft.PowerShell.Operation.Validation', 'PackageManagement', 'Pester', 'PowerShellGet', 'PSReadline'
-
-    Write-Host "Cleaning PowerShell module folder '$programFileModulePath'"
-    Get-ChildItem -Path $programFileModulePath | Where-Object { $_.BaseName -notin $modulesToKeep } | ForEach-Object {
-
-        Write-Host "Removing module '$($_.BaseName)'"
-        $_ | Remove-Item -Recurse -Force
-    }
 
     Write-Host "Copying modules from '$requiredModulesPath' to '$programFileModulePath'"
     Get-ChildItem -Path $requiredModulesPath | ForEach-Object {
         Write-Host "Copying module '$($_.BaseName)'"
-        $_ | Copy-Item -Destination $programFileModulePath -Recurse -Force
+        $_ | Copy-Item -Destination $programFileModulePath -Recurse -Force -ErrorAction SilentlyContinue -ErrorVariable copyErrors
+
+        if ($copyErrors)
+        {
+            Write-Host "There were $($copyErrors.Count) errors copying the module '$($_.BaseName)'"
+        }
     }
 
 }
