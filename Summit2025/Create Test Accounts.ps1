@@ -34,7 +34,7 @@ $result = for ($i = 1; $i -le $appCount; $i++)
 {
     $app = New-M365DscIdentity -Name "TestApp$i" -GenereateAppSecret -PassThru
     Write-Host "Created app: $($app.DisplayName) with ID: $($app.AppId)"
-    Add-M365DscIdentityPermission -Identity $app -Permissions 'Group.ReadWrite.All'
+    Add-M365DscIdentityPermission -Identity $app -Permissions 'Group.ReadWrite.All', 'Group.Read.All', 'Group.Create'
     Write-Host "Added permission to app: $($app.DisplayName)"
     $app | Add-Member -Name Index -Value $i -MemberType NoteProperty -PassThru
 }
