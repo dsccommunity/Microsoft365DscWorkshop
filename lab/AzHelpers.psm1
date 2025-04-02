@@ -464,6 +464,12 @@ function New-M365DscIdentity
         [switch]$PassThru
     )
 
+    if (-not (Get-MgContext))
+    {
+        Write-Error "You are not connected to the Microsoft Graph. Please run 'Connect-M365Dsc'."
+        return
+    }
+
     if (-not $OnlyServicePrincipals)
     {
         if (-not ($appRegistration = Get-MgApplication -Filter "displayName eq '$Name'" -ErrorAction SilentlyContinue))
@@ -999,49 +1005,67 @@ function Add-M365DscIdentityPermission
         [Parameter(Mandatory = $true)]
         [M365DscIdentity]$Identity,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = 'ByAccessType')]
         [ValidateSet('Update', 'Read')]
         [string]$AccessType = 'Update',
 
-        [Parameter()]
-        [switch]$AddToGlobalAdminRole = $false
+        [Parameter(ParameterSetName = 'ByAccessType')]
+        [switch]$AddToGlobalAdminRole = $false,
+
+        [Parameter(ParameterSetName = 'ByPermission')]
+        [string[]]$Permissions
     )
 
-    $azureContext = Get-AzContext
-
-    if (-not $azureContext.Subscription.Id)
+    if ($PSCmdlet.ParameterSetName -eq 'ByPermission')
     {
-        Write-Host 'No Azure subscription available. Skipping Azure permissions.' -ForegroundColor Yellow
+        Write-Host 'Adding Microsoft365DSC required Graph API permissions' -ForegroundColor Magenta
+
+        $requiredPermissions = foreach ($permission in $Permissions)
+        {
+            Get-GraphPermission -PermissionName $permission
+        }
+
+        $existingPermissions = @(Get-ServicePrincipalAppPermissions -DisplayName $Identity.DisplayName)
+        $permissionDifference = (Compare-Object -ReferenceObject $requiredPermissions -DifferenceObject $existingPermissions).InputObject
     }
     else
     {
-        Write-Host 'Adding Azure permissions' -ForegroundColor Magenta
+        $azureContext = Get-AzContext
+
+        if (-not $azureContext.Subscription.Id)
+        {
+            Write-Host 'No Azure subscription available. Skipping Azure permissions.' -ForegroundColor Yellow
+        }
+        else
+        {
+            Write-Host 'Adding Azure permissions' -ForegroundColor Magenta
+            if ($AccessType -eq 'Update')
+            {
+                if (-not (Get-AzRoleAssignment -ObjectId $Identity.AppPrincipalId -RoleDefinitionName Owner))
+                {
+                    New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner | Out-Null
+                    Write-Host "Assigning the application '$($Identity.DisplayName)' to the role 'Owner'."
+                }
+                else
+                {
+                    Write-Host "The application '$($Identity.DisplayName)' is already assigned to the role 'Owner'."
+                }
+            }
+            Write-Host 'Done adding Azure permissions' -ForegroundColor Magenta
+        }
+
+        #------------------------------------------------------------------------------
+
+        Write-Host 'Adding Microsoft365DSC required Graph API permissions' -ForegroundColor Magenta
+        $requiredPermissions = Get-M365DSCCompiledPermissionList2 -AccessType $AccessType
         if ($AccessType -eq 'Update')
         {
-            if (-not (Get-AzRoleAssignment -ObjectId $Identity.AppPrincipalId -RoleDefinitionName Owner))
-            {
-                New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner | Out-Null
-                Write-Host "Assigning the application '$($Identity.DisplayName)' to the role 'Owner'."
-            }
-            else
-            {
-                Write-Host "The application '$($Identity.DisplayName)' is already assigned to the role 'Owner'."
-            }
+            $requiredPermissions += Get-GraphPermission -PermissionName AppRoleAssignment.ReadWrite.All
         }
-        Write-Host 'Done adding Azure permissions' -ForegroundColor Magenta
+        $existingPermissions = @(Get-ServicePrincipalAppPermissions -DisplayName $Identity.DisplayName)
+
+        $permissionDifference = (Compare-Object -ReferenceObject $requiredPermissions -DifferenceObject $existingPermissions).InputObject
     }
-
-    #------------------------------------------------------------------------------
-
-    Write-Host 'Adding Microsoft365DSC required Graph API permissions' -ForegroundColor Magenta
-    $requiredPermissions = Get-M365DSCCompiledPermissionList2 -AccessType $AccessType
-    if ($AccessType -eq 'Update')
-    {
-        $requiredPermissions += Get-GraphPermission -PermissionName AppRoleAssignment.ReadWrite.All
-    }
-    $permissions = @(Get-ServicePrincipalAppPermissions -DisplayName $Identity.DisplayName)
-
-    $permissionDifference = (Compare-Object -ReferenceObject $requiredPermissions -DifferenceObject $permissions).InputObject
 
     if ($permissionDifference)
     {
@@ -1057,84 +1081,89 @@ function Add-M365DscIdentityPermission
 
     #------------------------------------------------------------------------------
 
-    Write-Host 'Adding identity to required roles Directory Roles' -ForegroundColor Magenta
-    $globalReadersRole = Get-MgDirectoryRole -Filter "DisplayName eq 'Global Reader'"
-    # If the role hasn't been activated, we need to get the role template ID to first activate the role
-    if ($null -eq $globalReadersRole)
+    if ($PSBoundParameters.ContainsKey('AccessType'))
     {
-        Write-Host "The role 'Global Reader' has not been activated yet. Activating the role."
-        $adminRoleTemplate = Get-MgDirectoryRoleTemplate | Where-Object { $_.DisplayName -eq 'Global Reader' }
-        New-MgDirectoryRole -RoleTemplateId $adminRoleTemplate.Id | Out-Null
-    }
-
-    $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$($Identity.DisplayName)'"
-    $requiredRoles = @('Global Reader')
-    if ($AccessType -eq 'Update')
-    {
-        $requiredRoles += 'Exchange Administrator'
-    }
-    if ($AddToGlobalAdminRole)
-    {
-        $requiredRoles += 'Global Administrator'
-    }
-
-    foreach ($requiredRole in $requiredRoles)
-    {
-        $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq '$requiredRole'"
-        if (-not $roleDefinition)
+        Write-Host 'Adding identity to required roles Directory Roles' -ForegroundColor Magenta
+        $globalReadersRole = Get-MgDirectoryRole -Filter "DisplayName eq 'Global Reader'"
+        # If the role hasn't been activated, we need to get the role template ID to first activate the role
+        if ($null -eq $globalReadersRole)
         {
-            Write-Host "Role definition '$requiredRole' not found."
-            continue
+            Write-Host "The role 'Global Reader' has not been activated yet. Activating the role."
+            $adminRoleTemplate = Get-MgDirectoryRoleTemplate | Where-Object { $_.DisplayName -eq 'Global Reader' }
+            New-MgDirectoryRole -RoleTemplateId $adminRoleTemplate.Id | Out-Null
         }
 
-        if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($Identity.AppPrincipalId)'"))
+        $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$($Identity.DisplayName)'"
+        $requiredRoles = @('Global Reader')
+        if ($AccessType -eq 'Update')
         {
-            New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId '/' | Out-Null
-            Write-Host "Role assignment for service principal '$($Identity.DisplayName)' for role '$($roleDefinition.DisplayName)' created."
+            $requiredRoles += 'Exchange Administrator'
         }
-        else
+        if ($AddToGlobalAdminRole)
         {
-            Write-Host "Role assignment for service principal '$($Identity.DisplayName)' for role '$($roleDefinition.DisplayName)' already exists."
+            $requiredRoles += 'Global Administrator'
         }
-    }
-    Write-Host 'Done adding identity to required roles Directory Roles' -ForegroundColor Magenta
-
-    #------------------------------------------------------------------------------
-
-    Write-Host 'Adding identity to required roles Exchange Roles' -ForegroundColor Magenta
-
-    if ($AccessType -eq 'Update')
-    {
-        $requiredRoles = 'Organization Management',
-        'Security Administrator',
-        'Recipient Management',
-        'Compliance Administrator',
-        'Compliance Management',
-        'Information Protection Admins',
-        'Privacy Management Administrators',
-        'Privacy Management'
 
         foreach ($requiredRole in $requiredRoles)
         {
-            $role = Get-RoleGroup -Filter "Name -eq '$requiredRole'"
-            if (-not $role)
+            $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq '$requiredRole'"
+            if (-not $roleDefinition)
             {
-                Write-Host "Role '$requiredRole' not found."
+                Write-Host "Role definition '$requiredRole' not found."
                 continue
             }
 
-            if (Get-RoleGroupMember -Identity $role.ExchangeObjectId | Where-Object Name -EQ $Identity.AppPrincipalId)
+            if (-not (Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($roleDefinition.Id)' and principalId eq '$($Identity.AppPrincipalId)'"))
             {
-                Write-Host "The service principal '$($Identity.DisplayName)' is already a member of the role '$requiredRole'."
-                continue
+                New-MgRoleManagementDirectoryRoleAssignment -PrincipalId $appPrincipal.Id -RoleDefinitionId $roleDefinition.Id -DirectoryScopeId '/' | Out-Null
+                Write-Host "Role assignment for service principal '$($Identity.DisplayName)' for role '$($roleDefinition.DisplayName)' created."
             }
-
-            Write-Host "Adding service principal '$($Identity.DisplayName)' to the role '$requiredRole'."
-            Add-RoleGroupMember -Identity $role.ExchangeObjectId -Member $Identity.AppPrincipalId
+            else
+            {
+                Write-Host "Role assignment for service principal '$($Identity.DisplayName)' for role '$($roleDefinition.DisplayName)' already exists."
+            }
         }
+        Write-Host 'Done adding identity to required roles Directory Roles' -ForegroundColor Magenta
+
+        #------------------------------------------------------------------------------
+
+        Write-Host 'Adding identity to required roles Exchange Roles' -ForegroundColor Magenta
+
+        if ($AccessType -eq 'Update')
+        {
+            $requiredRoles = 'Organization Management',
+            'Security Administrator',
+            'Recipient Management',
+            'Compliance Administrator',
+            'Compliance Management',
+            'Information Protection Admins',
+            'Privacy Management Administrators',
+            'Privacy Management'
+
+            foreach ($requiredRole in $requiredRoles)
+            {
+                $role = Get-RoleGroup -Filter "Name -eq '$requiredRole'"
+                if (-not $role)
+                {
+                    Write-Host "Role '$requiredRole' not found."
+                    continue
+                }
+
+                if (Get-RoleGroupMember -Identity $role.ExchangeObjectId | Where-Object Name -EQ $Identity.AppPrincipalId)
+                {
+                    Write-Host "The service principal '$($Identity.DisplayName)' is already a member of the role '$requiredRole'."
+                    continue
+                }
+
+                Write-Host "Adding service principal '$($Identity.DisplayName)' to the role '$requiredRole'."
+                Add-RoleGroupMember -Identity $role.ExchangeObjectId -Member $Identity.AppPrincipalId
+            }
+        }
+
+        Write-Host 'Done adding identity to required roles Exchange Roles' -ForegroundColor Magenta
     }
 
-    Write-Host 'Done adding identity to required roles Exchange Roles' -ForegroundColor Magenta
+    Write-Host 'Done adding identity to required permissions and / or roles' -ForegroundColor Magenta
 }
 
 function Remove-M365DscIdentityPermission
