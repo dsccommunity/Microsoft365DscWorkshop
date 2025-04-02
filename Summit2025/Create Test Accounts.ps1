@@ -67,7 +67,7 @@ $result = foreach ($app in $result)
     $user | Add-M365DscTestUserToAzDevOps -ProjectUrl $azureDevOpsProjectUrl -AccessLevel express -PersonalAccessToken $azureDevOpsPat -AddAsTeamContributor | Out-Null
     Write-Host "Added test user to Azure DevOps project $($datum.Global.ProjectSettings.ProjectName)."
 
-    $user | Add-M365DscRepositoryPermission -ProjectUrl $azureDevOpsProjectUrl -PersonalAccessToken $azureDevOpsPat -RepositoryName $datum.Global.ProjectSettings.ProjectName -Permissions CreateBranchPermission, ReadPermission
+    $user | Add-M365DscRepositoryPermission -ProjectUrl $azureDevOpsProjectUrl -PersonalAccessToken $azureDevOpsPat -RepositoryName $datum.Global.ProjectSettings.ProjectName -Permissions CreateBranchPermission, ReadPermission | Out-Null
 
     $userPassword = $password | Protect-Datum -Password ($app.Key | ConvertTo-SecureString -AsPlainText -Force)
 
