@@ -108,7 +108,6 @@ foreach ($lab in $labs)
 
         } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, datum, i)
     }
-    return
 
     Invoke-LabCommand -Activity 'Installing NuGet and PowerShellGet' -ScriptBlock {
 
