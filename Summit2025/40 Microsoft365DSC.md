@@ -34,6 +34,10 @@ Update-M365DSCDependencies #this installs another ~30 modules to 'C:\Program Fil
 
 ## How does the DSC resource AADGroup work?
 
+The next tasks will be done in VSCode and not the PowerShell terminal.
+
+> :warning: Please open VSCode as admin as we are interacting with the `Program Files` folder.
+
 To understand how the `AADGroup` resource should be use, let's have a look at its syntax:
 
 ```powershell
@@ -172,3 +176,8 @@ Start-DscConfiguration -Path C:\DSC -Wait -Verbose -Force
 ```
 
 Now things should work.
+
+> [!caution] After this task, please cleanup the LCM configuration on your notebook or virtual machine. Otherwise the configuration will be applied every 15 minunites again and again and forever.
+> ```powershell
+> Remove-DscConfigurationDocument -Stage Current, Pending, Previous
+> ```

@@ -35,6 +35,8 @@ When applied, the LCM on the target node reads the MOF file and uses DSC resourc
 
 ## One more thing before we can get started
 
+> :warning: Please open VSCode as admin as we are interacting with the `Program Files` folder.
+
 To use DSC in PowerShell 7, the module [PSDesiredStateConfiguration](https://www.powershellgallery.com/packages/PSDesiredStateConfiguration) is required. Please install it with the following command:
 
 ```powershell

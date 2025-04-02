@@ -2,22 +2,18 @@
 
 ## Requirements
 
-- for this lab you need a Windows machine, your notebook or a virtual machine, with admin permissions and the following software
-- a piece of paper with your user account in Azure
+- For this lab you need a Windows machine, your notebook or a virtual machine, with **admin permissions** and the following software.
+- A piece of paper with your user account in Azure and the decryption key.
 
 ## Preparing the machine
 
 ### Required Software
 
-<https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.5>
+- [PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.5)
+- [Git](https://git-scm.com/downloads)
+- [Visual Studio Code](https://code.visualstudio.com/download) - Install also the install the PowerShell extension in VSCode.
 
-<https://git-scm.com/downloads>
-
-<https://code.visualstudio.com/download>
-
-install the powershell extension in VSCode
-
-in the powershell terminal, install the modules powershell-yaml, ProtectedData and Datum.ProtectedData:
+In the powershell terminal, install the modules `powershell-yaml`, `ProtectedData` and `Datum.ProtectedData`:
 
 ```powershell
 Install-Module -Name powershell-yaml, ProtectedData, Datum.ProtectedData -Force
