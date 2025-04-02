@@ -149,4 +149,26 @@ The error occurs because the DSC configuration is trying to store the `Applicati
 
 ## <u>Unsecure</u> DSC Credentials Handling
 
-In this case we are ok with having the credentials in plain text in the MOF file. To convince DSC of tolerating unencrypted credentials, 
+In this case we are ok with having the credentials in plain text in the MOF file. To convince DSC of tolerating unencrypted credentials, we need to define a configuration data hashtable like this:
+
+```powershell
+$cd = @{
+    AllNodes = @(
+        @{
+            NodeName = 'localhost'
+            PSDscAllowPlainTextPassword = $true
+            PSDscAllowDomainUser = $true
+        }
+    )
+}
+```
+
+Then pass this hashtable to the compilation process.
+
+```powershell
+TestGroupDemo -OutputPath C:\DSC -ConfigurationData $cd
+
+Start-DscConfiguration -Path C:\DSC -Wait -Verbose -Force
+```
+
+Now things should work.
