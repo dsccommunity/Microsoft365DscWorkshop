@@ -64,7 +64,7 @@ $result = foreach ($app in $result)
     $user = New-M365DscTestUser -Name "SummitTestUser$($app.Index)" -Password ($password | ConvertTo-SecureString -AsPlainText -Force) -DisablePasswordExpiration
     Write-Host "Created test user: $($user.DisplayName) with ID: $($user.Id)."
 
-    $user | Add-M365DscTestUserToAzDevOps -ProjectUrl $azureDevOpsProjectUrl -AccessLevel express -PersonalAccessToken $azureDevOpsPat | Out-Null
+    $user | Add-M365DscTestUserToAzDevOps -ProjectUrl $azureDevOpsProjectUrl -AccessLevel express -PersonalAccessToken $azureDevOpsPat -AddAsTeamContributor | Out-Null
     Write-Host "Added test user to Azure DevOps project $($datum.Global.ProjectSettings.ProjectName)."
 
     $user | Add-M365DscRepositoryPermission -ProjectUrl $azureDevOpsProjectUrl -PersonalAccessToken $azureDevOpsPat -RepositoryName $datum.Global.ProjectSettings.ProjectName -Permissions CreateBranchPermission, ReadPermission
