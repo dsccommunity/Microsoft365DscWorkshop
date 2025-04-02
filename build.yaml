@@ -29,9 +29,14 @@ BuildWorkflow:
     - LoadDatumConfigData
     - ConfigDataPreparation
 
+  init:
+    - test7
+    - InitLab
+    - LoadDatumConfigData
+
   export:
     - Clean
-    - Init
+    - InitLab
     - LoadDatumConfigData
     - ExportTenantData
     - InvokingDscExportConfiguration
