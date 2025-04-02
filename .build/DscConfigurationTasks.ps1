@@ -13,7 +13,7 @@ task StartDscConfiguration {
     $mofOutputDirectory = Join-Path -Path $OutputDirectory -ChildPath $MofOutputFolder
     try
     {
-        Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Verbose -ErrorAction Stop
+        Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Force -Verbose -ErrorAction Stop
     }
     catch
     {
@@ -23,7 +23,7 @@ task StartDscConfiguration {
         Start-Sleep -Seconds $waitTimeInSeconds
         Wait-DscLocalConfigurationManager -DoNotWaitForProcessToFinish
 
-        Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Verbose -ErrorAction Stop
+        Start-DscConfiguration -Path "$mofOutputDirectory\$environment" -Wait -Force -Verbose -ErrorAction Stop
     }
 
 }
