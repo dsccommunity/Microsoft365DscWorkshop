@@ -170,4 +170,4 @@ This approach is vital for organizations adopting cloud-first strategies, as it 
 
 ### 3.6. Extra task: What's next? Configuration Data and the Datum module
 
-If you are interested in some of the hidden mechanics, you may want to go on with the extra task [](./51%20Configuration%20Data.md)
+If you are interested in some of the hidden mechanics, you may want to go on with the extra task [Configuration Data and the Datum Module](./51%20Configuration%20Data.md)
