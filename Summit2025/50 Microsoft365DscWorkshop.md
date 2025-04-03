@@ -1,33 +1,128 @@
 # The Microsoft365DscWorkshop Blueprint
 
+## That is the Microsoft365DscWorkshop Blueprint?
+
+**Microsoft365DscWorkshop** is a **blueprint** for implementing and managing Microsoft 365 configurations using the **Microsoft365Dsc** PowerShell module. It provides a structured framework, best practices, and reusable examples for automating Microsoft 365 services (e.g., Teams, Exchange Online, SharePoint, Azure AD) through **Desired State Configuration (DSC)**. Similarly, the **DscWorkshop** serves as a foundational blueprint for on-premises DSC projects, guiding infrastructure-as-code (IaC) practices for traditional systems like Windows Server, Hyper-V, and file services.
+
+### Relationship to DscWorkshop:
+- **Specialized Extension**: Microsoft365DscWorkshop adapts the core principles of the DscWorkshop (declarative configuration, idempotency, drift remediation) to Microsoft 365 cloud services.
+- **Shared Philosophy**: Both emphasize modularity, repeatability, and compliance, but **Microsoft365DscWorkshop** focuses on cloud-native management using the Microsoft365Dsc module, while **DscWorkshop** targets on-premises infrastructure with native DSC resources.
+
+### Key Benefits:
+1. **Implementation Blueprint**: Accelerates deployment by providing pre-built templates, architectural guidance, and workflow examples tailored to Microsoft 365 environments.  
+2. **Standardization**: Ensures consistent configurations across tenants, reducing drift and enforcing governance policies (e.g., security baselines, licensing, user provisioning).  
+3. **Best Practices**: Integrates lessons learned from real-world deployments, such as credential management, error handling, and incremental configuration rollouts.  
+4. **Scalability**: Demonstrates patterns for managing large-scale Microsoft 365 ecosystems, including multi-tenant and hybrid scenarios.  
+5. **DevOps Integration**: Guides automation pipelines (CI/CD) for testing, validating, and deploying configurations alongside tools like Azure DevOps or GitHub Actions.  
+6. **Community-Driven**: Builds on the open-source Microsoft365Dsc module, offering extensibility and collaboration opportunities.  
+7. **Cross-Service Coordination**: Unifies management of disparate Microsoft 365 workloads (e.g., Intune, Purview, Power Platform) under a single DSC framework.  
+
+---
+
+By serving as blueprints, both projects reduce the learning curve and setup time for teams adopting DSC, whether for on-premises infrastructure (**DscWorkshop**) or cloud-first Microsoft 365 environments (**Microsoft365DscWorkshop**). They enable organizations to enforce compliance, automate at scale, and maintain operational consistency.
+
+## How to get started
+
+If you are interested of testing out the [Microsoft365DscWorkshop](https://github.com/dsccommunity/Microsoft365DscWorkshop) approach, please have a look at the [Getting started guide](https://github.com/dsccommunity/Microsoft365DscWorkshop/tree/main/docs). The whole process is fully automated and should not take more than an hour to put a tenant under source control.
+
+## Seeing the Microsoft365DscWorkshop in action
+
+### Cloning the Project
+
+Let's say, someone in our company has already done the setup mentioned in the previous paragraph. Now we want to do a change to the tenant which is under source control.
+
+First, we need to logon to go with a browser to the lab repository [M365RA1](https://dev.azure.com/randre/M365RA1/_git/M365RA1). You will be asked to authenticate yourself. Please use the username (like SummitTestUser2@MngEnvMCAP167509.onmicrosoft.com) and the previously decrypted user password. Without this step, your user account is not initialized in Azure DevOps and you will not be able to do the next step.
+
+Then we have to clone the project so we can make changes its content. Please open VSCode and clone the project from the this link: <https://dev.azure.com/randre/M365RA1/_git/M365RA1>. When you are asked for credentials, use the same ones as you did in the previous step.
+
 > [!caution] Please open VSCode as admin as we are interacting with the `Program Files` folder.
 
-https://dev.azure.com/randre/M365RA1
+### Testing the Local Build
 
-auth with the given user account
+The Microsoft365DscWorkshop has a lot of dependencies that you luckily do not have to resolve yourself. The dependencies are defined in the file [/RequiredModules.psd1](/RequiredModules.psd1) and will be stores in [/output/RequiredModules](/output/RequiredModules). Please run the following command to download all the dependencies and get ready for the first build.
 
-clone
+```powershell
+.\build.ps1 -ResolveDependency -UseModuleFast -Tasks noop
+```
+
+> :information_source: The parameter `UseModuleFast` makes use of [ModuleFast](https://github.com/JustinGrote/ModuleFast) which is by far the fastest way to download PowerShell modules. `-Tasks noop` (No Operation) means to do nothing except resolving the dependencies.
+
+Now check out the [/output/RequiredModules](/output/RequiredModules) folder.
+
+To prevent conflicts with previously installed modules, please run the `CleanModuleFolder` task.
 
 ```powershell
 .\build.ps1 -Tasks CleanModuleFolder
 ```
 
+Now, please run a full build
+
+```powershell
+.\build.ps1
+```
+
+The full build will generate all artifacts required for a DSC scenario:
+
+- The [RSOP](/output//RSOP/) and [RsopWithSource](/output//RsopWithSource/)folder - RSOP provides **visibility and confidence** in your configuration management by ensuring hierarchical data is resolved correctly, minimizing deployment surprises.
+- The [MOF](/output//MOF/) folder contains the MOF files.
+
+The other artifacts are not important for this scenario.
+
+### Add a New Group to the Configuration Database
+
+Now let's do a change by
+
+- creating a new branch in the Git repository.
+- adding a new group to the yaml configuration database.
+- test the local build after we have done the change.
+- inspect the RSOP.
+- publish the branch to Azure DevOps.
+- create a pull request to notify our colleagues about the change and trigger the review process.
+
+Before being able to commit something to the Git repository, you need to set your user configuration to let Git know who you are. Please use the email address and user name from the account info yaml file.
+
+```powershell
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
+```
+
+Then we create a new branch:
+
+```powershell
+git checkout -b <Choose a name>
+```
+
+> :information_source: The branch name is shown in VSCode in the lower left corner. You should see the name you have chosen there. If it still says that you are on the main branch, something went wrong.
+
+Open the file [/source/1-AllTenantsConfig/AzureAd/cAADGroup.yml](/source/1-AllTenantsConfig/AzureAd/cAADGroup.yml). It contains a list of groups. PLease add another one by just copy and paste an already existing group definition. Please change the `MailNickname`, `DisplayName` and the `Description` to something that is hopefully unique.
+
+> :warning: The indentation in yaml is very important. Usually VSCode will highlight syntax errors.
+
+Save the file and commit it to the local git repository:
+
+```powershell
+git add .
+git commit -m <give your commit a comment>
+```
+
+The change is only within your local git repository, not yet in Azure DevOps. Same is with the new branch. Before we publish the branch, we want to see if the project still builds. Please run the build script again and afterwards please check if your new group is in the RSOP file.
+
+```powershell
+.\build.ps1
+```
+
+If the build succeeded and your are happy with the RSOP, please publish the new branch by running
+
+```powershell
+git push --set-upstream origin g1
+```
+
+Good, all done.
+
+### Create a Pull Request to Inform your Workmates
 
 
-build current state
-- resolve dependencies
-  - requiredmodules.psd1
-- artifacts in output
-  - rsop
-  - mof
 
-save the rsops for later
-
-new branch with git
-
-git checkout -b <branchname>
 
 create a group in all tenants
 show the promotion process
