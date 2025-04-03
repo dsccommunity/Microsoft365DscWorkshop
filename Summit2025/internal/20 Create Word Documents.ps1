@@ -43,11 +43,19 @@ for ($i = 0; $i -lt $csvData.Count; $i++)
     $titleParagraph.Alignment = 1 # Center alignment (0=left, 1=center, 2=right)
     $titleParagraph.Range.InsertParagraphAfter()
 
+    $paragraph = $document.Paragraphs.Add()
+    $paragraph.Range.Text = '' # Empty paragraph for spacing
+    $paragraph.Range.Font.Size = 16
+    $paragraph.Range.Font.Bold = $true
+    $paragraph.Alignment = 0 # Center alignment (0=left, 1=center, 2=right)
+    $paragraph.Range.InsertParagraphAfter()
+
     # Add the standard sentence after the title
     $paragraph = $document.Paragraphs.Add()
     $paragraph.Range.Text = $standardSentence
     $paragraph.Range.Font.Size = 16
     $paragraph.Range.Font.Bold = $true
+    $paragraph.Alignment = 0 # Center alignment (0=left, 1=center, 2=right)
     $paragraph.Range.InsertParagraphAfter()
 
     # Add the standard sentence after the title
