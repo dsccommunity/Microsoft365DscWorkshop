@@ -2,7 +2,7 @@
 & "$PSScriptRoot\..\lab\11 Test Connection.ps1" -EnvironmentName Dev -DoNotDisconnect
 Import-Module -Name NameIT -ErrorAction SilentlyContinue
 
-$appCount = 1
+$appCount = 10
 $azureDevOpsProjectUrl = "https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName)/$($datum.Global.ProjectSettings.ProjectName)"
 $tenantId = $datum.Global.Azure.Environments.Dev.AzTenantId
 $tenantName = $datum.Global.Azure.Environments.Dev.AzTenantName
@@ -34,7 +34,7 @@ $result = for ($i = 1; $i -le $appCount; $i++)
 {
     $app = New-M365DscIdentity -Name "TestApp$i" -GenereateAppSecret -PassThru
     Write-Host "Created app: $($app.DisplayName) with ID: $($app.AppId)"
-    Add-M365DscIdentityPermission -Identity $app -Permissions 'Group.ReadWrite.All', 'Group.Read.All', 'Group.Create'
+    Add-M365DscIdentityPermission -Identity $app -Permissions 'Group.ReadWrite.All'
     Write-Host "Added permission to app: $($app.DisplayName)"
     $app | Add-Member -Name Index -Value $i -MemberType NoteProperty -PassThru
 }
@@ -74,6 +74,7 @@ $result = foreach ($app in $result)
     $app | Add-Member -Name UserName -Value $user.DisplayName -MemberType NoteProperty -Force
     $app | Add-Member -Name UserPassword -Value $userPassword -MemberType NoteProperty -Force
     $app | Add-Member -Name UserPasswordPlain -Value $password -MemberType NoteProperty -Force
+    $app | Add-Member -Name UserUpn -Value $user.UserPrincipalName -MemberType NoteProperty -Force
     $app
 }
 
