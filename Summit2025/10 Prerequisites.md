@@ -1,4 +1,4 @@
-# Titel
+# Preparing your machine and retrieving your credentials
 
 ## Requirements
 
