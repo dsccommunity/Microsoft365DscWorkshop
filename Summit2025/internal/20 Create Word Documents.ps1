@@ -17,7 +17,11 @@ $word.Visible = $false
 $document = $word.Documents.Add()
 
 # Define the standard sentence to be included on each page
-$standardSentence = "Hello attendee, this piece of pater is important for the hands-on labs."
+$standardSentence = @"
+Hello attendee,
+
+this piece of paper is important for the hands-on labs. It contains the information you need to access the labs. Please keep it safe and do not lose it.
+"@
 
 # Loop through each record in the CSV
 for ($i = 0; $i -lt $csvData.Count; $i++) {
@@ -54,7 +58,7 @@ for ($i = 0; $i -lt $csvData.Count; $i++) {
 
 # Save the document
 $outputPath = Join-Path -Path $PSScriptRoot -ChildPath "SummitAppsDocument.docx"
-$document.SaveAs([ref]$outputPath)
+$document.SaveAs($outputPath)
 $document.Close()
 
 # Close Word
