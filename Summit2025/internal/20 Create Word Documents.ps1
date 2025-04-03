@@ -2,8 +2,11 @@
 # Each record will be on a separate page with Key, UserName, DisplayName and AppId properties
 # Each page starts with the same sentence
 
-# Import CSV data
-$csvPath = Join-Path -Path $PSScriptRoot -ChildPath "Apps.csv"
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$CsvPath
+)
+
 $csvData = Import-Csv -Path $csvPath
 
 # Create a Word application instance
