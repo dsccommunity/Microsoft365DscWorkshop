@@ -31,7 +31,7 @@ If you are interested of testing out the [Microsoft365DscWorkshop](https://githu
 
 Let's say, someone in our company has already done the setup mentioned in the previous paragraph. Now we want to do a change to the tenant which is under source control.
 
-First, we need to logon to go with a browser to the lab repository [M365RA1](https://dev.azure.com/randre/M365RA1/_git/M365RA1). You will be asked to authenticate yourself. Please use the username (like SummitTestUser2@MngEnvMCAP167509.onmicrosoft.com) and the previously decrypted user password. Without this step, your user account is not initialized in Azure DevOps and you will not be able to do the next step.
+First, we need to logon to go with a browser to the lab repository [M365RA1](https://dev.azure.com/randre/M365RA1/_git/M365RA1). You will be asked to authenticate yourself. Please use the username (like SummitTestUser2@MngEnvMCAP167509.onmicrosoft.com) and the previously decrypted user password. :warning: Without this step, your user account is not initialized in Azure DevOps and you will not be able to do the next step.
 
 Then we have to clone the project so we can make changes its content. Please open VSCode and clone the project from the this link: <https://dev.azure.com/randre/M365RA1/_git/M365RA1>. When you are asked for credentials, use the same ones as you did in the previous step.
 
@@ -121,11 +121,26 @@ Good, all done.
 
 ### Create a Pull Request to Inform your Workmates
 
+What is the purpose of a pull request (PR)? **Propose**, **review**, and *merge** code changes **safely**.
+
+- **Collaborate**: Discuss changes before merging.  
+- **Ensure Quality**: Review code for errors/standards.  
+- **Integrate**: Merge approved updates into the main codebase.  
+
+To create the pull request, navigate to the Azure DevOps repository: <https://dev.azure.com/randre/M365RA1/_git/M365RA1>. You should still be authenticated from the last visit. If not, please use the username (like SummitTestUser2@MngEnvMCAP167509.onmicrosoft.com) and the previously decrypted user password.
+
+On the left side there is a menu group called `Repos` and underneath `Pull requests`. Please go there. Azure DevOps knows about your last change and the new branch and should suggest you to create a PR by clicking on the `Create a pull request` button on the right side.
+
+You can give your PR a title and description and then click on `Create`.
+
+What happens next?
+
+- The reviewers of the project are notified as defined in the branch policies.
+- A build is triggered to check whether the project can still be built and whether all defined tests are successful, as you may not have tested this yourself.
+
+Let's hope that your PR is approved.
 
 
-
-create a group in all tenants
-show the promotion process
 
 appendix
 datum
