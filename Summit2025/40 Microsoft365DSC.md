@@ -177,7 +177,7 @@ Start-DscConfiguration -Path C:\DSC -Wait -Verbose -Force
 
 Now things should work.
 
-> [!QUESTION] After this task, please cleanup the LCM configuration on your notebook or virtual machine. Otherwise the configuration will be applied every 15 minunites again and again and forever.
+> [!WARNING] After this task, please cleanup the LCM configuration on your notebook or virtual machine. Otherwise the configuration will be applied every 15 minunites again and again and forever.
 > ```powershell
 > Remove-DscConfigurationDocument -Stage Current, Pending, Previous
 > ```
