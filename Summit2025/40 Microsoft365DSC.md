@@ -193,6 +193,44 @@ Start-DscConfiguration -Path C:\DSC -Wait -Verbose -Force
 
 Now things should work. If you get an error, run the LCM again, please.
 
+The full script looks like this:
+
+```powershell
+configuration TestGroupDemo
+{
+    Import-DscResource -ModuleName Microsoft365DSC
+
+    $cred = [pscredential]::new('empty', ('ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMN' | ConvertTo-SecureString -AsPlainText -Force))
+
+    node localhost {
+
+        AADGroup TestGroupDsc {
+            DisplayName       = 'Test Group Dsc'
+            MailEnabled       = $false
+            MailNickname      = 'TestGroupDsc'
+            SecurityEnabled   = $true
+            TenantId          = 'MngEnvMCAP167509.onmicrosoft.com'
+            ApplicationId     = '86013a22-39b3-4997-8f3b-f367fac4c458'
+            ApplicationSecret = $cred
+        }
+    }
+}
+
+$cd = @{
+    AllNodes = @(
+        @{
+            NodeName = 'localhost'
+            PSDscAllowPlainTextPassword = $true
+            PSDscAllowDomainUser = $true
+        }
+    )
+}
+
+TestGroupDemo -OutputPath C:\DSC -ConfigurationData $cd
+
+Start-DscConfiguration -Path C:\DSC\ -Wait -Verbose -Force
+```
+
 > [!WARNING] After this task, please cleanup the LCM configuration on your notebook or virtual machine. Otherwise the configuration will be applied every 15 minunites again and again and forever.
 > ```powershell
 > Remove-DscConfigurationDocument -Stage Current, Pending, Previous
