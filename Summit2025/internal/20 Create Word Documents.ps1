@@ -23,7 +23,7 @@ $document.Content.Font.Size = 16
 $standardSentence = @'
 Hello attendee,
 
-this piece of paper is important for the hands-on labs. It contains the information you need to access the labs. Please keep it safe and do not lose it.
+This piece of paper is important for the hands-on labs. It contains the information you need to access the labs. Please keep it safe and do not lose it.
 '@
 
 $tinyUrl = 'If you have some time before the workshop starts, please get prepared: https://aka.ms/EntraIDM365AsCodeDSCWorkshop'
