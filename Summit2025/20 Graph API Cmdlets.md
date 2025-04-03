@@ -1,5 +1,12 @@
 # Graph API Cmdlets
 
+- [Graph API Cmdlets](#graph-api-cmdlets)
+  - [1. Installation and Authentication](#1-installation-and-authentication)
+  - [2. Get-MgGroup](#2-get-mggroup)
+  - [3. New-MgGroup](#3-new-mggroup)
+
+## 1. Installation and Authentication
+
 For using the Graph API, we have to install the respective module first.
 
 ```powershell
@@ -20,7 +27,7 @@ Connect-MgGraph -ClientSecretCredential $cred -TenantId a1627b4f-281e-4f8b-bf13-
 
 > :information_source: Why are we not using the user account but the application to connect to the Graph API? Usually enforced MFA, IP restrictions, or device compliance policies will break automation. Service principals bypass MFA while maintaining security. Access can be restricted via certificates, IP whitelisting, or managed identities instead. The key benefit is reliable automation without interruptions from user security policies.
 
-### [Get-MgGroup](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.groups/get-mggroup?view=graph-powershell-1.0)
+## 2. [Get-MgGroup](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.groups/get-mggroup?view=graph-powershell-1.0)
 
 After connecting to the tenant we can interact with it. By default `Get-MgGroup` returns all groups. You can filter like this:
 
@@ -30,7 +37,7 @@ Get-MgGroup -Search '"DisplayName:Contoso"' -ConsistencyLevel eventual
 
 > :information_source: The cmdlet `Get-MgContext` tells you to which tenant you are currently connected. It also tells you which permissions you have. Reading users with `Get-MgUser` should not be possible and will throw 'Insufficient privileges to complete the operation' as we don't have the necessary scopes in the access token.
 
-### [New-MgGroup](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.groups/new-mggroup?view=graph-powershell-1.0)
+## 3. [New-MgGroup](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.groups/new-mggroup?view=graph-powershell-1.0)
 
 Now we create a new group. Please run the command. You may name the group as you like.
 
