@@ -7,3 +7,4 @@ The following documents contain the tasks for the follow along session / worksho
 - [DSC Basics](./30%20DSC%20Basics.md): Getting to Know the DSC Syntax.
 - [Microsoft365DSC](./40%20Microsoft365DSC.md): Finally...
 - [The Microsoft365DscWorkshop Blueprint](./50%20Microsoft365DscWorkshop.md)
+- [Configuration Data and the Datum Module](./51%20Configuration%20Data.md)

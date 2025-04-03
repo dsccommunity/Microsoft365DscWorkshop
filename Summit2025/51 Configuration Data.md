@@ -1,6 +1,6 @@
-# Configuration Data and the Datum module
+# Configuration Data and the Datum Module
 
-- [Configuration Data and the Datum module](#configuration-data-and-the-datum-module)
+- [Configuration Data and the Datum Module](#configuration-data-and-the-datum-module)
   - [1. What is the Datum Module?](#1-what-is-the-datum-module)
   - [2. Why is Datum Important?](#2-why-is-datum-important)
     - [2.1. Hierarchical Data Management](#21-hierarchical-data-management)
