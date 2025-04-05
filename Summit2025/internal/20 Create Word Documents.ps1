@@ -26,7 +26,7 @@ Hello attendee,
 This piece of paper is important for the hands-on labs. It contains the information you need to access the labs. Please keep it safe and do not lose it.
 '@
 
-$tinyUrl = 'If you have some time before the workshop starts, please get prepared: https://aka.ms/EntraIDM365AsCodeDSCWorkshop'
+$tinyUrl = 'If you have some time before the workshop starts, please get prepared: https://tinyurl.com/m365dscws'
 
 $title = 'Entra ID and M365 as Code with DSC workshop'
 
