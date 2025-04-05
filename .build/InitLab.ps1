@@ -9,8 +9,15 @@ task InitLab {
     Write-Host "Importing module 'M365DscHelpers' from path '$ProjectPath\lab\M365DscHelpers.psm1'." -ForegroundColor Yellow
     Import-Module -Name $ProjectPath\lab\M365DscHelpers.psm1 -Force
 
-    Write-Host "Importing module 'MofConvert' from path '$ProjectPath\export\MofConvert.psm1'." -ForegroundColor Yellow
-    Import-Module -Name $ProjectPath\export\MofConvert.psm1 -Force
+    if ($PSVersionTable.PSEdition -eq 'Core')
+    {
+        Write-Host "Importing module 'MofConvert' from path '$ProjectPath\export\MofConvert.psm1'." -ForegroundColor Yellow
+        Import-Module -Name $ProjectPath\export\MofConvert.psm1 -Force
+    }
+    else
+    {
+        Write-Host "The module 'MofConvert.psm1' cannot be loaded on Windows PowerShell."
+    }
 
     if (Get-Module -Name AutomatedLab -ListAvailable)
     {

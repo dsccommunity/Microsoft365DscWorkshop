@@ -40,6 +40,10 @@ BuildWorkflow:
     - LoadDatumConfigData
     - ExportTenantData
     - InvokingDscExportConfiguration
+
+  exportConvert:
+    - InitLab
+    - LoadDatumConfigData
     - ConvertMofToYaml
 
   build:

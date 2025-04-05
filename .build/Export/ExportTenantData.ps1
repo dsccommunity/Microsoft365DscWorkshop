@@ -67,7 +67,6 @@ task ExportTenantData {
 task InvokingDscExportConfiguration {
 
     Write-Host 'Invoking DSC configurations' -ForegroundColor Yellow
-    Remove-Module -Name PSDesiredStateConfiguration -Force -ErrorAction SilentlyContinue
 
     $environments = if ($env:BuildEnvironment)
     {
@@ -85,7 +84,7 @@ task InvokingDscExportConfiguration {
         $tenantExportDirectory = dir -Path "$OutputDirectory\export" -Directory |
             Where-Object { $_.Name -eq $env.Value.AzTenantName }
 
-        $dscResourceDirectories = dir -Path $tenantExportDirectory -Directory
+        $dscResourceDirectories = dir -Path $tenantExportDirectory.FullName -Directory
         foreach ($dscResourceDirectory in $dscResourceDirectories)
         {
             $dscResourceDirectory | Set-Location
@@ -93,7 +92,12 @@ task InvokingDscExportConfiguration {
             Write-Host "Invoking DSC configuration in directory '$($dscResourceDirectory.FullName)'" -ForegroundColor Yellow
             try
             {
-                dir -Path $Path -Recurse -Filter *.ps1 | ForEach-Object { & $_.FullName }
+                dir -Path $Path -Recurse -Filter *.ps1 | ForEach-Object {
+                    $prevErrorActionPreference = $prevErrorActionPreference
+                    $ErrorActionPreference = 'SilentlyContinue'
+                    & $_.FullName
+                    $ErrorActionPreference = $prevErrorActionPreference
+                }
                 Write-Host "        DSC configuration in folder '$($dscResourceDirectory.BaseName)' was successfully compiled." -ForegroundColor Green
             }
             catch
@@ -109,15 +113,30 @@ task InvokingDscExportConfiguration {
 
 task ConvertMofToYaml {
 
+    #The PSModulePath must be set to '.\output\RequiredModules\'' a number of times in this script as
+    #Something changes it back to the original value.
+    $modulePath = $env:PSModulePath
+    $env:PSModulePath = '.\output\RequiredModules\'
+
     $allModules = Get-ModuleFromFolder -ModuleFolder .\output\RequiredModules\
+    Write-Host "Found $($allModules.Count) modules in the output folder." -ForegroundColor Yellow
+    $env:PSModulePath = '.\output\RequiredModules\'
+
     $m365dscModule = $allModules | Where-Object { $_.Name -eq 'Microsoft365DSC' }
     $modulesWithDscResources = Get-DscResourceFromModuleInFolder -ModuleFolder .\output\RequiredModules\ -Modules $m365dscModule
+    Write-Host "Found $($modulesWithDscResources.Count) modules with DSC resources in the output folder." -ForegroundColor Yellow
+    $env:PSModulePath = '.\output\RequiredModules\'
+
     $resourceTypes = $modulesWithDscResources | Select-Object -ExpandProperty ResourceType
+    Write-Host "Found $($resourceTypes.Count) resource types in the output folder." -ForegroundColor Yellow
+    $env:PSModulePath = '.\output\RequiredModules\'
 
     $tenants = Get-ChildItem -Path "$OutputDirectory\export" -Directory
+    Write-Host "Found $($tenants.Count) tenants in the output folder." -ForegroundColor Yellow
 
     foreach ($tenant in $tenants)
     {
+        Write-Host "Converting MOF files in tenant '$($tenant.Name)'" -ForegroundColor Yellow
         $dscresources = dir -Path $tenant -Directory
         foreach ($dscresource in $dscresources)
         {
@@ -137,5 +156,7 @@ task ConvertMofToYaml {
             }
         }
     }
+
+    $env:PSModulePath = $modulePath
 
 }

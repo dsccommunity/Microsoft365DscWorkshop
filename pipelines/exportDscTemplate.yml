@@ -41,9 +41,18 @@ stages:
                 name: ExportTenantConfig
                 displayName: Export Tenant Configuration
                 inputs:
-                  pwsh: true
+                  pwsh: false
                   filePath: ./build.ps1
                   arguments: -UseModuleFast -ResolveDependency -Tasks export
+                continueOnError: true
+
+              - task: PowerShell@2
+                name: ConvertTenantConfig
+                displayName: Convert Exported Tenant Configuration
+                inputs:
+                  pwsh: true
+                  filePath: ./build.ps1
+                  arguments: -UseModuleFast -Tasks exportConvert
                 continueOnError: true
 
               - task: PublishPipelineArtifact@1
