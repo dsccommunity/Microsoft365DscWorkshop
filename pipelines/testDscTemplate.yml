@@ -40,7 +40,7 @@ stages:
                       dir -Path env: | Format-Table -Property Name, Value -AutoSize | Out-String | Write-Host
 
                 - task: PowerShell@2
-                  name: deploy
+                  name: testConfiguration
                   displayName: 'Validating Deployment of DSC Configuration'
                   inputs:
                     filePath: './build.ps1'
