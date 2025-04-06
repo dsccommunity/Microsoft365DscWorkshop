@@ -2,7 +2,7 @@
 & "$PSScriptRoot\..\..\lab\11 Test Connection.ps1" -EnvironmentName Dev -DoNotDisconnect
 Import-Module -Name NameIT -ErrorAction SilentlyContinue
 
-$appCount = 5
+$appCount = 120
 $azureDevOpsProjectUrl = "https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName)/$($datum.Global.ProjectSettings.ProjectName)"
 $tenantId = $datum.Global.Azure.Environments.Dev.AzTenantId
 $tenantName = $datum.Global.Azure.Environments.Dev.AzTenantName
@@ -74,7 +74,16 @@ $result = foreach ($app in $result)
     catch
     {
         #Let's try again
-        $user | Add-M365DscRepositoryPermission -ProjectUrl $azureDevOpsProjectUrl -PersonalAccessToken $azureDevOpsPat -RepositoryName $datum.Global.ProjectSettings.ProjectName -Permissions CreateBranchPermission, ReadPermission -ErrorAction Stop | Out-Null
+        try
+        {
+            $user | Add-M365DscRepositoryPermission -ProjectUrl $azureDevOpsProjectUrl -PersonalAccessToken $azureDevOpsPat -RepositoryName $datum.Global.ProjectSettings.ProjectName -Permissions CreateBranchPermission, ReadPermission -ErrorAction Stop | Out-Null
+        }
+        catch
+        {
+            Write-Warning "Failed to add test user to Azure DevOps project $($datum.Global.ProjectSettings.ProjectName)."
+            $app | Add-Member -Name Error -Value 'FailedToAddToProject' -MemberType NoteProperty -Force
+        }
+
     }
 
     $userPassword = $password | Protect-Datum -Password ($app.Key | ConvertTo-SecureString -AsPlainText -Force)
