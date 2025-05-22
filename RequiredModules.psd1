@@ -36,7 +36,7 @@
     'DscResource.Test'                                     = 'latest'
 
     # Composites
-    'DscConfig.M365'                                       = 'latest'
+    'DscConfig.M365'                                       = '0.6.1-preview0001'
     'DscConfig.Demo'                                       = 'latest'
 
     #DSC Resources
