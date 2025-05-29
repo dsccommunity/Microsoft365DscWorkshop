@@ -57,7 +57,7 @@
     'Microsoft.Graph.Identity.DirectoryManagement'         = '2.27.0'
 
     # Microsoft365DSC
-    Microsoft365DSC                                        = '1.25.514.1'
+    Microsoft365DSC                                        = '1.25.528.1'
 
     <#
         To update Microsoft365DSC and its dependencies, do the following steps:
