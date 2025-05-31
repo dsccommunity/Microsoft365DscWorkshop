@@ -851,7 +851,7 @@ function Connect-M365DscAzure
     try
     {
         $token = Get-AzAccessToken -ResourceTypeName MSGraph
-        Connect-MgGraph -AccessToken ($token.Token | ConvertTo-SecureString -AsPlainText -Force) -NoWelcome -ErrorAction Stop
+        Connect-MgGraph -AccessToken $token.Token
         $graphContext = Get-MgContext
         Write-Host "Connected to Graph API '$($graphContext.TenantId)' with account '$($graphContext.ClientId)'."
     }
