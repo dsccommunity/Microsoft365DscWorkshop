@@ -41,19 +41,21 @@ task InitLab {
 
     Write-Host ''
 
-    $azAccountsModule = Get-Module -Name Az.Accounts -ListAvailable |
-        Sort-Object -Property Version -Descending |
-            Select-Object -First 1 |
-                Import-Module -PassThru
-    Write-Host "'Az.Accounts' module version $($azAccountsModule.Version) is imported to make sure the highest available version is used." -ForegroundColor Yellow
+    $modulesToImport = @(
+        'ExchangeOnlineManagement',
+        'Az.Accounts',
+        'Az.Resources',
+        'Microsoft365DSC'
+    )
 
-    $azResourceModule = Get-Module -Name Az.Resources -ListAvailable |
-        Sort-Object -Property Version -Descending |
-            Select-Object -First 1 |
-                Import-Module -PassThru
-    Write-Host "'Az.Resources' module version $($azResourceModule.Version) is imported to make sure the highest available version is used." -ForegroundColor Yellow
+    foreach ($moduleToImport in $modulesToImport)
+    {
+        $module = Get-Module -Name $moduleToImport -ListAvailable |
+            Sort-Object -Property Version -Descending |
+                Select-Object -First 1 |
+                    Import-Module -PassThru
+        Write-Host "'$module' module version $($module.Version) is imported to make sure the highest available version is used." -ForegroundColor Yellow
 
-    Write-Host "Importing module 'Microsoft365DSC' from path '$RequiredModulesDirectory'." -ForegroundColor Yellow
-    Import-Module -Name Microsoft365DSC -Force
+    }
 
 }
