@@ -1,5 +1,17 @@
 task InitLab {
 
+    #workaround for https://github.com/microsoftgraph/msgraph-sdk-powershell/issues/3331
+    $dummyCred = [pscredential]::new('dummy', (New-Object System.Security.SecureString))
+    Import-Module -Name ExchangeOnlineManagement
+    try
+    {
+        Connect-ExchangeOnline -UserPrincipalName dummy@contoso.com -Credential $dummyCred | Out-Null
+    }
+    catch
+    {
+        # Exception is expected
+    }
+
     Write-Host "Importing module 'AzHelpers' from path '$ProjectPath\lab\AzHelpers.psm1'." -ForegroundColor Yellow
     Import-Module -Name $ProjectPath\lab\AzHelpers.psm1 -Force
 
