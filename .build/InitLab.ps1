@@ -1,11 +1,11 @@
 task InitLab {
 
     #workaround for https://github.com/microsoftgraph/msgraph-sdk-powershell/issues/3331
-    $dummyCred = [pscredential]::new('dummy', (New-Object System.Security.SecureString))
+    $dummyCred = [pscredential]::new('dummy', ('123' | ConvertTo-SecureString -AsPlainText -Force))
     Import-Module -Name ExchangeOnlineManagement
     try
     {
-        Connect-ExchangeOnline -UserPrincipalName dummy@contoso.com -Credential $dummyCred | Out-Null
+        Connect-ExchangeOnline -UserPrincipalName dummy@contoso.com -Credential $dummyCred -ErrorAction Ignore | Out-Null
     }
     catch
     {
