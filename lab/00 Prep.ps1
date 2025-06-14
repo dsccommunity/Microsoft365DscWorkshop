@@ -32,7 +32,7 @@ if ($projectSettings -contains 'ProjectName: <ProjectName>')
 
 $requiredModules = @{
     VSTeam       = '7.15.2'
-    AutomatedLab = 'latest'
+    AutomatedLab = '5.57.3-preview'
 }
 
 foreach ($module in $requiredModules.GetEnumerator())
@@ -43,6 +43,10 @@ foreach ($module in $requiredModules.GetEnumerator())
         Force              = $true
         AllowClobber       = $true
         SkipPublisherCheck = $true
+    }
+    if ($module.Value -like '*preview*')
+    {
+        $param.AllowPrerelease = $true
     }
     if ($module.Value -ne 'latest')
     {
