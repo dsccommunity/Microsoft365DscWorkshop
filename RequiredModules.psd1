@@ -53,11 +53,9 @@
     # Azure
     'Az.KeyVault'                                          = '6.3.1'
     'Az.ManagedServiceIdentity'                            = '2.0.0'
-    'Microsoft.Graph.Identity.Governance'                  = '2.28.0'
-    'Microsoft.Graph.Identity.DirectoryManagement'         = '2.28.0'
 
     # Microsoft365DSC
-    Microsoft365DSC                                        = '1.25.604.1'
+    Microsoft365DSC                                        = '1.25.730.1'
 
     <#
         To update Microsoft365DSC and its dependencies, do the following steps:
@@ -91,7 +89,8 @@
     'Microsoft.Graph.Beta.NetworkAccess'                   = '2.28.0'
     'Microsoft.Graph.Beta.Identity.DirectoryManagement'    = '2.28.0'
     'Microsoft.Graph.Beta.Identity.Governance'             = '2.28.0'
-    'Microsoft.Graph.Beta.Identity.SignIns'                = '2.28.0'
+    'Microsoft.Graph.Identity.DirectoryManagement'         = '2.28.0'
+    'Microsoft.Graph.Identity.SignIns'                     = '2.28.0'
     'Microsoft.Graph.Beta.Reports'                         = '2.28.0'
     'Microsoft.Graph.Beta.Search'                          = '2.28.0'
     'Microsoft.Graph.Beta.Teams'                           = '2.28.0'
@@ -103,9 +102,10 @@
     'Microsoft.Graph.Sites'                                = '2.28.0'
     'Microsoft.Graph.Users'                                = '2.28.0'
     'Microsoft.Graph.Users.Actions'                        = '2.28.0'
+    'Microsoft.Graph.Identity.Governance'               = '2.28.0'
     'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.205'
-    'MicrosoftTeams'                                       = '7.0.0'
-    'MSCloudLoginAssistant'                                = '1.1.44'
+    'MicrosoftTeams'                                       = '7.2.0'
+    'MSCloudLoginAssistant'                                = '1.1.50'
     'ReverseDSC'                                           = '2.0.0.28'
     'PnP.PowerShell'                                       = '1.12.0'
 
