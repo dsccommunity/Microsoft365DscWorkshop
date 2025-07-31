@@ -53,8 +53,6 @@
     # Azure
     'Az.KeyVault'                                          = '6.3.1'
     'Az.ManagedServiceIdentity'                            = '2.0.0'
-    'Microsoft.Graph.Identity.Governance'                  = '2.27.0'
-
 
     # Microsoft365DSC
     Microsoft365DSC                                        = '1.25.730.1'
@@ -104,6 +102,7 @@
     'Microsoft.Graph.Sites'                                = '2.28.0'
     'Microsoft.Graph.Users'                                = '2.28.0'
     'Microsoft.Graph.Users.Actions'                        = '2.28.0'
+    'Microsoft.Graph.Identity.Governance'               = '2.28.0'
     'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.205'
     'MicrosoftTeams'                                       = '7.2.0'
     'MSCloudLoginAssistant'                                = '1.1.50'
