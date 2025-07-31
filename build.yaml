@@ -49,6 +49,7 @@ BuildWorkflow:
   build:
     - test7
     - Clean
+    - ModuleCleanup
     - Build_Module_ModuleBuilder
     - LoadDatumConfigData
     - ConfigDataPreparation
