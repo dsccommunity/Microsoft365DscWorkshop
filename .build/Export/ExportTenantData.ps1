@@ -68,6 +68,10 @@ task InvokingDscExportConfiguration {
 
     Write-Host 'Invoking DSC configurations' -ForegroundColor Yellow
 
+    #Redirect errors to the pipeline as the ErrorAction parameter is ignored by the cmdlet
+    Remove-Module -Name PSDesiredStateConfiguration -Force
+    Import-Module -Name PSDesiredStateConfiguration -Force
+
     $environments = if ($env:BuildEnvironment)
     {
         $datum.Global.Azure.Environments.GetEnumerator().Where({ $_.Name -eq $env:BuildEnvironment })
