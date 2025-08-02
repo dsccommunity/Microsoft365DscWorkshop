@@ -23,7 +23,7 @@ stages:
 
             - task: PowerShell@2
               name: displayEnvVariables
-              displayName: 'Display Environment Variables'
+              displayName: Display Environment Variables
               inputs:
                 targetType: inline
                 pwsh: true
@@ -32,8 +32,8 @@ stages:
 
             - task: PowerShell@2
               name: InitializeModuleFolder
-              displayName: 'Initialize Program Files Modules'
+              displayName: Initialize Program Files Modules
               inputs:
                 pwsh: true
-                filePath: './build.ps1'
-                arguments: '-UseModuleFast -ResolveDependency -Tasks InitializeModuleFolder'
+                filePath: ./build.ps1
+                arguments: -ResolveDependency -Tasks InitializeModuleFolder #-UseModuleFast
