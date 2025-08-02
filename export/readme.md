@@ -1,8 +1,16 @@
 # 1. Export your Azure Tenant Configuration
 
+- [1. Export your Azure Tenant Configuration](#1-export-your-azure-tenant-configuration)
+  - [1.1. Preparations on your Local Machine](#11-preparations-on-your-local-machine)
+    - [1.1.1. Forking or importing the Project](#111-forking-or-importing-the-project)
+    - [1.1.2. Cloning the Project](#112-cloning-the-project)
+    - [1.1.3. Downloading Dependencies](#113-downloading-dependencies)
+  - [1.2. Configuring the Azure Tenant](#12-configuring-the-azure-tenant)
+  - [1.3. If you want the data in a different more transportable format, please refer to Export your Azure Tenant Configuration to Yaml or Json](#13-if-you-want-the-data-in-a-different-more-transportable-format-please-refer-to-export-your-azure-tenant-configuration-to-yaml-or-json)
+
 For exporting your tenant configuration with [Microsoft365DSC](https://microsoft365dsc.com/) there is not much required. The following lines will guide you through.
 
->  :warning: You must be a local administrator one the machine you run the setup scripts on.
+> :warning: You must be a local administrator one the machine you run the setup scripts on.
 
 ## 1.1. Preparations on your Local Machine
 
@@ -21,7 +29,7 @@ This guide expects you have created a new project on Azure DevOps and imported t
 Clone the project in Visual Studio Code Source Control Activity Bar or use the command `git.exe`. With the following command you clone the Git repository to your local machine. Please change the link according to your fork / project on your code management solution.
 
 ```powershell
-git clone https://github.com/raandree/Microsoft365DscWorkshop.git C:\Git
+git clone https://github.com/dsccommunity/Microsoft365DscWorkshop.git C:\Git
 ```
 
 ### 1.1.3. Downloading Dependencies
@@ -36,10 +44,10 @@ git clone https://github.com/raandree/Microsoft365DscWorkshop.git C:\Git
 
 > :information_source: 'noop' means 'no operation'
 
-1. After having all dependencies downloaded, you are ready to start the work. First you need to initialize the shell to access all required resources. The `Microsoft365DscWorkshop` repository provides some useful functions. To make them available, run the task `labinit`:
+1. After having all dependencies downloaded, you are ready to start the work. First you need to initialize the shell to access all required resources. The `Microsoft365DscWorkshop` repository provides some useful functions. To make them available, run the task `init`:
 
 ```powershell
-.\build.ps1 -Tasks labinit
+.\build.ps1 -Tasks init
 ```
 
 ## 1.2. Configuring the Azure Tenant
@@ -85,7 +93,7 @@ $id = New-M365DscIdentity -Name M365DscExportApplication -PassThru
 
 Now everything should be setup to run the export. To test this, please run the following command to test the export of applications. Change the tenant ID, certificate thumbprint and application ID according to your environment.
 
->Note: If you have closed the PowerShell session in the meantime and PowerShell does not find the cmdlet `Export-M365DSCConfiguration` anymore, please run `.\build.ps1 -Tasks noop`  to initialize the environment. The will amend the `PSModulePath` to include `$ProjectPath\output\RequiredModules\`.
+>Note: If you have closed the PowerShell session in the meantime and PowerShell does not find the cmdlet `Export-M365DSCConfiguration` anymore, please run `.\build.ps1 -Tasks noop` to initialize the environment. The will amend the `PSModulePath` to include `$ProjectPath\output\RequiredModules\`.
 
 ```powershell
 Export-M365DSCConfiguration -Components AADApplication -ApplicationId 40642b84-0d13-43ac-951e-8700d5be1131 -TenantId MngEnvMCAP576786.onmicrosoft.com -CertificateThumbprint FBA23F11CD8F78A17B9E2105D9BE3EE15BA04165 -Path .\temp\

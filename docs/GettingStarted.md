@@ -20,7 +20,7 @@
 
 ## 1. Getting started
 
-> Note: If you are only intersted in exporting your Microsoft Azure tenant configuration with [Microsoft365DSC](https://microsoft365dsc.com/) and you do not want to configure your tenants, please refer to [Export your Azure Tenant Configuration](../export/readme.md).
+> Note: If you are only interested in exporting your Microsoft Azure tenant configuration with [Microsoft365DSC](https://microsoft365dsc.com/) and you do not want to configure your tenants, please refer to [Export your Azure Tenant Configuration](../export/readme.md).
 
 ### 1.0.1. :warning: You must be a local administrator one the machine you run the setup scripts on
 
@@ -32,7 +32,7 @@ writable copy of the project. Please import the content of this project into a p
 1. Create a new project in your Azure DevOps Organization with the name of your choice.
 2. In the new project, click on 'Repos'.
 3. As there is no content yet, you are asked to add some code. Please press the 'Import' button.
-4. Please use the URL `https://github.com/raandree/Microsoft365DscWorkshop.git` as the 'Clone URL' and click on 'Import' (it may take a view seconds to copy the content).
+4. Please use the URL `https://github.com/dsccommunity/Microsoft365DscWorkshop.git` as the 'Clone URL' and click on 'Import' (it may take a view seconds to copy the content).
 
 This guide expects you have created a new project on Azure DevOps and imported the content from here. Alternatively, you can create a fork on GitHub, but then some scripts won't work and you have to make the required tasks manually.
 

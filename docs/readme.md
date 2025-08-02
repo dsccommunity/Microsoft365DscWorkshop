@@ -12,7 +12,7 @@ These are the top project that M365DscWorkshop is based on:
 
 Project Name | Project Description
 --- | ---
- [DscWorkshop](https://github.com/dsccommunity/DscWorkshop) | The DscWorkshop is the blueprint for this project where all the threads come together.
+[DscWorkshop](https://github.com/dsccommunity/DscWorkshop) | The DscWorkshop is the blueprint for this project where all the threads come together.
 [Datum](https://github.com/gaelcolas/Datum) | Datum is used to manage configuration data in a hierarchy adapted to the business context.
 [Pester](https://pester.dev/) | Pester is a testing framework to verify the configuration data, the code as well as the outcome after enacting the configuration.
 [Sampler](https://github.com/gaelcolas/Sampler) | Enables robust build and release pipelines for most involved open-source projects.
