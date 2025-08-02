@@ -23,7 +23,7 @@ stages:
 
             - task: PowerShell@2
               name: displayEnvVariables
-              displayName: 'Display Environment Variables'
+              displayName: Display Environment Variables
               inputs:
                 targetType: inline
                 pwsh: true
@@ -32,35 +32,35 @@ stages:
 
             - task: PowerShell@2
               name: clean
-              displayName: 'Clean Program Files Modules'
+              displayName: Clean Program Files Modules
               inputs:
                 pwsh: true
-                filePath: './build.ps1'
-                arguments: '-UseModuleFast -ResolveDependency -Tasks InitializeModuleFolder'
+                filePath: ./build.ps1
+                arguments: -ResolveDependency -Tasks InitializeModuleFolder #-UseModuleFast
 
             - task: PowerShell@2
               name: build
-              displayName: 'Build DSC Artifacts'
+              displayName: Build DSC Artifacts
               inputs:
                 pwsh: true
-                filePath: './build.ps1'
-                arguments: '-Tasks build -Filter { $_.Environment -eq $env:BuildEnvironment }'
+                filePath: ./build.ps1
+                arguments: -Tasks build -Filter { $_.Environment -eq $env:BuildEnvironment }
               #env:
               #  ModuleVersion: $(NuGetVersionV2)
 
             - task: PowerShell@2
               name: pack
-              displayName: 'Pack DSC Artifacts'
+              displayName: Pack DSC Artifacts
               inputs:
                 pwsh: true
-                filePath: './build.ps1'
-                arguments: '-Tasks pack -Filter { $_.Environment -eq $env:BuildEnvironment }'
+                filePath: ./build.ps1
+                arguments: -Tasks pack -Filter { $_.Environment -eq $env:BuildEnvironment }
               enabled: false
 
             - task: PublishPipelineArtifact@1
               displayName: Publish MOF Files for ${{ buildEnvironment.Name }}
               inputs:
-                targetPath: '$(buildFolderName)/MOF'
+                targetPath: $(buildFolderName)/MOF
                 artifact: MOF_${{ buildEnvironment.Name }}
                 publishLocation: 'pipeline'
                 parallel: true
@@ -68,7 +68,7 @@ stages:
             - task: PublishPipelineArtifact@1
               displayName: Publish RSOP Files for ${{ buildEnvironment.Name }}
               inputs:
-                targetPath: '$(buildFolderName)/RSOP'
+                targetPath: $(buildFolderName)/RSOP
                 artifact: RSOP_${{ buildEnvironment.Name }}
-                publishLocation: 'pipeline'
+                publishLocation: pipeline
                 parallel: true
