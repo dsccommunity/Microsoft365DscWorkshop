@@ -1,5 +1,15 @@
 # 1. Export your Azure Tenant Configuration to Yaml or Json
 
+- [1. Export your Azure Tenant Configuration to Yaml or Json](#1-export-your-azure-tenant-configuration-to-yaml-or-json)
+  - [1.1. Benefits and Best Practices of Regularly Exporting Azure Tenant Configuration with Microsoft365DSC](#11-benefits-and-best-practices-of-regularly-exporting-azure-tenant-configuration-with-microsoft365dsc)
+  - [1.2. The Concept](#12-the-concept)
+  - [1.3. Walkthrough](#13-walkthrough)
+    - [1.3.1. Configuring the configuration file](#131-configuring-the-configuration-file)
+    - [1.3.2. Run the Export](#132-run-the-export)
+    - [1.3.3. Run the Convert Export](#133-run-the-convert-export)
+    - [1.3.4. Examining the Export](#134-examining-the-export)
+    - [1.3.5. Running the export in a Azure Pipeline](#135-running-the-export-in-a-azure-pipeline)
+
 ## 1.1. Benefits and Best Practices of Regularly Exporting Azure Tenant Configuration with Microsoft365DSC
 
 Regularly exporting your Azure tenant configuration using Microsoft365DSC can be highly beneficial for several reasons:
@@ -28,19 +38,11 @@ This concept is used for the export to make the tasks easily accessible and run 
 
 ## 1.3. Walkthrough
 
-The following steps guide you through the process of customizing and running the export based on the framework provided by [Sampler](https://github.com/gaelcolas/Sampler) and the [Microsoft365DscWorkshop](https://github.com/raandree/Microsoft365DscWorkshop).
+The following steps guide you through the process of customizing and running the export based on the framework provided by [Sampler](https://github.com/gaelcolas/Sampler) and the [Microsoft365DscWorkshop](https://github.com/dsccommunity/Microsoft365DscWorkshop).
 
 > :warning: It is expected that you have created an application in the tenant you want to export. The steps to do that are described in [Export your Azure Tenant Configuration](./readme.md).
 
-### 1.3.1. Initialize the PowerShell session by running the build script
-
-This step sets the `PSModulePath` and imports required modules.
-
-```powershell
-.\build.ps1 -Tasks labinit
-```
-
-### 1.3.2. Configuring the configuration file
+### 1.3.1. Configuring the configuration file
 
 The file [Azure.yml](../source//Global//Azure.yml) stores the configuration of your Azure tenants. In this guide only one tenant will be configured and later exported.
 
@@ -56,16 +58,21 @@ The file [Azure.yml](../source//Global//Azure.yml) stores the configuration of y
 dir Cert:\LocalMachine\My\ | Where-Object Subject -eq 'CN=M365DSC Export'
 ```
 
-### Run the Export
+### 1.3.2. Run the Export
 
 The export is started with the command `.\build.ps1 -Tasks export`. The task `export` does these things:
 
 - It reads the file [ExportConfiguration.yml](./ExportConfiguration.yml) to identity the DSC resources that should be part of the export.
 - It exports the configuration of the Azure tenant by running the command `Export-M365DSCConfiguration`. `Export-M365DSCConfiguration` creates a PowerShell `.ps1` file containing the DSC configuration.
 - The DSC configuration will be compiled into a `.mof` file, which is much easier to parse.
-- Thanks to the great [Kingsland.MofParser](https://github.com/KingslandConsulting/Kingsland.MofParser), the `.mof` file can be converted into objects that can be converted into any desired data format like Json or Yaml.
 
-### Examining the Export
+### 1.3.3. Run the Convert Export
+
+When running `.\build.ps1 -Tasks exportconvert`, the `.mof` files are converted to objects. This is done using the great [Kingsland.MofParser](https://github.com/KingslandConsulting/Kingsland.MofParser). Then the objects can be easily converted into Yaml or another format and stored on disk.
+
+> Note: You can run both tasks sequentially: `.\build.ps1 -Tasks export, exportconvert`.
+
+### 1.3.4. Examining the Export
 
 After the export job is finished, you should have these files in the folder `.\output\Export`:
 
@@ -73,6 +80,6 @@ After the export job is finished, you should have these files in the folder `.\o
 - The `.mof` file which is the result of compiling the `.ps1` file.
 - A Yaml file containing all the output of the DSC resources defined in the file [ExportConfiguration.yml](./ExportConfiguration.yml).
 
-### Running the export in a Azure Pipeline
+### 1.3.5. Running the export in a Azure Pipeline
 
-It is quite easy to run the export task in a Azure pipeline. For this, please refer to the [azure-pipelines.yml](../azure-pipelines.yml) or the pipelines in the folder [pipelines](../pipelines/).
+It is quite easy to run the export task in a Azure pipeline. For this, please refer to the [azure-pipelines.yml](../azure-pipelines.yml) or the pipelines in the folder [pipelines](../pipelines/). For this, please navigate to [Exporting the tenant data in a AzDo pipeline](ExportPipeline.md).
