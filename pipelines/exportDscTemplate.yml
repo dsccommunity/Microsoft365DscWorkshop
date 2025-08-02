@@ -35,15 +35,15 @@ stages:
                 inputs:
                   pwsh: true
                   filePath: ./build.ps1
-                  arguments: -UseModuleFast -ResolveDependency -Tasks InitializeModuleFolder
+                  arguments: -ResolveDependency -Tasks InitializeModuleFolder
 
               - task: PowerShell@2
                 name: ExportTenantConfig
                 displayName: Export Tenant Configuration
                 inputs:
-                  pwsh: false
+                  pwsh: true
                   filePath: ./build.ps1
-                  arguments: -UseModuleFast -ResolveDependency -Tasks export
+                  arguments: -Tasks export
                 continueOnError: true
 
               - task: PowerShell@2
@@ -52,7 +52,7 @@ stages:
                 inputs:
                   pwsh: true
                   filePath: ./build.ps1
-                  arguments: -UseModuleFast -Tasks exportConvert
+                  arguments: -Tasks exportConvert
                 continueOnError: true
 
               - task: PublishPipelineArtifact@1
