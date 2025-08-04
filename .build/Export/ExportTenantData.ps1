@@ -20,7 +20,11 @@ task ExportTenantData {
             Write-Error "AzTenantId is not defined for environment $($env.Name)" -ErrorAction Stop
         }
 
-        $exportApp = $env.Value.Identities | Where-Object { $_.Name -EQ 'M365DscExportApplication' -or $_.IsExportApplication -eq $true }
+        $exportApp = @($env.Value.Identities | Where-Object { $_.Name -EQ 'M365DscExportApplication' -or $_.IsExportApplication -eq $true })
+        if ($exportApp.Count -gt 1)
+        {
+            Write-Error "Multiple export applications defined for environment '$($env.Name)'. Please ensure only one application has the name 'M365DscExportApplication' and / or is defined with 'IsExportApplication' set to true." -ErrorAction Stop
+        }
         if ($null -eq $exportApp)
         {
             Write-Error "Export application 'M365DscExportApplication' is not defined for environment '$($env.Name)' and is no application with 'IsExportApplication' set to true" -ErrorAction Stop
