@@ -6,7 +6,9 @@
     - [1.1.2. Cloning the Project](#112-cloning-the-project)
     - [1.1.3. Downloading Dependencies](#113-downloading-dependencies)
   - [1.2. Configuring the Azure Tenant](#12-configuring-the-azure-tenant)
-  - [1.3. If you want the data in a different more transportable format, please refer to Export your Azure Tenant Configuration to Yaml or Json](#13-if-you-want-the-data-in-a-different-more-transportable-format-please-refer-to-export-your-azure-tenant-configuration-to-yaml-or-json)
+  - [1.3. Data Conversion to Yaml or Json](#13-data-conversion-to-yaml-or-json)
+
+---
 
 For exporting your tenant configuration with [Microsoft365DSC](https://microsoft365dsc.com/) there is not much required. The following lines will guide you through.
 
@@ -26,7 +28,7 @@ This guide expects you have created a new project on Azure DevOps and imported t
 
 > :warning: Do not download the project as a Zip file. The build process will not work if you don't clone the project.
 
-Clone the project in Visual Studio Code Source Control Activity Bar or use the command `git.exe`. With the following command you clone the Git repository to your local machine. Please change the link according to your fork / project on your code management solution.
+Clone the project in Visual Studio Code Source Control Activity Bar or use the command `git.exe`. With the following command you clone the Git repository to your local machine. **Please change the link according to your fork / project on your code management solution.**
 
 ```powershell
 git clone https://github.com/dsccommunity/Microsoft365DscWorkshop.git C:\Git
@@ -99,4 +101,8 @@ Now everything should be setup to run the export. To test this, please run the f
 Export-M365DSCConfiguration -Components AADApplication -ApplicationId 40642b84-0d13-43ac-951e-8700d5be1131 -TenantId MngEnvMCAP576786.onmicrosoft.com -CertificateThumbprint FBA23F11CD8F78A17B9E2105D9BE3EE15BA04165 -Path .\temp\
 ```
 
-## 1.3. If you want the data in a different more transportable format, please refer to [Export your Azure Tenant Configuration to Yaml or Json](./ExportToYaml.md)
+## 1.3. Data Conversion to Yaml or Json
+
+If you want the data in a different more transportable format, please refer to [Export your Azure Tenant Configuration to Yaml or Json](./ExportToYaml.md). In many scenarios, the PSD1 files are not helpful.
+
+In [Exporting the tenant data in a Azure DevOps pipeline](./ExportPipeline.md) you will be guided to setup the export in an Azure DevOps Release Pipeline.
