@@ -24,7 +24,7 @@ BeforeDiscovery {
     }
     $nodeDefinitions = Get-ChildItem $ProjectPath\source\BuildAgents -Recurse -Include *.yml |
         Where-Object {
-            $_.BaseName -in $configurationData.BuildAgents.Name
+            $_.BaseName -in $configurationData.AllNodes.Name
         }
     $environments = (Get-ChildItem $ProjectPath\source\BuildAgents -Directory -ErrorAction SilentlyContinue).BaseName
     $roleDefinitions = Get-ChildItem $ProjectPath\source\Roles -Recurse -Include *.yml -ErrorAction SilentlyContinue
@@ -173,9 +173,13 @@ Describe 'Node Definition Files' -Tag Integration {
     }
 
 
-    Describe 'Roles Definition Files' -Tag Integration {
-        It '<FullName> has valid yaml' -TestCases $nodeRoleTests {
-            { $null = Get-Content -Raw -Path $FullName | ConvertFrom-Yaml } | Should -Not -Throw
+    # This project does not use role definition files, hence there may be no test cases at all.
+    if ($nodeRoleTests)
+    {
+        Describe 'Roles Definition Files' -Tag Integration {
+            It '<FullName> has valid yaml' -TestCases $nodeRoleTests {
+                { $null = Get-Content -Raw -Path $FullName | ConvertFrom-Yaml } | Should -Not -Throw
+            }
         }
     }
 
