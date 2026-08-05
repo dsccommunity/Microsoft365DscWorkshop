@@ -50,6 +50,19 @@ source: repository evidence
 - Az.KeyVault is capped by the Az.Accounts version Microsoft365DSC pins.
   Az.Accounts 5.3.2 allows Az.KeyVault up to 6.4.2; 6.5.0 and later demand
   5.5.0 or newer.
+- The `lab/` scripts call `Microsoft.Graph.*` cmdlets that Microsoft365DSC no
+  longer pins. `RequiredModules.psd1` declares `Microsoft.Graph.Applications`,
+  `Microsoft.Graph.Identity.DirectoryManagement`,
+  `Microsoft.Graph.Identity.Governance` and `Microsoft.Graph.Users` outside the
+  generated block. Their version must equal the generated
+  `Microsoft.Graph.Authentication` pin, because every Graph SDK sub-module
+  manifest requires that exact version of it.
+- A restore fails with `Access to the path 'PowerShellYamlSerializer.dll' is
+  denied` when any other PowerShell process holds `powershell-yaml`.
+  `Resolve-Dependency.ps1` skips that module only when the restoring session
+  itself has it loaded. Close the other sessions, or save the affected module
+  on its own with `Save-PSResource -Path output\RequiredModules
+  -TrustRepository`.
 - Every pin must name a version that exists on the PowerShell Gallery. A pin to
   an unpublished version is skipped by the restore without failing it, and only
   surfaces later as a missing folder under `output/RequiredModules`.
@@ -68,6 +81,10 @@ source: repository evidence
 | Az.KeyVault | 6.4.2 | 6.6.0 (needs Az.Accounts 5.5.2) |
 | PSResourceGet (bootstrap) | 1.2.0 | 1.2.0 |
 | Microsoft.Graph.Authentication | 2.35.1 | 2.39.0 |
+| Microsoft.Graph.Applications | 2.35.1 | 2.39.0 |
+| Microsoft.Graph.Identity.DirectoryManagement | 2.35.1 | 2.39.0 |
+| Microsoft.Graph.Identity.Governance | 2.35.1 | 2.39.0 |
+| Microsoft.Graph.Users | 2.35.1 | 2.39.0 |
 | ExchangeOnlineManagement | 3.9.2 | 3.10.1 |
 | MicrosoftTeams | 7.6.0 | 7.9.0 |
 | PnP.PowerShell | 1.12.0 | 3.3.27-nightly |
@@ -84,8 +101,10 @@ releases; only prereleases sit above them.
 
 - `.\build.ps1` — default `build` plus `pack` workflow; about five minutes.
 - `.\build.ps1 -ResolveDependency -Tasks noop` — restore dependencies only.
-- `.\build.ps1 -Tasks test` — VS Code task `test`.
-- `.\build.ps1 -Tasks rsop` — compile RSOP without producing MOF files.
+- `.\build.ps1 -Tasks rsop` — `TestConfigData` plus `CompileDatumRsop`, the
+  cheapest guard for a configuration-data change.
+- `build.yaml` defines no `test` workflow, so the VS Code task `test`
+  (`build.ps1 -AutoRestore -Tasks test`) aborts with `Missing task 'test'`.
 - Results land in `output/TestResults/*.xml`; transcripts in `output/Logs`.
 - The green baseline is 21 tasks, 0 errors, 0 warnings, with 129
   configuration-data tests and 12 acceptance tests, all passing. A run that

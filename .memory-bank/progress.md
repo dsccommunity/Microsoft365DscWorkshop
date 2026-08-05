@@ -14,6 +14,44 @@ August 2026 levels.
 
 ## Recent milestones
 
+- 2026-08-05 Fixed `Connect-M365DscAzure` selecting the Azure account's default
+  subscription during application-secret or certificate authentication. It now
+  forwards the configured subscription to `Connect-AzAccount`; an offline
+  regression test covers both service-principal paths. The live connection test
+  selects `<dev-subscription-name>` and passes all service-context validation.
+- 2026-08-05 Fixed the placeholder identity in `lab/10 Setup App
+  Registrations.ps1`: unfilled `<...>` names are skipped, `IsManagedIdentity` is
+  honoured through `-OnlyServicePrincipals`, and the placeholder was removed
+  from `source/Global/Azure.yml`. Also fixed `-OnlyServicePrincipals -PassThru`
+  and added an MFA claims-challenge retry around `New-AzRoleAssignment`.
+- 2026-08-05 Fixed `lab/10 Setup App Registrations.ps1` failing with `The term
+  'New-M365DSCSelfSignedCertificate' is not recognized`: `lab/AzHelpers.psm1`
+  now imports `lab/CertHelpers.psm1` instead of relying on the `InitLab` task.
+- 2026-08-05 Fixed `lab/10 Setup App Registrations.ps1` failing with `The term
+  'Get-MgApplication' is not recognized`: Microsoft365DSC `1.26.729.2` stopped
+  pinning the granular `Microsoft.Graph.*` modules the lab scripts call.
+  `RequiredModules.psd1` now declares the four they need at `2.35.1`.
+- 2026-08-05 Diagnosed the `AADSTS500014` failure of
+  `lab/10 Setup App Registrations.ps1` as a lapsed Microsoft 365 subscription in
+  the Dev tenant, not a code defect. No subscribed SKUs, all 88 assigned plans
+  `Deleted`, and every workload service principal disabled. Not fixable from
+  this repository.
+- 2026-08-05 Fixed `lab/10 Setup App Registrations.ps1`: it never imported
+  `AzHelpers.psm1` and relied on another script having loaded the module in the
+  same session.
+- 2026-08-05 Fixed `lab/10 Setup App Registrations.ps1`: `Connect-M365Dsc` in
+  `lab/AzHelpers.psm1` called `Sync-M365DSCParameter`, which Microsoft365DSC
+  `1.26.729.2` no longer ships. Replaced it with the local
+  `Select-M365DscCommandParameter`.
+- 2026-08-05 Fixed `lab/00 Prep.ps1` for a session that has already run
+  `build.ps1`: `Set_PSModulePath` strips the CurrentUser and AllUsers module
+  scopes, so AutomatedLab was reinstalled and its commands stayed unrecognized.
+  Added `Restore-DefaultModulePath`.
+- 2026-08-05 Fixed `lab/00 Prep.ps1`: an `Az.Accounts` 5.5.1 copy in the
+  CurrentUser scope shadowed 5.5.2 in AllUsers, so
+  `Test-LabAzureModuleAvailability` could never succeed. Added an elevation
+  guard, a prerelease-aware installed-version check, the `Resolve-ShadowedModule`
+  cleanup and comment-based help; repinned AutomatedLab to `5.61.0`.
 - 2026-08-05 Fixed the build: `DscConfig.M365` was pinned to the unpublished
   version `0.7.9-preview0001`, so the module never restored and
   `TestConfigData` failed during Pester discovery. Repinned to

@@ -55,6 +55,15 @@
     'Az.KeyVault'                                          = '6.4.2'
     'Az.ManagedServiceIdentity'                            = '2.0.0'
 
+    # Microsoft Graph SDK
+    # Microsoft365DSC 1.26.729.2 dropped these and now pins Microsoft.Graph.Authentication alone,
+    # but the lab scripts still call the Mg* cmdlets. Keep the version in sync with the
+    # Microsoft.Graph.Authentication pin in the generated block below.
+    'Microsoft.Graph.Applications'                         = '2.35.1'
+    'Microsoft.Graph.Identity.DirectoryManagement'         = '2.35.1'
+    'Microsoft.Graph.Identity.Governance'                  = '2.35.1'
+    'Microsoft.Graph.Users'                                = '2.35.1'
+
     # Microsoft365DSC
     Microsoft365DSC                                        = '1.26.729.2'
 

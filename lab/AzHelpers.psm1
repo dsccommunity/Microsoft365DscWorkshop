@@ -1,3 +1,5 @@
+Import-Module -Name $PSScriptRoot\CertHelpers.psm1 -Force
+
 function Get-ServicePrincipalAppPermissions
 {
     param (
@@ -554,7 +556,7 @@ function New-M365DscIdentity
 
     if ($PassThru)
     {
-        $app = Get-M365DscIdentity -Name $appRegistration.DisplayName
+        $app = Get-M365DscIdentity -Name $Name
         if ($GenereateAppSecret)
         {
             $app.Secret = $clientSecret.SecretText
@@ -805,6 +807,10 @@ function Connect-M365DscAzure
                 ErrorAction      = 'Stop'
                 WarningAction    = 'Ignore'
             }
+            if ($SubscriptionId)
+            {
+                $param.Subscription = $SubscriptionId
+            }
             $subscription = Connect-AzAccount @param *>&1
         }
         elseif ($PSCmdlet.ParameterSetName -eq 'Certificate')
@@ -815,6 +821,10 @@ function Connect-M365DscAzure
                 CertificateThumbprint = $CertificateThumbprint
                 ErrorAction           = 'Stop'
                 WarningAction         = 'Ignore'
+            }
+            if ($SubscriptionId)
+            {
+                $param.Subscription = $SubscriptionId
             }
             $subscription = Connect-AzAccount @param *>&1
         }
@@ -946,6 +956,36 @@ function Connect-M365DscExchangeOnline
     }
 }
 
+function Select-M365DscCommandParameter
+{
+    # Replaces Sync-M365DSCParameter, which Microsoft365DSC no longer ships as of 1.26.729.2.
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [System.Management.Automation.CommandInfo]$Command,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [System.Collections.IDictionary]$Parameters
+    )
+
+    $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters +
+    [System.Management.Automation.PSCmdlet]::OptionalCommonParameters
+
+    $selectedParameters = @{}
+    foreach ($key in $Parameters.Keys)
+    {
+        if ($Command.Parameters.ContainsKey($key) -and $key -notin $commonParameters)
+        {
+            $selectedParameters[$key] = $Parameters[$key]
+        }
+    }
+
+    return $selectedParameters
+}
+
 function Connect-M365Dsc
 {
     [CmdletBinding(DefaultParameterSetName = 'Interactive')]
@@ -979,10 +1019,10 @@ function Connect-M365Dsc
     Disconnect-M365Dsc -ErrorAction SilentlyContinue
 
     Write-Host 'Connecting to Azure, Microsoft Graph, and Exchange Online services.' -ForegroundColor Green
-    $param = Sync-M365DSCParameter -Command (Get-Command -Name Connect-M365DscAzure) -Parameters $PSBoundParameters
+    $param = Select-M365DscCommandParameter -Command (Get-Command -Name Connect-M365DscAzure) -Parameters $PSBoundParameters
     Connect-M365DscAzure @param -ErrorAction Stop
 
-    $param = Sync-M365DSCParameter -Command (Get-Command -Name Connect-M365DscExchangeOnline) -Parameters $PSBoundParameters
+    $param = Select-M365DscCommandParameter -Command (Get-Command -Name Connect-M365DscExchangeOnline) -Parameters $PSBoundParameters
     Connect-M365DscExchangeOnline @param -ErrorAction Stop
     Write-Host 'Connected to all services.' -ForegroundColor Green
 }
@@ -1043,8 +1083,31 @@ function Add-M365DscIdentityPermission
             {
                 if (-not (Get-AzRoleAssignment -ObjectId $Identity.AppPrincipalId -RoleDefinitionName Owner))
                 {
-                    New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner | Out-Null
                     Write-Host "Assigning the application '$($Identity.DisplayName)' to the role 'Owner'."
+                    try
+                    {
+                        New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner -ErrorAction Stop | Out-Null
+                    }
+                    catch
+                    {
+                        # Azure rejects a resource write when the token was not issued through MFA and returns the challenge to replay.
+                        if ($_.Exception.Message -notmatch '-ClaimsChallenge\s+"?(?<claimsChallenge>[A-Za-z0-9+/=_-]+)"?')
+                        {
+                            throw
+                        }
+
+                        Write-Host 'Azure requires multi-factor authentication to manage resources. Re-authenticating.' -ForegroundColor Yellow
+                        $reconnectParam = @{
+                            Tenant          = $azureContext.Tenant.Id
+                            Subscription    = $azureContext.Subscription.Id
+                            ClaimsChallenge = $Matches.claimsChallenge
+                            WarningAction   = 'Ignore'
+                            ErrorAction     = 'Stop'
+                        }
+                        Connect-AzAccount @reconnectParam | Out-Null
+
+                        New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner -ErrorAction Stop | Out-Null
+                    }
                 }
                 else
                 {
