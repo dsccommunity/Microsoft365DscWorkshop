@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-04
+last-verified: 2026-08-05
 owner: active-agent
 source: repository evidence
 ---
@@ -61,3 +61,35 @@ app registrations, the Azure DevOps project and the agent VMs.
 - Rationale: Pester 6 rejects an empty `-TestCases` collection during discovery;
   the previous lookup used a non-existent `BuildAgents` key and produced one.
   Recorded in the changelog under `[Unreleased] / Fixed`.
+
+### Decision 5: Read the dependency block from the Microsoft365DSC package
+
+- Choice: Regenerate the generated block in `RequiredModules.psd1` by extracting
+  `Dependencies/Manifest.psd1` from the Microsoft365DSC `.nupkg` on the gallery,
+  rather than restoring first and running `Update-M365DSCDependencies
+  -ValidateOnly` afterwards.
+- Rationale: The documented procedure needs two full restores because the block
+  is only correct after the first one. Reading the manifest out of the package
+  produces the same list up front, so a single restore suffices.
+
+### Decision 6: Treat a Microsoft365DSC bump as a config-data breaking change
+
+- Choice: After bumping Microsoft365DSC, compile and read the
+  `InvalidInstanceProperty` errors from `CompileRootConfiguration`, then rename
+  the affected properties in `source/`.
+- Rationale: Microsoft365DSC renames resource properties between releases.
+  1.26.729.2 corrected `AADRoleSetting`'s `Elegibility*` to `Eligibility*`,
+  which broke the three `cAADRoleSetting.yml` files. The composite splats config
+  data straight onto the resource, so the compiler is the only place the
+  mismatch surfaces.
+
+### Decision 7: Confirm a pinned version exists before restoring
+
+- Choice: Check the PowerShell Gallery for the exact version before changing a
+  pin in `RequiredModules.psd1`, and confirm the folder afterwards under
+  `output/RequiredModules`.
+- Rationale: `Resolve-Dependency` skips a pin that names an unpublished version
+  without failing the restore. `DscConfig.M365` `0.7.9-preview0001` does not
+  exist, and the miss only surfaced two tasks later as a Pester discovery error
+  in `CompositeResources.Tests.ps1`, which resolves every composite module
+  listed in `build.yaml`.

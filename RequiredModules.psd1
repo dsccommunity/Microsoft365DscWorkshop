@@ -36,26 +36,27 @@
     'DscResource.Test'                                     = 'latest'
 
     # Composites
-    'DscConfig.M365'                                       = '0.6.1-preview0001'
+    'DscConfig.M365'                                       = '0.7.0-preview0001'
     'DscConfig.Demo'                                       = 'latest'
 
     #DSC Resources
     xPSDesiredStateConfiguration                           = '9.2.1'
-    ComputerManagementDsc                                  = '9.2.0'
-    NetworkingDsc                                          = '9.0.0'
+    ComputerManagementDsc                                  = '10.0.0'
+    NetworkingDsc                                          = '9.1.0'
     JeaDsc                                                 = '0.7.2'
     WebAdministrationDsc                                   = '4.2.1'
     FileSystemDsc                                          = '1.1.1'
     SecurityPolicyDsc                                      = '2.10.0.0'
     xDscDiagnostics                                        = '2.8.0'
-    PSDesiredStateConfiguration                            = '2.0.7'
+    PSDesiredStateConfiguration                            = '2.0.8'
 
     # Azure
-    'Az.KeyVault'                                          = '6.3.1'
+    # Az.KeyVault 6.4.2 is the newest release that works with the Az.Accounts version Microsoft365DSC pins below.
+    'Az.KeyVault'                                          = '6.4.2'
     'Az.ManagedServiceIdentity'                            = '2.0.0'
 
     # Microsoft365DSC
-    Microsoft365DSC                                        = '1.25.730.1'
+    Microsoft365DSC                                        = '1.26.729.2'
 
     <#
         To update Microsoft365DSC and its dependencies, do the following steps:
@@ -73,41 +74,19 @@
         (Import-PowerShellDataFile -Path '.\output\RequiredModules\Microsoft365DSC\*\Dependencies\Manifest.psd1').Dependencies | ForEach-Object { "'{0}' = '{1}'" -f $_.ModuleName, $_.RequiredVersion } | Set-Clipboard
     #>
 
-    'Az.Accounts'                                          = '3.0.2'
-    'Az.ResourceGraph'                                     = '1.0.0'
-    'Az.Resources'                                         = '7.2.0'
-    'Az.SecurityInsights'                                  = '3.1.2'
-    'DSCParser'                                            = '2.0.0.20'
-    'ExchangeOnlineManagement'                             = '3.8.0'
-    'Microsoft.Graph.Applications'                         = '2.28.0'
-    'Microsoft.Graph.Beta.Applications'                    = '2.28.0'
-    'Microsoft.Graph.Authentication'                       = '2.28.0'
-    'Microsoft.Graph.Beta.DeviceManagement'                = '2.28.0'
-    'Microsoft.Graph.Beta.Devices.CorporateManagement'     = '2.28.0'
-    'Microsoft.Graph.Beta.DeviceManagement.Administration' = '2.28.0'
-    'Microsoft.Graph.Beta.DeviceManagement.Enrollment'     = '2.28.0'
-    'Microsoft.Graph.Beta.NetworkAccess'                   = '2.28.0'
-    'Microsoft.Graph.Beta.Identity.DirectoryManagement'    = '2.28.0'
-    'Microsoft.Graph.Beta.Identity.Governance'             = '2.28.0'
-    'Microsoft.Graph.Identity.DirectoryManagement'         = '2.28.0'
-    'Microsoft.Graph.Identity.SignIns'                     = '2.28.0'
-    'Microsoft.Graph.Beta.Identity.SignIns'                = '2.28.0'
-    'Microsoft.Graph.Beta.Reports'                         = '2.28.0'
-    'Microsoft.Graph.Beta.Search'                          = '2.28.0'
-    'Microsoft.Graph.Beta.Teams'                           = '2.28.0'
-    'Microsoft.Graph.DeviceManagement.Administration'      = '2.28.0'
-    'Microsoft.Graph.Beta.DirectoryObjects'                = '2.28.0'
-    'Microsoft.Graph.Groups'                               = '2.28.0'
-    'Microsoft.Graph.Beta.Groups'                          = '2.28.0'
-    'Microsoft.Graph.Planner'                              = '2.28.0'
-    'Microsoft.Graph.Sites'                                = '2.28.0'
-    'Microsoft.Graph.Users'                                = '2.28.0'
-    'Microsoft.Graph.Users.Actions'                        = '2.28.0'
-    'Microsoft.Graph.Identity.Governance'                  = '2.28.0'
-    'Microsoft.PowerApps.Administration.PowerShell'        = '2.0.205'
-    'MicrosoftTeams'                                       = '7.2.0'
-    'MSCloudLoginAssistant'                                = '1.1.50'
-    'ReverseDSC'                                           = '2.0.0.28'
+    'Az.Accounts'                                          = '5.3.2'
+    'Az.ResourceGraph'                                     = '1.2.1'
+    'Az.Resources'                                         = '9.0.1'
+    'Az.Subscription'                                      = '0.12.0'
+    'Az.Security'                                          = '1.8.0'
+    'Az.SecurityInsights'                                  = '3.2.1'
+    'DSCParser'                                            = '3.0.0.5'
+    'ExchangeOnlineManagement'                             = '3.9.2'
+    'Microsoft.Graph.Authentication'                       = '2.35.1'
+    'MicrosoftTeams'                                       = '7.6.0'
+    'MSCloudLoginAssistant'                                = '1.1.72'
     'PnP.PowerShell'                                       = '1.12.0'
+    'ReverseDSC'                                           = '2.0.0.34'
+    'PSParallelPipeline'                                   = '1.2.5'
 
 }

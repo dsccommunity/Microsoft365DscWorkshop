@@ -18,8 +18,8 @@ Items:
     ApprovaltoActivate: false
     AssignmentReqJustification: true
     AssignmentReqMFA: false
-    ElegibilityAssignmentReqJustification: false
-    ElegibilityAssignmentReqMFA: false
+    EligibilityAssignmentReqJustification: false
+    EligibilityAssignmentReqMFA: false
     #EligibleAlertNotificationAdditionalRecipient              : @();
     EligibleAlertNotificationDefaultRecipient: true
     EligibleAlertNotificationOnlyCritical: false
