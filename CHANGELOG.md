@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial Upload
+- Support tenants without an Exchange Online license. The new per-environment
+  setting `HasExchangeOnline` in `source/Global/Azure.yml` is maintained by the
+  user and controls the Exchange Online prep work. `Connect-M365Dsc` gained a
+  `SkipExchangeOnline` switch and validates the tenant entitlement with the new
+  `Test-M365DscExchangeOnlineLicense` before connecting, so a tenant that
+  contradicts the setting fails with an actionable error instead of an
+  `AADSTS500014`. `New-M365DscIdentity`, `Get-M365DscIdentity`,
+  `Remove-M365DscIdentity`, `Add-M365DscIdentityPermission` and
+  `Remove-M365DscIdentityPermission` skip their Exchange Online work when the
+  session is not connected to it, `Test-M365DscConnection` gained the same
+  switch, and `.build/Export/ExportTenantData.ps1` skips the `EXO*` components
+  for such an environment.
+- Resolve the Exchange layers of the Datum hierarchy through the same
+  `HasExchangeOnline` setting. `source/Datum.yml` replaces both Exchange layers
+  with the empty `source/1-AllTenantsConfig/ExchangeDisabled` layer for an
+  environment configured without Exchange Online, so no `cEXO*` configuration is
+  composed or compiled for it. A new configuration data test guards the
+  mechanism.
 
 ### Changed
 
@@ -24,6 +42,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `5.57.3-preview`, and add comment-based help to the script.
 
 ### Fixed
+
+- Fix `lab/30 Create Agent VMs.ps1` registering a superfluous Entra application
+  next to the user-assigned managed identity of the build agent, which surfaced
+  as `Update-MgApplication_UpdateExpanded: Resource '...' does not exist`
+  because Entra had not yet replicated the application it had just created. The
+  script now calls `New-M365DscIdentity -OnlyServicePrincipals`, like
+  `lab/10 Setup App Registrations.ps1` does for an identity marked
+  `IsManagedIdentity`. `Remove-M365DscIdentity` no longer calls
+  `Remove-MgApplication` for an identity that has no application registration,
+  which is the case for every managed identity.
+- Fix the post-deployment validation of `Install-Lab` reporting `Lab deployment
+  seems to have failed` for a healthy lab. `AutomatedLabTest` 5.61.4 declares
+  its `Dynamics*.tests.ps1` with an empty `-ForEach`, which Pester 6 rejects
+  during discovery, and `Invoke-LabPester` passes its own `PesterConfiguration`
+  so `$PesterPreference` cannot relax it. `lab/00 Prep.ps1` now installs Pester
+  `5.7.1` next to the repository's Pester 6, and `lab/30 Create Agent VMs.ps1`
+  imports that version before it calls `Install-Lab`.
+- Fix `lab/30 Create Agent VMs.ps1`, `lab/31 Agent Setup.ps1`,
+  `lab/88 Start Workers.ps1`, `lab/89 Stop Workers.ps1` and
+  `lab/97 Remove Workers and DevOps Project.ps1` stopping with `The tenant
+  '...' is not licensed for Exchange Online` on an environment configured with
+  `HasExchangeOnline: false`. They called `Connect-M365Dsc` without the
+  `SkipExchangeOnline` switch, so the entitlement check ran although none of
+  them uses Exchange Online. All five now read `HasExchangeOnline` from the
+  environment like `lab/10`, `lab/11` and `lab/98` do, and a new test guards
+  every `lab/` script that connects. The error of `Connect-M365Dsc` and the
+  hint of `lab/10` no longer point at the removed `ExchangeConfigSet` node
+  property; `HasExchangeOnline` is the only setting.
+- Fix `lab/20 Configure AzDo Project.ps1` failing to commit the adapted
+  pipelines with `fatal: ..\pipelines\build.yml: '..\pipelines\build.yml' is
+  outside repository`. `git diff --name-only` reports repository-root relative
+  paths, but the script prefixed them with `..`, which only resolved when the
+  script was started from the `lab` folder. All git calls of that block now run
+  through `git -C <repository root>` and use the reported paths unchanged, so
+  the commit and push work from any working directory. `lab/31 Agent Setup.ps1`
+  had the same defect in `git add ../source/Global/Azure.yml` and now uses the
+  `$PSScriptRoot` based path.
+- Fix `Disconnect-M365Dsc` reporting `Disconnect-AzAccount: Method not found:
+  'Void Microsoft.Identity.Client.Extensions.Msal.MsalCacheHelper.RegisterCache(Microsoft.Identity.Client.ITokenCache)'`.
+  `Az.Accounts` `5.3.2` is built against MSAL `4.65` while
+  `Microsoft.Graph.Authentication` `2.35.1` loads MSAL `4.78` into the same
+  process, and both versions are dictated by the Microsoft365DSC dependency
+  block. The disconnect now falls back to `Clear-AzContext -Scope Process` for
+  that specific failure and still surfaces any other error.
 
 - Fix `Connect-M365DscAzure` ignoring the configured subscription for
   application-secret and certificate authentication. Both paths now pass the
@@ -49,6 +111,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through MFA`. `Add-M365DscIdentityPermission` now replays the claims challenge
   Azure returns through `Connect-AzAccount -ClaimsChallenge` and retries the
   assignment once.
+- Fix `Remove-M365DscIdentityPermission` failing to remove the subscription
+  `Owner` assignment with the same MFA claims challenge, and reporting
+  `Removing the application ... from the role 'Owner'.` although nothing was
+  removed. The claims-challenge retry moved into the shared
+  `Resolve-M365DscAzureMfaChallenge` function, `Remove-AzRoleAssignment` now
+  runs with `-ErrorAction Stop` so a failure is no longer silent, and the
+  removal path reports `Done removing Azure permissions` instead of
+  `Done adding Azure permissions`.
 - Fix `lab/10 Setup App Registrations.ps1` failing with `The term
   'New-M365DSCSelfSignedCertificate' is not recognized` in a session that had
   not run `.\build.ps1 -Tasks init`. `lab/AzHelpers.psm1` calls that function

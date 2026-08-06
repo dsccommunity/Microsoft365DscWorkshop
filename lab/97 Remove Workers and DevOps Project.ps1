@@ -37,9 +37,13 @@ foreach ($lab in $labs)
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
 
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $skipExchangeOnline = $environment.HasExchangeOnline -eq $false
+    $param.SkipExchangeOnline = $skipExchangeOnline
+
     Connect-M365Dsc @param -ErrorAction Stop
 
-    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction Stop
+    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -SkipExchangeOnline:$skipExchangeOnline -ErrorAction Stop
 
     $identity = Get-M365DscIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity"
     if ($null -ne $identity)
@@ -64,6 +68,8 @@ foreach ($lab in $labs)
         ServicePrincipalId     = $setupIdentity.ApplicationId
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $param.SkipExchangeOnline = $environment.HasExchangeOnline -eq $false
     Connect-M365Dsc @param -ErrorAction Stop
     Write-Host "Successfully connected to Azure environment '$envName'."
 

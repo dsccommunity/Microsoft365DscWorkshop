@@ -10,7 +10,7 @@
           Azure DevOps project.
         - Restores the default module paths, see 'Restore-DefaultModulePath'.
         - Writes the project name into 'source/Global/ProjectSettings.yml'.
-        - Installs 'VSTeam' and 'AutomatedLab' with the pinned versions for all users.
+        - Installs 'VSTeam', 'AutomatedLab' and 'Pester' with the pinned versions for all users.
         - Installs the Azure modules that AutomatedLab requires.
         - Removes module copies that shadow a newer installation, see 'Resolve-ShadowedModule'.
         - Enables remoting for the lab host.
@@ -243,6 +243,8 @@ if ($projectSettings -contains 'ProjectName: <ProjectName>')
 $requiredModules = @{
     VSTeam       = '7.15.2'
     AutomatedLab = '5.61.0'
+    # AutomatedLabTest fails the discovery of its own tests under Pester 6, so 'Install-Lab' needs Pester 5 next to it.
+    Pester       = '5.7.1'
 }
 
 foreach ($module in $requiredModules.GetEnumerator())

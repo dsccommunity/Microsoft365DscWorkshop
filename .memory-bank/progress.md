@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-05
+last-verified: 2026-08-06
 owner: active-agent
 source: repository evidence
 ---
@@ -14,6 +14,48 @@ August 2026 levels.
 
 ## Recent milestones
 
+- 2026-08-06 Fixed `lab/30 Create Agent VMs.ps1` registering a superfluous Entra
+  application next to the build agent's user-assigned managed identity, which
+  surfaced as a `404` from `Update-MgApplication`. It now calls
+  `New-M365DscIdentity -OnlyServicePrincipals`, and `Remove-M365DscIdentity`
+  skips `Remove-MgApplication` for an identity without an application. The
+  leftover application was removed from the Dev tenant.
+- 2026-08-06 Fixed the post-deployment validation of `Install-Lab` reporting a
+  false `Lab deployment seems to have failed`. `AutomatedLabTest` 5.61.4 cannot
+  be discovered under Pester 6, so `lab/00 Prep.ps1` pins Pester `5.7.1` and
+  `lab/30` imports it before `Install-Lab`.
+- 2026-08-06 Fixed `lab/30`, `lab/31`, `lab/88`, `lab/89` and `lab/97` stopping
+  with `is not licensed for Exchange Online` on an environment configured with
+  `HasExchangeOnline: false`. They called `Connect-M365Dsc` without the
+  `SkipExchangeOnline` switch although none of them uses Exchange Online; all
+  five now derive it from the environment, a Pester case guards every `lab/`
+  script that connects, and both messages naming the removed `ExchangeConfigSet`
+  node property were corrected.
+- 2026-08-06 Fixed `lab/20 Configure AzDo Project.ps1` aborting the pipeline
+  commit with `fatal: ..\pipelines\build.yml ... is outside repository` when
+  started from the repository root. The git calls now run with
+  `git -C <repository root>` and consume the repository-root relative paths of
+  `git diff --name-only` unchanged; `lab/31 Agent Setup.ps1` lost the same `..`
+  assumption.
+- 2026-08-06 Fixed `Disconnect-AzAccount` failing with `Method not found:
+  MsalCacheHelper.RegisterCache(ITokenCache)` in every `lab/` script. The MSAL
+  versions of `Az.Accounts` and `Microsoft.Graph.Authentication` are both
+  dictated by the Microsoft365DSC dependency block, so `Disconnect-M365Dsc`
+  falls back to `Clear-AzContext -Scope Process` for that specific error and
+  still surfaces any other one.
+- 2026-08-06 Added support for tenants without an Exchange Online license. The
+  user-maintained `HasExchangeOnline` setting per environment is the single
+  switch: the lab scripts skip their Exchange Online work, `Connect-M365Dsc`
+  validates the tenant against it with the new
+  `Test-M365DscExchangeOnlineLicense` before any prep work, `source/Datum.yml`
+  swaps both Exchange layers for an empty `ExchangeDisabled` layer so no `cEXO*`
+  configuration is compiled, and the export skips the `EXO*` components.
+- 2026-08-06 Fixed `Remove-M365DscIdentityPermission` failing to remove the
+  subscription `Owner` assignment on the Azure MFA claims challenge. The retry
+  from `Add-M365DscIdentityPermission` moved into the shared
+  `Resolve-M365DscAzureMfaChallenge`, `Remove-AzRoleAssignment` now runs with
+  `-ErrorAction Stop`, and the false success message was corrected. Three Pester
+  tests cover both helper branches and the removal retry.
 - 2026-08-05 Fixed `Connect-M365DscAzure` selecting the Azure account's default
   subscription during application-secret or certificate authentication. It now
   forwards the configured subscription to `Connect-AzAccount`; an offline

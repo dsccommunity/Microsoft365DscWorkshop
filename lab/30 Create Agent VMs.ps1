@@ -11,6 +11,14 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
 }
 
 Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
+
+# AutomatedLabTest 5.61.4 fails the discovery of its own tests under Pester 6, which makes 'Install-Lab' report a false deployment failure.
+if (-not (Get-Module -Name Pester -ListAvailable | Where-Object Version -EQ 5.7.1))
+{
+    Write-Error "Pester 5.7.1 is not installed. Please run 'lab\00 Prep.ps1' first." -ErrorAction Stop
+}
+Import-Module -Name Pester -RequiredVersion 5.7.1
+
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 
@@ -63,9 +71,13 @@ foreach ($envName in $environments)
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
 
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $skipExchangeOnline = $environment.HasExchangeOnline -eq $false
+    $param.SkipExchangeOnline = $skipExchangeOnline
+
     Connect-M365Dsc @param -ErrorAction Stop
 
-    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction Stop
+    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -SkipExchangeOnline:$skipExchangeOnline -ErrorAction Stop
 }
 
 foreach ($envName in $environments)
@@ -86,6 +98,8 @@ foreach ($envName in $environments)
         ServicePrincipalId     = $setupIdentity.ApplicationId
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $param.SkipExchangeOnline = $environment.HasExchangeOnline -eq $false
     Connect-M365Dsc @param -ErrorAction Stop
     Write-Host "Successfully connected to Azure environment '$envName'."
 
@@ -144,6 +158,8 @@ foreach ($lab in $labs)
         ServicePrincipalId     = $setupIdentity.ApplicationId
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $param.SkipExchangeOnline = $environment.HasExchangeOnline -eq $false
     Connect-M365Dsc @param -ErrorAction Stop
     Write-Host "Successfully connected to Azure environment '$envName'."
 
@@ -168,7 +184,8 @@ foreach ($lab in $labs)
         Update-AzVM -ResourceGroupName $lab.AzureSettings.DefaultResourceGroup.ResourceGroupName -VM $vm -IdentityType UserAssigned -IdentityId $id.Id | Out-Null
     }
 
-    $azIdentity = New-M365DscIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity" -PassThru
+    # The build agent identity is an Azure user-assigned managed identity, so it has a service principal but no application registration.
+    $azIdentity = New-M365DscIdentity -Name "M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity" -OnlyServicePrincipals -PassThru
     Write-Host "Setting permissions for managed identity 'M365DscLcm$($datum.Global.ProjectSettings.ProjectName)$($envName)Identity' in environment '$envName'"
     Add-M365DscIdentityPermission -Identity $azIdentity -AccessType Update
 

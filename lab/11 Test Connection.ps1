@@ -52,9 +52,13 @@ foreach ($envName in $environments)
         $param.CertificateThumbprint = $setupIdentity.CertificateThumbprint
     }
 
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $skipExchangeOnline = $environment.HasExchangeOnline -eq $false
+    $param.SkipExchangeOnline = $skipExchangeOnline
+
     Connect-M365Dsc @param -ErrorAction Stop
 
-    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -ErrorAction Stop | Out-Null
+    Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -SkipExchangeOnline:$skipExchangeOnline -ErrorAction Stop | Out-Null
 
     if (-not $DoNotDisconnect)
     {

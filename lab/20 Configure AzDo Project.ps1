@@ -239,17 +239,19 @@ foreach ($pipeline in $pipelinesToAdapt)
     }
 }
 
-$changedFiles = git diff --name-only | Where-Object { $_ -like 'pipelines/*.yml' }
+$repositoryRoot = (Resolve-Path -Path $PSScriptRoot\..).Path
+
+# 'git diff' reports paths relative to the repository root, so git must run there as well
+$changedFiles = git -C $repositoryRoot diff --name-only | Where-Object { $_ -like 'pipelines/*.yml' }
 if ($changedFiles.Count -gt 0)
 {
     Write-Host 'Committing changes to pipelines.'
     foreach ($changedFile in $changedFiles)
     {
-        $path = Join-Path -Path .. -ChildPath $changedFile
-        git add $path
+        git -C $repositoryRoot add $changedFile
     }
-    git commit -m 'Updated pipelines to use only the configured environments' | Out-Null
-    git push | Out-Null
+    git -C $repositoryRoot commit -m 'Updated pipelines to use only the configured environments' | Out-Null
+    git -C $repositoryRoot push | Out-Null
 }
 else
 {

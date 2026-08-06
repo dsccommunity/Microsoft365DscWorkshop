@@ -35,6 +35,13 @@ foreach ($environmentName in $environments)
         $param.SubscriptionId = $environment.AzSubscriptionId
     }
 
+    # 'HasExchangeOnline' is maintained by the user and controls all Exchange Online prep work.
+    if ($environment.HasExchangeOnline -eq $false)
+    {
+        Write-Host "The environment '$environmentName' is configured without Exchange Online. All Exchange Online preparation steps are skipped and no Exchange configuration is compiled for it." -ForegroundColor Yellow
+        $param.SkipExchangeOnline = $true
+    }
+
     Connect-M365Dsc @param
 
     $param.Remove('TenantName')

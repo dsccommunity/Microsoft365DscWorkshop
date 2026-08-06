@@ -53,6 +53,8 @@ foreach ($lab in $labs)
         ServicePrincipalId     = $setupIdentity.ApplicationId
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $param.SkipExchangeOnline = $environment.HasExchangeOnline -eq $false
     Connect-M365Dsc @param -ErrorAction Stop
     Write-Host "Successfully connected to Azure environment '$envName'."
 
@@ -164,7 +166,7 @@ $datum.Global.Azure | ConvertTo-Yaml | Out-File -FilePath $PSScriptRoot\..\sourc
 
 Write-Host "Committing and pushing the changes to the repository '$(git config --get remote.origin.url)'."
 $currentBranchName = git rev-parse --abbrev-ref HEAD
-git add ../source/Global/Azure.yml
+git add $PSScriptRoot/../source/Global/Azure.yml
 git commit -m 'Tenant Update' | Out-Null
 git push --set-upstream origin $currentBranchName | Out-Null
 

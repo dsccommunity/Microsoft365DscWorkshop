@@ -10,6 +10,7 @@ if ($env:PSModulePath -notlike "*$requiredModulesPath*")
     $env:PSModulePath = $env:PSModulePath + ";$requiredModulesPath"
 }
 
+Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force
 $datum = New-DatumStructure -DefinitionFile $PSScriptRoot\..\source\Datum.yml
 $environments = $datum.Global.Azure.Environments.Keys
 if ($EnvironmentName)
@@ -23,8 +24,11 @@ foreach ($envName in $environments)
     Write-Host "Working in environment '$envName'" -ForegroundColor Magenta
     Write-Host "Connecting to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'"
 
-    Connect-M365Dsc -TenantId $environment.AzTenantId -TenantName $environment.AzTenantName -SubscriptionId $environment.AzSubscriptionId
-    if (-not (Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId))
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $skipExchangeOnline = $environment.HasExchangeOnline -eq $false
+
+    Connect-M365Dsc -TenantId $environment.AzTenantId -TenantName $environment.AzTenantName -SubscriptionId $environment.AzSubscriptionId -SkipExchangeOnline:$skipExchangeOnline
+    if (-not (Test-M365DscConnection -TenantId $environment.AzTenantId -SubscriptionId $environment.AzSubscriptionId -SkipExchangeOnline:$skipExchangeOnline))
     {
         Write-Error "Failed to connect to Azure subscription '$($environment.AzSubscriptionId)' in tenant '$($environment.AzTenantId)'" -ErrorAction Stop
     }

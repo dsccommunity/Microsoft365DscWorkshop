@@ -32,6 +32,12 @@ task ExportTenantData {
 
         foreach ($dscresource in $exportConfig.DscResources)
         {
+            if ($env.Value.HasExchangeOnline -eq $false -and $dscresource -like 'EXO*')
+            {
+                Write-Host "Skipping the component '$dscresource'. The tenant of environment '$($env.Name)' is not licensed for Exchange Online." -ForegroundColor Yellow
+                continue
+            }
+
             $exportParams = @{
                 Components    = $dscresource
                 ApplicationId = $exportApp.ApplicationId

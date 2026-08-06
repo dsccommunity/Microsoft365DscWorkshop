@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-05
+last-verified: 2026-08-06
 owner: active-agent
 source: current task evidence
 ---
@@ -9,13 +9,163 @@ source: current task evidence
 
 ## Current focus
 
-`lab/11 Test Connection.ps1` connected to the Azure account's default
-subscription instead of the subscription configured for the Dev environment.
-The repository fix and regression test are complete and remain uncommitted, as
-requested.
+The first successful `lab/30 Create Agent VMs.ps1` run surfaced two further
+defects. It created the build agent identity with `New-M365DscIdentity` without
+`-OnlyServicePrincipals`, so Entra registered a superfluous application next to
+the user-assigned managed identity and the immediate `Update-MgApplication`
+returned `404` before replication caught up. And the post-deployment validation
+of `Install-Lab` reported `Lab deployment seems to have failed` for a healthy
+lab, because `AutomatedLabTest` 5.61.4 cannot be discovered under Pester 6.
 
 ## Evidence
 
+- Red proof against the committed scripts in a scratch tree: the two new guards
+  fail — `Expected 'OnlyServicePrincipals' to be found in collection @('Name',
+  'PassThru')` and the `Remove-MgApplication` invocation count. With the fix,
+  `tests/ConfigData/AzHelpers.Tests.ps1` is 24 passed, 0 failed.
+- The leftover application `M365DscLcmM3652DevIdentity`
+  (`6bfa5419-43de-40c2-8f80-06a5bd68cc17`, AppId `b845e41e-...`) was removed
+  from the Dev tenant. Its AppId differed from the managed identity service
+  principal `1bbc976d-b631-43ce-a900-507cba535114` (AppId `0962a055-...`),
+  which is untouched. The recycle bin holds a second such application
+  (`701a55a8-...`), so an earlier run had produced the same artefact.
+- `Invoke-LabPester` builds `[PesterConfiguration]::Default` and passes it to
+  `Invoke-Pester -Configuration`, so `$PesterPreference` cannot set
+  `Run.FailOnNullOrEmptyForEach`. The host had only Pester 3.4.0, 6.0.1 and
+  6.1.0, hence `lab/00 Prep.ps1` pins `5.7.1` and `lab/30` imports it before
+  `Install-Lab`. Not yet exercised in a live deployment.
+- `Get-Item: Cannot find path 'C:\AL'` during "Configuring localization and
+  additional disks" is AutomatedLab's own `$Global:AL_DeployDebugFolder`: some
+  guest blocks read it with `Get-Item` although only other blocks create it.
+  Third-party, non-terminating, not fixed here.
+
+## Earlier focus
+
+`lab/30`, `lab/31`, `lab/88`, `lab/89` and `lab/97` passed no
+`SkipExchangeOnline` to `Connect-M365Dsc`, so the entitlement check ran although
+none of them touches Exchange Online and the Dev tenant is configured with
+`HasExchangeOnline: false`. All five now derive the switch from the environment,
+and a Pester case guards every `lab/` script that connects.
+
+## Earlier focus (git paths)
+
+`lab/20 Configure AzDo Project.ps1` adapted the five pipeline files but could
+not commit them: it prefixed the repository-root relative paths of `git diff
+--name-only` with `..`, which lands outside the repository when the script runs
+from the repository root. The block now uses `git -C <repository root>` with the
+unchanged paths, and `lab/31 Agent Setup.ps1` lost the same `..` assumption. The
+edits are uncommitted at the user's request, and the five adapted pipeline files
+are still uncommitted from the failed run.
+
+## Earlier evidence
+
+- `git add (Join-Path -Path .. -ChildPath 'pipelines/build.yml')` from
+  `C:\Git\M3652` reproduces the verbatim fatal; `git -C C:\Git\M3652 add
+  --dry-run 'pipelines/build.yml'` succeeds from the repository root and from
+  `lab`. Both checks ran with `--dry-run`, so the index is untouched.- `git status` still lists the five adapted `pipelines/*.yml` files as modified,
+  so re-running the script commits and pushes them.
+- `lab/10 Setup App Registrations.ps1` is not affected: it reads `git status -s`,
+  whose paths are relative to the current directory, so its `Substring(3)` form
+  works from either folder.
+
+## Earlier focus
+
+`Disconnect-AzAccount` failed in every `lab/` script with `Method not found:
+'Void Microsoft.Identity.Client.Extensions.Msal.MsalCacheHelper.RegisterCache(Microsoft.Identity.Client.ITokenCache)'`.
+`Disconnect-M365Dsc` now falls back to `Clear-AzContext -Scope Process` for that
+specific failure. The Exchange Online entitlement work of the same session is
+complete and committed on `ai/exchange-license-optional`.
+
+## Earlier evidence (MSAL)
+
+- Measured assembly versions: `Az.Accounts` `5.3.2` ships
+  `Microsoft.Identity.Client` and `Microsoft.Identity.Client.Extensions.Msal` at
+  `4.65.0.0`, `ExchangeOnlineManagement` `3.9.2` ships only
+  `Microsoft.Identity.Client` `4.74.1.0`, and `Microsoft.Graph.Authentication`
+  `2.35.1` ships both at `4.78.0.0`.
+- Probe with Graph loaded first: the process holds
+  `Microsoft.Identity.Client=4.78`, `Extensions.Msal=4.78` and, after importing
+  `Az.Accounts`, additionally `Extensions.Msal=4.65`. Reflection shows the two
+  helpers expect `ITokenCache` from their own MSAL version, which is why the
+  call from the `4.65` helper cannot bind.
+- Both pins come from the Microsoft365DSC dependency block, so the conflict
+  cannot be resolved by bumping a version.
+- `Disconnect-M365Dsc` now normalises the terminating and non-terminating form
+  of the failure, warns, and calls `Clear-AzContext -Scope Process -Force`. Any
+  other error is re-surfaced unchanged.
+- Regression proof: with the fix reverted in a scratch copy of the module, both
+  new tests fail; with the fix, all 14 tests of
+  `tests/ConfigData/AzHelpers.Tests.ps1` pass.
+- `.\build.ps1 -Tasks rsop` in a clean `pwsh -NoProfile`:
+  `Build succeeded. 7 tasks, 0 errors, 0 warnings`, 147 tests, 0 failures, 2
+  skipped.
+
+## Exchange Online entitlement
+
+The per-environment `HasExchangeOnline` setting in `source/Global/Azure.yml` is
+the single switch the user maintains: it drives the prep scripts, the Datum
+hierarchy and the export. No script writes it back. The Dev environment is
+currently set to `false` and the full build is green.
+
+- Entitlement check: `Test-M365DscExchangeOnlineLicense` reads the
+  `00000002-0000-0ff1-ce00-000000000000` service principal and the subscribed
+  SKUs through Graph, so it needs no Exchange Online connection. It rejects a
+  disabled resource service principal and a tenant whose only Exchange service
+  plan is `EXCHANGE_S_FOUNDATION`, which ships with almost every SKU.
+- `Connect-M365Dsc` skips `Connect-M365DscExchangeOnline` when the caller passes
+  `-SkipExchangeOnline`, and otherwise fails with an actionable error when the
+  tenant is not licensed. `Disconnect-M365Dsc` no longer calls
+  `Disconnect-ExchangeOnline` without a connection.
+- `lab/10`, `lab/11` and `lab/98` read `HasExchangeOnline` from the environment
+  and pass the switch to `Connect-M365Dsc` and `Test-M365DscConnection`.
+- Skipped prep steps: the EXO service principal in `New-M365DscIdentity`,
+  `Get-M365DscIdentity` and `Remove-M365DscIdentity`; the Exchange API
+  permissions in `Get-M365DSCCompiledPermissionList2`; the `Exchange
+  Administrator` directory role and the eight Exchange role groups in
+  `Add-M365DscIdentityPermission` and `Remove-M365DscIdentityPermission`.
+- Config data: `source/Datum.yml` swaps both Exchange layers for
+  `1-AllTenantsConfig\ExchangeDisabled` through a `Datum.InvokeCommand`
+  expression that reads the environment's `HasExchangeOnline`. Isolated probes
+  confirmed that both `$Node` and `$datum` are usable inside a
+  `ResolutionPrecedence` entry.
+- Full `.\build.ps1` with `HasExchangeOnline: false` on Dev:
+  `Build succeeded. 21 tasks, 0 errors, 0 warnings`, 145 tests, 0 failures, 2
+  skipped. The Dev RSOP holds 0 `cEXO*` configurations against 4 for Prod and
+  Test, and `output/MOF/Dev/LcmM3652Dev.mof` holds 0 `MSFT_EXO` instances
+  against 8 each for the other two.
+- Re-running the build repeatedly in one long-lived session fails the two tests
+  that construct an `M365DscIdentity` with `Cannot convert the "M365DscIdentity"
+  value of type "M365DscIdentity" to type "M365DscIdentity"`. That is the
+  PowerShell class identity drift of `Import-Module -Force`, not a defect; a
+  fresh process is green.
+- `source/Global/Azure.yml` defines only the `Dev` environment, so the `Test`
+  and `Prod` nodes resolve `HasExchangeOnline` to `$null`, which the `-ne $false`
+  default treats as licensed.
+- The live run against an unlicensed tenant is untested.
+
+## Earlier evidence
+
+- `lab/98 Cleanup App Registrations.ps1` was the last `lab/` script without
+  `Import-Module -Name $PSScriptRoot\AzHelpers.psm1 -Force`; it only ever ran in
+  a session that had executed another script.
+- `Add-M365DscIdentityPermission` already replayed the claims challenge around
+  `New-AzRoleAssignment`; `Remove-M365DscIdentityPermission` had no such retry
+  and called `Remove-AzRoleAssignment` without `-ErrorAction Stop`. Azure
+  PowerShell writes a non-terminating error, so the removal continued and
+  printed `Removing the application ... from the role 'Owner'.` after the
+  failure, then closed the block with `Done adding Azure permissions`.
+- The retry now lives in `Resolve-M365DscAzureMfaChallenge`, which both
+  functions call from their catch block. It returns `$false` for an unrelated
+  error, and the caller rethrows.
+- Regression proof: with the removal fix reverted in a scratch copy of the
+  module, `Should retry the Owner role removal after replaying the claims
+  challenge` fails with the verbatim MFA error.
+- The live run of `lab/98 Cleanup App Registrations.ps1` is untested against the
+  tenant. The claims-challenge replay itself is unchanged code that was already
+  verified for `New-AzRoleAssignment`.
+
+- `lab/11 Test Connection.ps1` connected to the Azure account's default
+  subscription instead of the subscription configured for the Dev environment.
 - `source/Global/Azure.yml` configures Dev subscription
   `9522bd96-d34f-4910-9667-0517ab5dc595`, but application-secret authentication
   connected to the account's other subscription
@@ -138,7 +288,7 @@ requested.
   `Microsoft.Graph.Authentication` `2.35.1` takes `SecureString`. The token hand-off
   inside `Connect-M365DscAzure` therefore needs no change.
 
-## Earlier evidence
+## Older evidence
 
 - `build.yaml` configures the Sampler task `Set_PSModulePath` with
   `RemovePersonal: true` and `RemoveProgramFiles: true`. A session that ran
@@ -208,11 +358,15 @@ subscription ID, the application ID registered on 2026-08-05, and the Dev
 subscription display name — are redacted to angle-bracket placeholders in this
 file and in `progress.md`. Keep new tenant facts redacted the same way.
 
-The new `tests/ConfigData/AzHelpers.Tests.ps1` still hard-codes the live tenant
-and subscription IDs as mock values. Both are already public through
-`docs/GettingStarted.md` and `export/readme.md`, so this exposes nothing new,
-but the mocks would work just as well with placeholder GUIDs.
+The `tests/ConfigData/AzHelpers.Tests.ps1` mocks still hard-code the live tenant
+and subscription IDs. Both are already public through `docs/GettingStarted.md`
+and `export/readme.md`, so this exposes nothing new, but the mocks would work
+just as well with placeholder GUIDs. The service-principal object ID from the
+2026-08-06 cleanup failure was replaced with a placeholder GUID before the test
+was added.
 
 ## Next step
 
-No further repository action is required for the subscription-selection defect.
+No further repository action is required for the `Remove-AzRoleAssignment`
+defect. The live `lab/98 Cleanup App Registrations.ps1` run is the remaining
+confirmation and needs the user's tenant.

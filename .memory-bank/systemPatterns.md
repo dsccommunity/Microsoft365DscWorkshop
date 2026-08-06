@@ -211,16 +211,21 @@ app registrations, the Azure DevOps project and the agent VMs.
 
 ### Decision 16: Replay the Azure claims challenge, do not force MFA at sign-in
 
-- Choice: `Add-M365DscIdentityPermission` catches the `New-AzRoleAssignment`
-  failure, extracts the challenge from the error text, calls
-  `Connect-AzAccount -ClaimsChallenge` and retries once. Any other error is
-  rethrown.
+- Choice: `Resolve-M365DscAzureMfaChallenge` extracts the challenge from an
+  Azure error record, calls `Connect-AzAccount -ClaimsChallenge` and reports
+  whether the caller may retry. Both `Add-M365DscIdentityPermission` and
+  `Remove-M365DscIdentityPermission` wrap their role-assignment write in a
+  try/catch that retries once through it and rethrows any other error. Every
+  such write runs with `-ErrorAction Stop`, so a rejected write cannot pass for
+  a success.
 - Rationale: Azure requires an MFA-satisfied token for resource management and
   returns `{"access_token":{"acrs":{"essential":true,"values":["p1"]}}}` to
   replay. Requesting that authentication context up front in
   `Connect-M365DscAzure` would block an account with no registered MFA method
   even for the read-only parts of the workshop, so the challenge is honoured
-  only when Azure actually raises it.
+  only when Azure actually raises it. Azure PowerShell writes non-terminating
+  errors by default, which is why the removal path reported success while the
+  assignment survived.
 
 ### Decision 17: Always bind a configured Azure subscription
 
@@ -232,3 +237,91 @@ app registrations, the Azure DevOps project and the agent VMs.
   The connection can look successful while targeting the wrong subscription;
   the subsequent context validation then fails. Offline Pester tests guard both
   service-principal paths.
+
+### Decision 18: Derive the Exchange Online skip from the live connection
+
+- Choice: `Connect-M365Dsc` is the only place that decides whether Exchange
+  Online is connected. The caller passes `SkipExchangeOnline` from the
+  environment's `HasExchangeOnline` setting; when Exchange Online is expected,
+  `Connect-M365Dsc` first validates the entitlement with
+  `Test-M365DscExchangeOnlineLicense` — three read-only Graph calls against the
+  Exchange resource service principal and the subscribed SKUs — and fails with
+  an actionable error when the tenant contradicts the configuration. Every other
+  function asks `Test-M365DscExchangeOnlineConnection` instead of taking a
+  parameter, so the absence of a connection is the single signal that its
+  Exchange Online work must be skipped.
+- Rationale: Configuration data is the user's, so no script writes the
+  entitlement back; the check exists to catch a contradiction before any prep
+  work runs, not to overrule the configuration. Threading a `SkipExchange`
+  switch through `New-M365DscIdentity`, `Get-M365DscIdentity`,
+  `Remove-M365DscIdentity` and both permission functions would multiply call
+  sites that can disagree with the live session. `Add-RoleGroupMember` failed
+  with `Organization ... is not licensed for Exchange email functionality` on
+  the Dev tenant, and `Get-RoleGroup` does not even exist until
+  `Connect-ExchangeOnline` has run, so a stale flag turns into a
+  `CommandNotFoundException`. Only `Test-M365DscConnection` keeps an explicit
+  `SkipExchangeOnline` switch, because a validation function must not silently
+  accept a missing connection.
+- Enforcement: a Pester case parses every `lab/*.ps1`, selects those that call
+  `Connect-M365Dsc` and requires each to reference `HasExchangeOnline` and
+  `SkipExchangeOnline`. Five of the eight connecting scripts failed that check
+  when it was written.
+
+### Decision 19: Derive the Exchange layers from the environment setting
+
+- Choice: `source/Datum.yml` resolves both Exchange layers through a
+  `Datum.InvokeCommand` expression that reads
+  `$datum.Global.Azure.Environments."$($Node.Environment)".HasExchangeOnline`
+  and returns `1-AllTenantsConfig\ExchangeDisabled` — an empty layer — when it is
+  `$false`. `HasExchangeOnline` in `source/Global/Azure.yml` is the single
+  setting the user maintains; the `lab/` scripts and the export read the same
+  key. A configuration data test guards the mechanism.
+- Rationale: The first attempt carried a second setting, the node property
+  `ExchangeConfigSet`, and a test that failed the build when the two
+  contradicted each other. The user hit that failure on the first real edit,
+  which is the proof that two settings for one fact is the wrong design.
+  Datum's knockout prefix is not an alternative: `Configurations` merges with
+  `merge_basetype_array: Unique`, and Datum honours the prefix for that strategy
+  only in `Clear-DatumKnockout` after the merge, not in `Merge-Datum`, so a
+  `--cEXOTransportConfig` entry is order-dependent. `Resolve-Datum` runs
+  `$PathPrefixes | ConvertTo-Datum -DatumHandlers`, and both `$Node` and
+  `$datum` are in scope there — measured with two isolated probes. Selecting the
+  layer removes the Exchange data as well as the composition, and it is visible
+  in the RSOP. Proven with `HasExchangeOnline: false` on Dev: the full build is
+  green, the Dev RSOP holds 0 `cEXO*` configurations against 4 for Prod and
+  Test, and `LcmM3652Dev.mof` holds 0 `MSFT_EXO` instances against 8 each.
+
+### Decision 20: A managed identity never gets an application registration
+
+- Choice: Every caller that hands a managed identity to `New-M365DscIdentity`
+  passes `-OnlyServicePrincipals`. `lab/10 Setup App Registrations.ps1` does it
+  for an identity marked `IsManagedIdentity`, and `lab/30 Create Agent VMs.ps1`
+  does it for the build agent identity it has just created with
+  `New-AzUserAssignedIdentity`. `Remove-M365DscIdentity` mirrors that: it skips
+  `Remove-MgApplication` when the identity carries no application id. A static
+  test asserts the `lab/30` call site.
+- Rationale: Without the switch the function finds no application of that
+  display name, registers one, and then fails with `Update-MgApplication:
+  Resource '...' does not exist` because Entra has not replicated the object it
+  returned a moment earlier. The result is a second directory object with the
+  same display name that nothing uses; the Dev tenant had accumulated two of
+  them. `Get-M365DscIdentity` already resolves a service-principal-only
+  identity, and `Add-M365DscIdentityPermission` needs only `AppPrincipalId` and
+  `DisplayName`, so no caller depends on the application object.
+
+### Decision 21: Run the AutomatedLab validation under Pester 5
+
+- Choice: `lab/00 Prep.ps1` installs Pester `5.7.1` for all users next to the
+  repository's Pester 6, and `lab/30 Create Agent VMs.ps1` imports that version
+  before `Install-Lab`. The script fails early with a pointer to `00 Prep.ps1`
+  when the version is missing.
+- Rationale: `AutomatedLabTest` 5.61.4 declares its `Dynamics*.tests.ps1` with
+  an empty `-ForEach`, which Pester 6 rejects during discovery, so four
+  containers fail and `Install-Lab` prints `Lab deployment seems to have failed`
+  for a healthy lab and skips `Remove-LabDeploymentFiles`. The module cannot be
+  patched, and `Invoke-LabPester` builds `[PesterConfiguration]::Default` and
+  passes it to `Invoke-Pester -Configuration`, so `$PesterPreference` cannot
+  relax `Run.FailOnNullOrEmptyForEach`. `Install-Lab -NoValidation` would drop
+  the validation altogether; loading Pester 5 keeps it. AutomatedLab only
+  unloads a Pester older than 5.0, so the imported 5.7.1 survives.
+

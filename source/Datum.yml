@@ -26,8 +26,10 @@ ResolutionPrecedence:
   - 2-EnvironmentConfig\$($Node.Environment)\AzureAd
   - 1-AllTenantsConfig\AzureAd
 
-  - 2-EnvironmentConfig\$($Node.Environment)\Exchange
-  - 1-AllTenantsConfig\Exchange
+  # Both Exchange layers are replaced by the empty 'ExchangeDisabled' layer when the
+  # environment is configured with 'HasExchangeOnline: false' in 'Global\Azure.yml'.
+  - '[x={ if ($datum.Global.Azure.Environments."$($Node.Environment)".HasExchangeOnline -eq $false) { "1-AllTenantsConfig\ExchangeDisabled" } else { "2-EnvironmentConfig\$($Node.Environment)\Exchange" } }=]'
+  - '[x={ if ($datum.Global.Azure.Environments."$($Node.Environment)".HasExchangeOnline -eq $false) { "1-AllTenantsConfig\ExchangeDisabled" } else { "1-AllTenantsConfig\Exchange" } }=]'
 
   - 2-EnvironmentConfig\$($Node.Environment)\SharePoint
   - 1-AllTenantsConfig\SharePoint

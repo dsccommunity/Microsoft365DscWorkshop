@@ -214,21 +214,33 @@ function Get-M365DSCCompiledPermissionList2
         Exchange   = '00000002-0000-0ff1-ce00-000000000000'
     }
 
+    $exchangeAvailable = Test-M365DscExchangeOnlineConnection
+    if (-not $exchangeAvailable)
+    {
+        Write-Host 'Exchange Online is not connected, skipping the Exchange Online API permissions.' -ForegroundColor Yellow
+        $resourceAppIds.Remove('Exchange')
+    }
+
     try
     {
-        $servicePrincipals = @{
-            Graph      = Get-MgServicePrincipal -Filter "AppId eq '$($resourceAppIds.Graph)'" -ErrorAction Stop
-            SharePoint = Get-MgServicePrincipal -Filter "AppId eq '$($resourceAppIds.SharePoint)'" -ErrorAction Stop
-            Exchange   = Get-MgServicePrincipal -Filter "AppId eq '$($resourceAppIds.Exchange)'" -ErrorAction Stop
+        $servicePrincipals = @{}
+        foreach ($resourceAppId in $resourceAppIds.GetEnumerator())
+        {
+            $servicePrincipals."$($resourceAppId.Name)" = Get-MgServicePrincipal -Filter "AppId eq '$($resourceAppId.Value)'" -ErrorAction Stop
         }
     }
     catch
     {
-        Write-Error "Failed to retrieve service principals for Graph, SharePoint, and Exchange. The error was: $($_.Exception.Message)"
+        Write-Error "Failed to retrieve service principals for '$($resourceAppIds.Keys -join ', ')'. The error was: $($_.Exception.Message)"
         return
     }
 
     $permissions = $m365GraphPermissionList.$AccessType
+
+    if (-not $exchangeAvailable)
+    {
+        $permissions = $permissions | Where-Object { $_.Api -ne 'Exchange' }
+    }
 
     if ($AccessType -eq 'Read')
     {
@@ -530,7 +542,11 @@ function New-M365DscIdentity
         $appPrincipal = New-MgServicePrincipal -AppId $appRegistration.AppId
     }
 
-    if ($exchangeServicePrincipal = Get-ServicePrincipal | Where-Object DisplayName -EQ $Name)
+    if (-not (Test-M365DscExchangeOnlineConnection))
+    {
+        Write-Host "Exchange Online is not connected, skipping the EXO service principal for application '$Name'." -ForegroundColor Yellow
+    }
+    elseif ($exchangeServicePrincipal = Get-ServicePrincipal | Where-Object DisplayName -EQ $Name)
     {
         Write-Verbose "The EXO service principal for application '$Name' already exists."
     }
@@ -587,19 +603,28 @@ function Remove-M365DscIdentity
         Write-Verbose "Removing EXO service principal for application '$($Identity.DisplayName)'."
         Remove-ServicePrincipal -Identity $($Identity.DisplayName) -Confirm:$false
     }
+    elseif (-not (Test-M365DscExchangeOnlineConnection))
+    {
+        Write-Verbose "Exchange Online is not connected, skipping the EXO service principal of application '$($Identity.DisplayName)'."
+    }
     else
     {
         Write-Verbose "EXO service principal for application '$($Identity.DisplayName)' does not exist."
     }
 
-    if ($null -ne $identity)
+    if ($null -eq $identity)
     {
-        Write-Verbose "Removing application '$($Identity.DisplayName)'."
-        Remove-MgApplication -ApplicationId $identity.Id
+        Write-Verbose "Application '$($Identity.DisplayName)' does not exist."
+    }
+    elseif (-not $identity.Id)
+    {
+        # A managed identity has a service principal but no application registration.
+        Write-Verbose "Identity '$($Identity.DisplayName)' has no application registration to remove."
     }
     else
     {
-        Write-Verbose "Application '$($Identity.DisplayName)' does not exist."
+        Write-Verbose "Removing application '$($Identity.DisplayName)'."
+        Remove-MgApplication -ApplicationId $identity.Id
     }
 }
 
@@ -623,7 +648,10 @@ function Get-M365DscIdentity
     {
         Write-Verbose "Found application '$Name' with Id '$($appRegistration.Id)' and AppId '$($appRegistration.AppId)'."
         $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue
-        $exchangeServicePrincipal = Get-ServicePrincipal -Identity $Name -ErrorAction SilentlyContinue
+        $exchangeServicePrincipal = if (Test-M365DscExchangeOnlineConnection)
+        {
+            Get-ServicePrincipal -Identity $Name -ErrorAction SilentlyContinue
+        }
 
         if ($appRegistration.KeyCredentials.Count -gt 0)
         {
@@ -656,7 +684,10 @@ function Get-M365DscIdentity
     elseif ($principal = Get-MgServicePrincipal -Filter "DisplayName eq '$Name'" -ErrorAction SilentlyContinue)
     {
         Write-Verbose "Found principal '$Name' with Id '$($principal.Id)' and AppId '$($principal.AppId)'."
-        $exchangeServicePrincipal = Get-ServicePrincipal -Identity $Name -ErrorAction SilentlyContinue
+        $exchangeServicePrincipal = if (Test-M365DscExchangeOnlineConnection)
+        {
+            Get-ServicePrincipal -Identity $Name -ErrorAction SilentlyContinue
+        }
 
         [M365DscIdentity]::new($principal.DisplayName,
             $null,
@@ -678,7 +709,10 @@ function Test-M365DscConnection
         [string]$TenantId,
 
         [Parameter()]
-        [string]$SubscriptionId
+        [string]$SubscriptionId,
+
+        [Parameter()]
+        [switch]$SkipExchangeOnline
     )
 
     $azContext = Get-AzContext
@@ -699,7 +733,7 @@ function Test-M365DscConnection
         $isConnected = $false
     }
 
-    if ($null -eq $exoConnection)
+    if ($null -eq $exoConnection -and -not $SkipExchangeOnline)
     {
         Write-Error "Exchange Online connection is not set. Please run 'Connect-ExchangeOnline'."
         $isConnected = $false
@@ -744,7 +778,11 @@ function Test-M365DscConnection
         Write-Host 'Microsoft Graph context tenant ID '$($mgContext.TenantId)' matches the provided tenant ID.'
     }
 
-    if ($exoConnection.TenantId -ne $TenantId)
+    if ($null -eq $exoConnection -and $SkipExchangeOnline)
+    {
+        Write-Host 'Exchange Online is not connected, skipping its tenant ID validation.'
+    }
+    elseif ($exoConnection.TenantId -ne $TenantId)
     {
         Write-Error "Exchange Online connection tenant ID '$($exoConnection.TenantId)' does not match the provided tenant ID: '$TenantId'."
         $isConnected = $false
@@ -889,6 +927,76 @@ function Connect-M365DscAzure
     #>
 }
 
+function Test-M365DscExchangeOnlineConnection
+{
+    <#
+        .SYNOPSIS
+            Tests whether the current session is connected to Exchange Online.
+
+        .DESCRIPTION
+            'Connect-M365Dsc' skips the Exchange Online connection for an environment
+            configured without Exchange Online. Every function that calls an Exchange Online
+            cmdlet uses this test to decide whether it can do the Exchange Online part of its
+            work.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param ()
+
+    return [bool](Get-ConnectionInformation -ErrorAction SilentlyContinue)
+}
+
+function Test-M365DscExchangeOnlineLicense
+{
+    <#
+        .SYNOPSIS
+            Tests whether the connected tenant is licensed for Exchange Online.
+
+        .DESCRIPTION
+            Reads the tenant entitlement through Microsoft Graph and does not require an
+            Exchange Online connection, so it can be called before any Exchange Online prep
+            work is attempted. The tenant is licensed when the 'Office 365 Exchange Online'
+            resource service principal is enabled and at least one subscribed SKU provides an
+            Exchange service plan other than 'EXCHANGE_S_FOUNDATION'.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param ()
+
+    if (-not (Get-MgContext))
+    {
+        Write-Error "You are not connected to the Microsoft Graph. Please run 'Connect-M365Dsc'." -ErrorAction Stop
+    }
+
+    $exchangeOnlineAppId = '00000002-0000-0ff1-ce00-000000000000'
+    $exchangeServicePrincipal = Get-MgServicePrincipal -Filter "AppId eq '$exchangeOnlineAppId'" -ErrorAction Stop
+
+    if (-not $exchangeServicePrincipal)
+    {
+        Write-Host "The tenant has no 'Office 365 Exchange Online' service principal, hence Exchange Online is not available." -ForegroundColor Yellow
+        return $false
+    }
+
+    if (-not $exchangeServicePrincipal.AccountEnabled)
+    {
+        Write-Host "The 'Office 365 Exchange Online' service principal is disabled, hence Exchange Online is not available." -ForegroundColor Yellow
+        return $false
+    }
+
+    # 'EXCHANGE_S_FOUNDATION' is part of almost every SKU and does not entitle a tenant to Exchange Online.
+    $exchangeServicePlans = (Get-MgSubscribedSku -ErrorAction Stop).ServicePlans |
+        Where-Object { $_.ServicePlanName -like 'EXCHANGE_*' -and $_.ServicePlanName -ne 'EXCHANGE_S_FOUNDATION' -and $_.ProvisioningStatus -eq 'Success' }
+
+    if (-not $exchangeServicePlans)
+    {
+        Write-Host 'The tenant has no subscribed SKU with a provisioned Exchange Online service plan, hence Exchange Online is not available.' -ForegroundColor Yellow
+        return $false
+    }
+
+    Write-Host "The tenant is licensed for Exchange Online with the service plan(s) '$(($exchangeServicePlans.ServicePlanName | Sort-Object -Unique) -join ', ')'."
+    return $true
+}
+
 function Connect-M365DscExchangeOnline
 {
     [CmdletBinding(DefaultParameterSetName = 'Interactive')]
@@ -1013,7 +1121,10 @@ function Connect-M365Dsc
         [securestring]$ServicePrincipalSecret,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]
-        [string]$CertificateThumbprint
+        [string]$CertificateThumbprint,
+
+        [Parameter()]
+        [switch]$SkipExchangeOnline
     )
 
     Disconnect-M365Dsc -ErrorAction SilentlyContinue
@@ -1022,9 +1133,22 @@ function Connect-M365Dsc
     $param = Select-M365DscCommandParameter -Command (Get-Command -Name Connect-M365DscAzure) -Parameters $PSBoundParameters
     Connect-M365DscAzure @param -ErrorAction Stop
 
-    $param = Select-M365DscCommandParameter -Command (Get-Command -Name Connect-M365DscExchangeOnline) -Parameters $PSBoundParameters
-    Connect-M365DscExchangeOnline @param -ErrorAction Stop
-    Write-Host 'Connected to all services.' -ForegroundColor Green
+    if ($SkipExchangeOnline)
+    {
+        Write-Host 'Skipping the Exchange Online connection as configured.' -ForegroundColor Yellow
+    }
+    else
+    {
+        if (-not (Test-M365DscExchangeOnlineLicense))
+        {
+            Write-Error "The tenant '$TenantName' is not licensed for Exchange Online. Set 'HasExchangeOnline' to false for this environment in 'source\Global\Azure.yml'." -ErrorAction Stop
+        }
+
+        $param = Select-M365DscCommandParameter -Command (Get-Command -Name Connect-M365DscExchangeOnline) -Parameters $PSBoundParameters
+        Connect-M365DscExchangeOnline @param -ErrorAction Stop
+    }
+
+    Write-Host 'Connected to all configured services.' -ForegroundColor Green
 }
 
 function Disconnect-M365Dsc
@@ -1032,10 +1156,80 @@ function Disconnect-M365Dsc
     [CmdletBinding()]
     param ()
 
-    Disconnect-ExchangeOnline -Confirm:$false
+    if (Test-M365DscExchangeOnlineConnection)
+    {
+        Disconnect-ExchangeOnline -Confirm:$false
+    }
     Disconnect-MgGraph | Out-Null
-    Disconnect-AzAccount | Out-Null
+
+    # Az.Accounts writes this failure as a non-terminating error, unless the caller preference makes it terminating.
+    $disconnectError = $null
+    try
+    {
+        Disconnect-AzAccount -ErrorAction SilentlyContinue -ErrorVariable disconnectError | Out-Null
+    }
+    catch
+    {
+        $disconnectError = @($_)
+    }
+
+    if ($disconnectError)
+    {
+        if ($disconnectError[0].Exception -isnot [System.MissingMethodException])
+        {
+            Write-Error -ErrorRecord $disconnectError[0]
+        }
+        else
+        {
+            # Az.Accounts 5.3.2 is built against MSAL 4.65, Microsoft.Graph.Authentication 2.35.1 loads 4.78 into the same process.
+            Write-Warning "'Disconnect-AzAccount' failed on the MSAL assembly conflict between 'Az.Accounts' and 'Microsoft.Graph.Authentication'. Clearing the Azure context of this process instead. The error was: $($disconnectError[0].Exception.Message)"
+            Clear-AzContext -Scope Process -Force
+        }
+    }
+
     Write-Host 'Disconnected from all services.'
+}
+
+function Resolve-M365DscAzureMfaChallenge
+{
+    <#
+        .SYNOPSIS
+            Replays the multi-factor authentication challenge that Azure returns when a resource write is rejected.
+
+        .DESCRIPTION
+            Azure rejects a resource write when the current token was not issued through multi-factor
+            authentication and returns the claims challenge to replay. This function extracts that challenge
+            from the error record and re-authenticates the current Azure context with it, so the caller can
+            retry the operation once. It returns $false for any other error, which the caller must rethrow.
+
+        .PARAMETER ErrorRecord
+            The error record raised by the failed Azure cmdlet.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorRecord]$ErrorRecord
+    )
+
+    if ($ErrorRecord.Exception.Message -notmatch '-ClaimsChallenge\s+"?(?<claimsChallenge>[A-Za-z0-9+/=_-]+)"?')
+    {
+        return $false
+    }
+
+    Write-Host 'Azure requires multi-factor authentication to manage resources. Re-authenticating.' -ForegroundColor Yellow
+
+    $azureContext = Get-AzContext
+    $reconnectParam = @{
+        Tenant          = $azureContext.Tenant.Id
+        Subscription    = $azureContext.Subscription.Id
+        ClaimsChallenge = $Matches.claimsChallenge
+        WarningAction   = 'Ignore'
+        ErrorAction     = 'Stop'
+    }
+    Connect-AzAccount @reconnectParam | Out-Null
+
+    return $true
 }
 
 function Add-M365DscIdentityPermission
@@ -1090,21 +1284,10 @@ function Add-M365DscIdentityPermission
                     }
                     catch
                     {
-                        # Azure rejects a resource write when the token was not issued through MFA and returns the challenge to replay.
-                        if ($_.Exception.Message -notmatch '-ClaimsChallenge\s+"?(?<claimsChallenge>[A-Za-z0-9+/=_-]+)"?')
+                        if (-not (Resolve-M365DscAzureMfaChallenge -ErrorRecord $_))
                         {
                             throw
                         }
-
-                        Write-Host 'Azure requires multi-factor authentication to manage resources. Re-authenticating.' -ForegroundColor Yellow
-                        $reconnectParam = @{
-                            Tenant          = $azureContext.Tenant.Id
-                            Subscription    = $azureContext.Subscription.Id
-                            ClaimsChallenge = $Matches.claimsChallenge
-                            WarningAction   = 'Ignore'
-                            ErrorAction     = 'Stop'
-                        }
-                        Connect-AzAccount @reconnectParam | Out-Null
 
                         New-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner -ErrorAction Stop | Out-Null
                     }
@@ -1158,7 +1341,8 @@ function Add-M365DscIdentityPermission
 
         $appPrincipal = Get-MgServicePrincipal -Filter "DisplayName eq '$($Identity.DisplayName)'"
         $requiredRoles = @('Global Reader')
-        if ($AccessType -eq 'Update')
+        $exchangeAvailable = Test-M365DscExchangeOnlineConnection
+        if ($AccessType -eq 'Update' -and $exchangeAvailable)
         {
             $requiredRoles += 'Exchange Administrator'
         }
@@ -1192,7 +1376,11 @@ function Add-M365DscIdentityPermission
 
         Write-Host 'Adding identity to required roles Exchange Roles' -ForegroundColor Magenta
 
-        if ($AccessType -eq 'Update')
+        if (-not $exchangeAvailable)
+        {
+            Write-Host 'Exchange Online is not connected, skipping the Exchange role groups.' -ForegroundColor Yellow
+        }
+        elseif ($AccessType -eq 'Update')
         {
             $requiredRoles = 'Organization Management',
             'Security Administrator',
@@ -1242,14 +1430,26 @@ function Remove-M365DscIdentityPermission
     Write-Host 'Removing Azure permissions' -ForegroundColor Magenta
     if (Get-AzRoleAssignment -ObjectId $Identity.AppPrincipalId -RoleDefinitionName Owner)
     {
-        Remove-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner | Out-Null
         Write-Host "Removing the application '$($Identity.DisplayName)' from the role 'Owner'."
+        try
+        {
+            Remove-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner -ErrorAction Stop | Out-Null
+        }
+        catch
+        {
+            if (-not (Resolve-M365DscAzureMfaChallenge -ErrorRecord $_))
+            {
+                throw
+            }
+
+            Remove-AzRoleAssignment -PrincipalId $Identity.AppPrincipalId -RoleDefinitionName Owner -ErrorAction Stop | Out-Null
+        }
     }
     else
     {
         Write-Host "The application '$($Identity.DisplayName)' is not assigned to the role 'Owner'."
     }
-    Write-Host 'Done adding Azure permissions' -ForegroundColor Magenta
+    Write-Host 'Done removing Azure permissions' -ForegroundColor Magenta
 
     #------------------------------------------------------------------------------
 
@@ -1300,32 +1500,39 @@ function Remove-M365DscIdentityPermission
 
     Write-Host 'Removing identity to required roles Exchange Roles' -ForegroundColor Magenta
 
-    $requiredRoles = $requiredRoles = 'Organization Management',
-    'Security Administrator',
-    'Recipient Management',
-    'Compliance Administrator',
-    'Compliance Management',
-    'Information Protection Admins',
-    'Privacy Management Administrators',
-    'Privacy Management'
-
-    foreach ($requiredRole in $requiredRoles)
+    if (-not (Test-M365DscExchangeOnlineConnection))
     {
-        $role = Get-RoleGroup -Filter "Name -eq '$requiredRole'"
-        if (-not $role)
-        {
-            Write-Host "Role '$requiredRole' not found."
-            continue
-        }
+        Write-Host 'Exchange Online is not connected, skipping the Exchange role groups.' -ForegroundColor Yellow
+    }
+    else
+    {
+        $requiredRoles = 'Organization Management',
+        'Security Administrator',
+        'Recipient Management',
+        'Compliance Administrator',
+        'Compliance Management',
+        'Information Protection Admins',
+        'Privacy Management Administrators',
+        'Privacy Management'
 
-        if (-not (Get-RoleGroupMember -Identity $role.ExchangeObjectId | Where-Object Name -EQ $Identity.AppPrincipalId))
+        foreach ($requiredRole in $requiredRoles)
         {
-            Write-Host "The service principal '$($Identity.DisplayName)' is not a member of the role '$requiredRole'."
-            continue
-        }
+            $role = Get-RoleGroup -Filter "Name -eq '$requiredRole'"
+            if (-not $role)
+            {
+                Write-Host "Role '$requiredRole' not found."
+                continue
+            }
 
-        Write-Host "Removing service principal '$($Identity.DisplayName)' from the role '$requiredRole'."
-        Remove-RoleGroupMember -Identity $role.ExchangeObjectId -Member $Identity.AppPrincipalId -Confirm:$false
+            if (-not (Get-RoleGroupMember -Identity $role.ExchangeObjectId | Where-Object Name -EQ $Identity.AppPrincipalId))
+            {
+                Write-Host "The service principal '$($Identity.DisplayName)' is not a member of the role '$requiredRole'."
+                continue
+            }
+
+            Write-Host "Removing service principal '$($Identity.DisplayName)' from the role '$requiredRole'."
+            Remove-RoleGroupMember -Identity $role.ExchangeObjectId -Member $Identity.AppPrincipalId -Confirm:$false
+        }
     }
 
     Write-Host 'Done removing identity to required roles Exchange Roles' -ForegroundColor Magenta

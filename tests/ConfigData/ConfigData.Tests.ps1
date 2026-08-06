@@ -199,4 +199,17 @@ Describe 'Node Definition Files' -Tag Integration {
             }
         }
     }
+
+    Describe 'Exchange Online Entitlement' -Tag Integration {
+
+        It '<Name> composes no Exchange configuration when its environment is configured without Exchange Online' -TestCases $nodeTestsSingleNode {
+            if ($datum.Global.Azure.Environments."$($node.Environment)".HasExchangeOnline -ne $false)
+            {
+                Set-ItResult -Skipped -Because "the environment '$($node.Environment)' is configured with Exchange Online"
+            }
+
+            $configurations = Resolve-Datum -PropertyPath Configurations -Node $node -DatumTree $datum
+            $configurations | Where-Object { $_ -like 'cEXO*' } | Should -BeNullOrEmpty
+        }
+    }
 }

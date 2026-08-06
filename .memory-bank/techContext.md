@@ -67,6 +67,14 @@ source: repository evidence
   an unpublished version is skipped by the restore without failing it, and only
   surfaces later as a missing folder under `output/RequiredModules`.
 - Never push to a git remote unless the user asks for it in the current turn.
+- `Az.Accounts` `5.3.2` is built against MSAL `4.65`, `Microsoft.Graph.Authentication`
+  `2.35.1` against MSAL `4.78`, and `ExchangeOnlineManagement` `3.9.2` ships
+  `Microsoft.Identity.Client` `4.74.1` without the `Extensions.Msal` companion.
+  Both versions are dictated by the Microsoft365DSC dependency block, so the
+  conflict cannot be resolved by bumping a pin. Once Graph has loaded MSAL
+  `4.78`, `Disconnect-AzAccount` fails with `Method not found: 'Void
+  Microsoft.Identity.Client.Extensions.Msal.MsalCacheHelper.RegisterCache(Microsoft.Identity.Client.ITokenCache)'`.
+  `Disconnect-M365Dsc` falls back to `Clear-AzContext -Scope Process`.
 
 ## Dependency state measured 2026-08-05
 

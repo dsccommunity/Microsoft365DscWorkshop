@@ -42,6 +42,9 @@ foreach ($lab in $labs)
         ServicePrincipalSecret = $setupIdentity.ApplicationSecret | ConvertTo-SecureString -AsPlainText -Force
     }
 
+    # 'HasExchangeOnline' is maintained by the user and controls whether Exchange Online is expected.
+    $param.SkipExchangeOnline = $environment.HasExchangeOnline -eq $false
+
     Connect-M365Dsc @param -ErrorAction Stop
 
     Write-Host "Stopping all VMs in $($lab.Name) for environment '$envName'" -ForegroundColor Magenta

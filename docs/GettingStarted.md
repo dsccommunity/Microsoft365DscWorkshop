@@ -152,6 +152,8 @@ Please run the script [10 Setup App Registrations.ps1](../lab/10%20Setup%20App%2
 
 > :information_source: To clean up the tenant if you don't want to continue the project, use the script [98 Cleanup App Registrations.ps1](../lab//98%20Cleanup%20App%20Registrations.ps1).
 
+Before doing any Exchange Online prep work, the script reads the `HasExchangeOnline` setting of the environment from the [Azure.yml](../source/Global/Azure.yml) file. Set it to `false` for a tenant without an Exchange Online license: such a tenant cannot create the Exchange service principals and cannot be added to the Exchange role groups, so these steps are skipped. The same setting removes the Exchange layers from the Datum hierarchy, so no `cEXO*` configuration is compiled and no Exchange component is exported for that tenant. If the setting claims Exchange Online but the tenant is not licensed for it, the script stops with an explicit error.
+
 The App ID and the plain-text secrets are shown on the console in case you want to copy them. They are also written to the [Azure.yml](../source/Global/Azure.yml) file but  encrypted. The file is then committed and pushed to the code repository.
 
 > :warning: The password for encrypting the app secrets is taken from the [Datum.yml](../source//Datum.yml) file. This is not a secure solution and only meant to be used in a proof of concept. For any production related tenant, the pass phrase should be replaced by a certificate.

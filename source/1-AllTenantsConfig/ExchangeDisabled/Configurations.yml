@@ -1,0 +1,4 @@
+# Intentionally empty. The 'ResolutionPrecedence' in 'Datum.yml' points the Exchange
+# layers here for an environment configured with 'HasExchangeOnline: false', so that no
+# cEXO* configuration is composed for it.
+[]
