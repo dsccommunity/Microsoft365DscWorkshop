@@ -354,6 +354,31 @@ Describe 'Build agent identity in the lab scripts' -Tag Integration {
     }
 }
 
+Describe 'Build agent software installation in the lab scripts' -Tag Integration {
+    BeforeAll {
+        $path = (Resolve-Path -Path "$PSScriptRoot\..\..\lab\31 Agent Setup.ps1").Path
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$null)
+
+        # Covers quoted paths and bare command names alike.
+        $script:literals = $ast.FindAll({
+                param ($node)
+                $node -is [System.Management.Automation.Language.StringConstantExpressionAst]
+            }, $true).Value
+    }
+
+    It "'31 Agent Setup.ps1' does not download the agent from the retired Azure CDN" {
+        # 'vstsagentpackage.azureedge.net' no longer resolves, so the download failed with
+        # 'No such host is known'. Chocolatey pulls the agent from download.agent.dev.azure.com.
+        $script:literals | Where-Object { $_ -match 'vstsagentpackage\.azureedge\.net' } | Should -BeNullOrEmpty
+    }
+
+    It "'31 Agent Setup.ps1' does not call the lab sources script at a hard-coded path" {
+        # AutomatedLab writes 'AzureLabSources.ps1' below '$AL_DeployDebugFolder\AL', which expands
+        # to '%APPDATA%\DeployDebug\AL' and not to the legacy 'C:\AL'.
+        $script:literals | Where-Object { $_ -match 'AzureLabSources\.ps1' } | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Remove-M365DscIdentity' -Tag Integration {
     It 'Should not remove an application for an identity that has none' {
         InModuleScope -ModuleName AzHelpers {

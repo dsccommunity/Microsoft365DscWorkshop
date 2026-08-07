@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment configured without Exchange Online, so no `cEXO*` configuration is
   composed or compiled for it. A new configuration data test guards the
   mechanism.
+- Support tenants without a SharePoint Online license. The new per-environment
+  setting `HasSharePointOnline` in `source/Global/Azure.yml` is maintained by
+  the user. `source/Datum.yml` replaces both SharePoint layers with the empty
+  `source/1-AllTenantsConfig/SharePointDisabled` layer for an environment
+  configured without SharePoint Online, so no `cSPO*` configuration is composed
+  or compiled for it, and `.build/Export/ExportTenantData.ps1` skips the `SPO*`
+  components. A new configuration data test guards the mechanism.
 
 ### Changed
 
@@ -42,6 +49,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `5.57.3-preview`, and add comment-based help to the script.
 
 ### Fixed
+
+- Fix the `Build DSC Artifacts` and `Pack DSC Artifacts` steps failing with
+  `##[error]Detected characters in arguments that may not be executed correctly
+  by the shell. Please escape special characters using backtick`. The
+  organization or project has `Enable shell tasks arguments validation` turned
+  on, and both steps passed the environment filter as a script block in the
+  `arguments` input of `PowerShell@2`, which the validation rejects for its
+  `{`, `}` and `$` characters. Escaping them is not an option, because the
+  backticks would reach `build.ps1` and turn the script block into a literal
+  string. Both steps now call `./build.ps1` from an inline `script`, so no
+  `arguments` input is involved and `-Filter` still binds as a `ScriptBlock`.
+- Fix the export pipeline failing in `Publish Exported Data` with
+  `##[error]Path does not exist: ...\output\Export`. That was the symptom, not
+  the cause: `source/Global/Azure.yml` still carried the sample identity
+  `<Name of your Application of Managed Identity>` with
+  `IsExportApplication: true` next to `M365DscExportApplication`, so
+  `.build/Export/ExportTenantData.ps1` matched two export applications and
+  stopped with `Multiple export applications defined for environment 'Dev'`
+  before it created the export folder. `continueOnError: true` on the export
+  step downgraded that to a warning, and the artifact task was the first step
+  to fail. The placeholder identity was removed, `ExportTenantData` now ignores
+  an identity whose name is still a `<...>` placeholder, its "no export
+  application" guard tests the match count instead of `$null` so an empty
+  result is caught, and `Export Tenant Configuration` no longer runs with
+  `continueOnError`. Converting the export to YAML keeps it, because the raw
+  export is still worth publishing when only the conversion fails. A new
+  configuration data test asserts that every environment defines exactly one
+  export application.
+- Fix `lab/31 Agent Setup.ps1` failing to download the Azure Pipelines agent
+  with `Exception calling "GetResponse" with "0" argument(s): "No such host is
+  known. (vstsagentpackage.azureedge.net:443)"`. That CDN host was retired with
+  the Azure CDN from Edgio and no longer resolves. The script now installs all
+  build agent software with Chocolatey: `vscode`, `vscode-powershell`, `git`
+  and `notepadplusplus` replace the direct downloads and the
+  `Install-LabSoftwarePackage` calls, and the `azure-pipelines-agent` package
+  supplies the agent binaries from `download.agent.dev.azure.com`. The package
+  is installed once without `/Url`, so it only extracts the binaries and the
+  personal access token stays out of the Chocolatey command line and log; each
+  agent directory is then created from that copy and registered as before.
+- Fix `lab/31 Agent Setup.ps1` reporting `The term
+  'C:\AL\AzureLabSources.ps1' is not recognized as the name of a cmdlet,
+  function, script file, or operable program` three times per run. AutomatedLab
+  writes that helper below `$AL_DeployDebugFolder\AL`, which expands to
+  `%APPDATA%\DeployDebug\AL` and no longer to the legacy `C:\AL`. With the
+  Chocolatey installation the script no longer needs the Azure lab sources
+  share on the build agents at all, so the activity that mapped it was removed.
 
 - Fix `lab/30 Create Agent VMs.ps1` registering a superfluous Entra application
   next to the user-assigned managed identity of the build agent, which surfaced

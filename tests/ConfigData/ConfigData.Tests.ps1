@@ -97,6 +97,14 @@ BeforeDiscovery {
             ConfigurationData = $configurationData
         }
     }
+
+    [hashtable[]]$azureEnvironmentTests = foreach ($environmentName in $datum.Global.Azure.Environments.Keys)
+    {
+        @{
+            Name       = $environmentName
+            Identities = $datum.Global.Azure.Environments.$environmentName.Identities
+        }
+    }
 }
 
 Describe 'Validate All Definition Files' -Tag Integration {
@@ -211,5 +219,29 @@ Describe 'Node Definition Files' -Tag Integration {
             $configurations = Resolve-Datum -PropertyPath Configurations -Node $node -DatumTree $datum
             $configurations | Where-Object { $_ -like 'cEXO*' } | Should -BeNullOrEmpty
         }
+    }
+
+    Describe 'SharePoint Online Entitlement' -Tag Integration {
+
+        It '<Name> composes no SharePoint configuration when its environment is configured without SharePoint Online' -TestCases $nodeTestsSingleNode {
+            if ($datum.Global.Azure.Environments."$($node.Environment)".HasSharePointOnline -ne $false)
+            {
+                Set-ItResult -Skipped -Because "the environment '$($node.Environment)' is configured with SharePoint Online"
+            }
+
+            $configurations = Resolve-Datum -PropertyPath Configurations -Node $node -DatumTree $datum
+            $configurations | Where-Object { $_ -like 'cSPO*' } | Should -BeNullOrEmpty
+        }
+    }
+}
+
+Describe 'Export Application' -Tag Integration {
+
+    It "The environment '<Name>' defines exactly one export application" -TestCases $azureEnvironmentTests {
+        $exportApps = @($Identities |
+                Where-Object { $_.Name -notmatch '^<.+>$' } |
+                Where-Object { $_.Name -eq 'M365DscExportApplication' -or $_.IsExportApplication -eq $true })
+
+        $exportApps.Count | Should -Be 1 -Because "'.build/Export/ExportTenantData.ps1' stops when an environment defines no or more than one export application"
     }
 }

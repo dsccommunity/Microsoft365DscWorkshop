@@ -42,9 +42,10 @@ stages:
               name: build
               displayName: Build DSC Artifacts
               inputs:
+                targetType: inline
                 pwsh: true
-                filePath: ./build.ps1
-                arguments: -Tasks build -Filter { $_.Environment -eq $env:BuildEnvironment }
+                script: |
+                  ./build.ps1 -Tasks build -Filter { $_.Environment -eq $env:BuildEnvironment }
               #env:
               #  ModuleVersion: $(NuGetVersionV2)
 
@@ -52,9 +53,10 @@ stages:
               name: pack
               displayName: Pack DSC Artifacts
               inputs:
+                targetType: inline
                 pwsh: true
-                filePath: ./build.ps1
-                arguments: -Tasks pack -Filter { $_.Environment -eq $env:BuildEnvironment }
+                script: |
+                  ./build.ps1 -Tasks pack -Filter { $_.Environment -eq $env:BuildEnvironment }
               enabled: false
 
             - task: PublishPipelineArtifact@1

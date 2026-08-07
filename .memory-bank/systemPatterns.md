@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-05
+last-verified: 2026-08-07
 owner: active-agent
 source: repository evidence
 ---
@@ -325,3 +325,88 @@ app registrations, the Azure DevOps project and the agent VMs.
   the validation altogether; loading Pester 5 keeps it. AutomatedLab only
   unloads a Pester older than 5.0, so the imported 5.7.1 survives.
 
+### Decision 22: Install build agent software from Chocolatey, not from URLs
+
+- Choice: `lab/31 Agent Setup.ps1` installs `vscode`, `vscode-powershell`,
+  `git`, `notepadplusplus` and `azure-pipelines-agent` with Chocolatey on the
+  VM instead of downloading installers to the lab sources share and pushing
+  them with `Install-LabSoftwarePackage`. The agent package is installed once
+  without the `/Url` package parameter, so it only extracts the binaries; each
+  agent directory is a copy of that extraction and is registered by the
+  existing `config.cmd` flow.
+- Rationale: every hard-coded download URL is a future outage. The agent CDN
+  `vstsagentpackage.azureedge.net` was retired and stopped resolving, and the
+  pinned VS Code, Git and Notepad++ URLs had already aged. Chocolatey packages
+  track the vendor's current location. Withholding `/Url` keeps the personal
+  access token out of the Chocolatey command line and log, and preserves the
+  per-agent idempotency guard. The change also removes the last use of the
+  Azure lab sources share on the build agents.
+
+### Decision 23: Never hard-code the AutomatedLab deploy debug folder
+
+- Choice: Do not call `C:\AL\...` from a lab script. Read
+  `$AL_DeployDebugFolder` or avoid the dependency altogether.
+- Rationale: `AutomatedLabWorker` expands `$AL_DeployDebugFolder`, which is
+  `$([Environment]::GetFolderPath('ApplicationData'))/DeployDebug`, so
+  `AzureLabSources.ps1` lives below `%APPDATA%\DeployDebug\AL`. The legacy
+  `C:\AL` path produced `The term 'C:\AL\AzureLabSources.ps1' is not
+  recognized` on every run. `AutomatedLab.Common` 2.3.37 carries the same stale
+  path in its own fallback, so the failure mode reappears whenever a lab script
+  installs software from an `\\automatedlabsources*` path.
+
+### Decision 24: A pipeline step that cannot deliver must fail itself
+
+- Choice: `Export Tenant Configuration` in `pipelines/exportDscTemplate.yml`
+  runs without `continueOnError`, because its output is the artifact the stage
+  publishes. `Convert Exported Tenant Configuration` keeps `continueOnError`,
+  because the raw export is still worth publishing when only the MOF-to-YAML
+  conversion fails. Every consumer of `source/Global/Azure.yml` skips an
+  identity whose name still matches `^<.+>$`, and a guard that rejects "no
+  match" tests the count of a `@()`-wrapped result, never `$null`.
+- Rationale: `.build/Export/ExportTenantData.ps1` stopped with `Multiple export
+  applications defined for environment 'Dev'` because the sample managed-identity
+  placeholder carried `IsExportApplication: true`. `continueOnError: true`
+  turned that verdict into a warning, so the first red step was
+  `PublishPipelineArtifact@1` with `Path does not exist: ...\output\Export` —
+  a message that names neither the failing tenant nor the contradicting
+  configuration. Tolerating an error is only correct where the following steps
+  can still produce something useful.
+
+### Decision 25: Call `build.ps1` from an inline script, not through `arguments`
+
+- Choice: A `PowerShell@2` step whose command line carries a shell
+  metacharacter uses `targetType: inline` with `script: ./build.ps1 ...`
+  instead of `filePath` plus `arguments`. `pipelines/buildTemplate.yml` does it
+  for `Build DSC Artifacts` and `Pack DSC Artifacts`; the steps whose arguments
+  are plain switches keep `filePath`.
+- Rationale: the `Enable shell tasks arguments validation` organization or
+  project setting (`aka.ms/ado/75787`) inspects the `arguments` input of
+  `PowerShell`, `BatchScript`, `Bash`, `Ssh`, `AzureFileCopy` and
+  `WindowsMachineFileCopy`, and rejects `{`, `}` and `$` with `Detected
+  characters in arguments that may not be executed correctly by the shell`. The
+  error message suggests backtick escaping, which is wrong here: the backticks
+  would reach `build.ps1` and bind its `[ScriptBlock] $Filter` parameter to a
+  literal string. The inline form removes the `arguments` input altogether and
+  preserves the type, which a probe binding confirmed.
+
+### Decision 26: One entitlement setting per workload, resolved as a Datum layer
+
+- Choice: A workload the tenant does not own is switched off by a single
+  per-environment key in `source/Global/Azure.yml`, and `source/Datum.yml`
+  resolves that workload's layers through a `Datum.InvokeCommand` expression
+  that returns an empty `*Disabled` layer when the key is `$false`.
+  `HasExchangeOnline` and `HasSharePointOnline` follow the identical shape, down
+  to the `1-AllTenantsConfig/<Workload>Disabled/Configurations.yml` stub, the
+  `SPO*` / `EXO*` skip in `.build/Export/ExportTenantData.ps1` and the
+  `<Workload> Online Entitlement` test in
+  `tests/ConfigData/ConfigData.Tests.ps1`.
+- Rationale: A tenant without a SharePoint license has no SharePoint at all —
+  `MngEnvMCAP167509.sharepoint.com` and its `-admin` host do not resolve — so
+  `Connect-PnPOnline` leaves `PnPConnection.Current.Context` null and every
+  `cSPO*` resource dies during `Test-TargetResource` with PnP's
+  `NoDefaultSharePointConnection` message. The failure is a licensing fact, not
+  a code defect, and it can only be expressed in configuration data. Removing
+  the entries from `Configurations.yml` instead would switch the workload off
+  for every environment, and Datum's knockout prefix is order-dependent under
+  `merge_basetype_array: Unique` (see Decision 19). Reusing one shape keeps the
+  next workload a three-file change.

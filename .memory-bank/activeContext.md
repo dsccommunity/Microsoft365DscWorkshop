@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-06
+last-verified: 2026-08-07
 owner: active-agent
 source: current task evidence
 ---
@@ -8,6 +8,160 @@ source: current task evidence
 # Active context
 
 ## Current focus
+
+The `push` pipeline failed in `Deploy DSC Configuration` with `PowerShell DSC
+resource MSFT_SPOAccessControlSettings failed to execute Test-TargetResource
+functionality with error message: The current connection holds no SharePoint
+context`. The Dev tenant has no SharePoint Online at all, so the workload cannot
+be configured. `HasSharePointOnline` is now the per-environment counterpart of
+`HasExchangeOnline`: `source/Datum.yml` swaps both SharePoint layers for the new
+empty `source/1-AllTenantsConfig/SharePointDisabled` layer, the export task skips
+the `SPO*` components, and a configuration data test guards the mechanism. The
+edits are uncommitted on `main` at the user's request, together with the pipeline
+fixes of the previous turns.
+
+## Evidence
+
+- `Resolve-DnsName MngEnvMCAP167509.sharepoint.com` and
+  `MngEnvMCAP167509-admin.sharepoint.com` both return `DNS name does not exist`,
+  while `microsoft.sharepoint.com` resolves. The Entra tenant itself is healthy:
+  `login.microsoftonline.com/MngEnvMCAP167509.onmicrosoft.com/v2.0/.well-known/openid-configuration`
+  returns issuer `.../a1627b4f-281e-4f8b-bf13-bddc0eb6857e/v2.0`, the
+  `AzTenantId` of `source/Global/Azure.yml`. So the tenant exists and SharePoint
+  Online is simply not provisioned in it.
+- The failure chain is mechanical: `Connect-MSCloudLoginPnP` derives the URLs
+  from the tenant name (`TenantId.Replace('.onmicrosoft.', '-admin.sharepoint.')`),
+  `Connect-PnPOnline` leaves `PnPConnection.Current.Context` null for a host that
+  does not exist, and PnP's `NoDefaultSharePointConnection` resource string is
+  verbatim the reported message. `Get-PnPTenant -ErrorAction Stop` in
+  `MSFT_SPOAccessControlSettings\Get-TargetResource` then logs and rethrows.
+- The two SharePoint composites were the only resources still authenticating
+  with `M365DscLcmApplication` plus `CertificateThumbprint`; the other 20
+  instances use `ManagedIdentity: true` and pass, which is why only SharePoint
+  failed. Purview is already commented out in its `Configurations.yml`.
+- Red proof: with `HasSharePointOnline: false` but no Datum gate,
+  `.\build.ps1 -Tasks rsop` fails the new case with `Expected $null or empty,
+  but got @('cSPOAccessControlSettings', 'cSPOTenantSettings')`.
+- Green proof: `.\build.ps1 -Tasks rsop` is `7 tasks, 0 errors, 0 warnings` with
+  158 passed and 4 skipped, and the full `.\build.ps1` is `21 tasks, 0 errors, 0
+  warnings`. The Dev RSOP composes `DscTagging, cAADGroup,
+  cAADNamedLocationPolicy, cAADAuthorizationPolicy, cAADGroupsSettings,
+  cAADSecurityDefaults`, Prod is unchanged and keeps both `cSPO*` entries, and
+  `output/MOF/Dev/LcmM3653Dev.mof` holds zero `MSFT_SPO*` and `MSFT_EXO*`
+  instances.
+- `Invoke-ScriptAnalyzer` on both changed `.ps1` files reports only the
+  pre-existing `PSAvoidUsingWriteHost`, `PSAvoidUsingCmdletAliases` and
+  `PSUseDeclaredVarsMoreThanAssignments` findings; AST parse 0 errors.
+
+## Earlier focus
+
+The `push` pipeline failed in `Build DSC Artifacts` with `##[error]Detected
+characters in arguments that may not be executed correctly by the shell`. The
+organization or project has `Enable shell tasks arguments validation` enabled,
+and `pipelines/buildTemplate.yml` passed the environment filter as a script
+block through the `arguments` input of `PowerShell@2`. Both that step and the
+disabled `Pack DSC Artifacts` step now call `./build.ps1` from an inline
+`script`. The edits are uncommitted on `main` at the user's request, together
+with the export pipeline fix of the previous turn.
+
+## Evidence
+
+- The validation is the documented `aka.ms/ado/75787` setting. It inspects the
+  `arguments` input of `PowerShell`, `BatchScript`, `Bash`, `Ssh`,
+  `AzureFileCopy` and `WindowsMachineFileCopy`, and cannot be worked around
+  inside the same input: the suggested backtick escaping would reach
+  `build.ps1` and bind `-Filter` to a literal string instead of a script block.
+- `build.ps1` declares `[ScriptBlock] $Filter = {}` at position 1, so the
+  inline form is the only equivalent that keeps the type.
+- The neighbouring steps were unaffected because their arguments hold no shell
+  metacharacter; `-ResolveDependency -Tasks InitializeModuleFolder
+  #-UseModuleFast` passed. `arguments:.*[{}$]` now matches nothing under
+  `pipelines/`.
+- Verified: `buildTemplate.yml` parses as YAML, both inline invocations parse
+  with 0 errors, and re-binding the unchanged argument text against a probe
+  function returns `filterType=ScriptBlock filter='$_.Environment -eq
+  $env:BuildEnvironment'` for `build` and `pack`.
+
+## Earlier focus
+
+The export pipeline stage failed in `Publish Exported Data` with
+`##[error]Path does not exist: C:\Agent1\_work\1\s\output\Export`. The
+artifact task was only the messenger: `source/Global/Azure.yml` still carried
+the sample identity `<Name of your Application of Managed Identity>` with
+`IsExportApplication: true`, so `.build/Export/ExportTenantData.ps1` matched two
+export applications and stopped before creating the export folder, and
+`continueOnError: true` downgraded that to a warning. The placeholder was
+removed, the task now ignores `<...>` placeholders and counts matches instead of
+testing for `$null`, and the export step no longer runs with `continueOnError`.
+The edits are uncommitted on `main` at the user's request.
+
+## Evidence
+
+- Red proof against the committed configuration: the original selection
+  expression returns `Dev: matches=2 -> M365DscExportApplication | <Name of your
+  Application of Managed Identity>`, which is exactly the input for
+  `Write-Error "Multiple export applications defined ..." -ErrorAction Stop`.
+- Green proof: with the placeholder filter and the same committed data the
+  expression returns `old filter=2 new filter=1 -> M365DscExportApplication`, so
+  the code fix alone unblocks the task; removing the placeholder from
+  `source/Global/Azure.yml` restores the documented three-identity example.
+- `Clean` is the first task of the `export` workflow and preserves only
+  `RequiredModules`, so a failing `ExportTenantData` leaves no `output\Export`
+  at all and `PublishPipelineArtifact@1` fails on the missing path.
+- `continueOnError` was removed from `Export Tenant Configuration` only.
+  `Convert Exported Tenant Configuration` keeps it, because the raw export is
+  still worth publishing when only the MOF-to-YAML conversion fails.
+- `.\build.ps1 -Tasks rsop` in a detached `pwsh`: `Build succeeded. 7 tasks, 0
+  errors, 0 warnings`, 158 tests passed, including the new
+  `[+] The environment 'Dev' defines exactly one export application`.
+- `Invoke-ScriptAnalyzer` on both changed `.ps1` files reports only the
+  pre-existing `PSAvoidUsingWriteHost`, `PSAvoidUsingCmdletAliases` and
+  `PSUseDeclaredVarsMoreThanAssignments` findings; AST parse 0 errors.
+- Unfixed finding, reported to the user: `InvokingDscExportConfiguration` calls
+  `dir -Path $Path -Recurse -Filter *.ps1` with an undefined `$Path`. Its own
+  `try/catch` swallows the binding error, so the task compiles no MOF and
+  `ConvertMofToYaml` then reports `No MOF file found`. Out of scope for the
+  reported failure.
+
+## Earlier focus
+
+`lab/31 Agent Setup.ps1` could no longer fetch the Azure Pipelines agent:
+`vstsagentpackage.azureedge.net` was retired with the Edgio Azure CDN and no
+longer resolves, so `Get-LabInternetFile` failed with `No such host is known`.
+All build agent software now comes from Chocolatey, which also removed the
+script's dependency on the Azure lab sources share and with it the second
+defect, the hard-coded `C:\AL\AzureLabSources.ps1` call. The edits are
+uncommitted on `main` at the user's request.
+
+## Earlier evidence
+
+- `Resolve-DnsName vstsagentpackage.azureedge.net` returns nothing;
+  `download.agent.dev.azure.com` resolves to `96.16.53.162`. The Chocolatey
+  package `azure-pipelines-agent` 4.274.1 downloads from that host, and
+  `vscode` 1.132.0, `vscode-powershell` 2025.4.0, `git` 2.55.0.3 and
+  `notepadplusplus` 8.9.7 all exist on the community feed.
+- Its `chocolateyinstall.ps1` only runs `Agent.Listener.exe configure` when the
+  `/Url` package parameter is set, so installing it with `/Directory` alone
+  extracts the binaries without registering an agent. That keeps the personal
+  access token out of the Chocolatey command line and log, and the existing
+  per-agent `config.cmd` flow, its idempotency guard and the `DeployDebug`
+  helper `.cmd` files stay unchanged.
+- `AutomatedLabWorker` 5.61.0 writes `AzureLabSources.ps1` to
+  `Join-Path $deployDebug AL`, where `$deployDebug` expands
+  `$AL_DeployDebugFolder`. `Get-LabConfigurationItem -Name AL_DeployDebugFolder`
+  returns `$([Environment]::GetFolderPath('ApplicationData'))/DeployDebug`, so
+  the file lives below `%APPDATA%\DeployDebug\AL` and never at `C:\AL`.
+  `AutomatedLab.Common` 2.3.37 still hard-codes the same legacy path in its own
+  `Install-LabSoftwarePackage` fallback, which is a third-party defect.
+- `lab/31` was the only file in the repository referencing the lab sources share
+  or the `Z:` drive, so removing the mapping activity affects nothing else.
+- Red proof in a scratch tree against the committed script: both new cases fail
+  with `Expected $null or empty, but got 'https://vstsagentpackage.azureedge.net/agent/4.251.0/vsts-agent-win-x64-4.251.0.zip'`
+  and `... but got 'C:\AL\AzureLabSources.ps1'`. With the fix,
+  `tests/ConfigData/AzHelpers.Tests.ps1` is 26 passed, 0 failed.
+- The live run against the lab is untested; the change was validated statically.
+
+## Earlier focus
 
 The first successful `lab/30 Create Agent VMs.ps1` run surfaced two further
 defects. It created the build agent identity with `New-M365DscIdentity` without
@@ -17,7 +171,7 @@ returned `404` before replication caught up. And the post-deployment validation
 of `Install-Lab` reported `Lab deployment seems to have failed` for a healthy
 lab, because `AutomatedLabTest` 5.61.4 cannot be discovered under Pester 6.
 
-## Evidence
+## Earlier evidence
 
 - Red proof against the committed scripts in a scratch tree: the two new guards
   fail — `Expected 'OnlyServicePrincipals' to be found in collection @('Name',

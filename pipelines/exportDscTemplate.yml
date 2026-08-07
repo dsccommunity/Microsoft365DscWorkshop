@@ -44,7 +44,6 @@ stages:
                   pwsh: true
                   filePath: ./build.ps1
                   arguments: -Tasks export
-                continueOnError: true
 
               - task: PowerShell@2
                 name: ConvertTenantConfig

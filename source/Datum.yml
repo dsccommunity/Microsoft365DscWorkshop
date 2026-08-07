@@ -31,8 +31,10 @@ ResolutionPrecedence:
   - '[x={ if ($datum.Global.Azure.Environments."$($Node.Environment)".HasExchangeOnline -eq $false) { "1-AllTenantsConfig\ExchangeDisabled" } else { "2-EnvironmentConfig\$($Node.Environment)\Exchange" } }=]'
   - '[x={ if ($datum.Global.Azure.Environments."$($Node.Environment)".HasExchangeOnline -eq $false) { "1-AllTenantsConfig\ExchangeDisabled" } else { "1-AllTenantsConfig\Exchange" } }=]'
 
-  - 2-EnvironmentConfig\$($Node.Environment)\SharePoint
-  - 1-AllTenantsConfig\SharePoint
+  # Both SharePoint layers are replaced by the empty 'SharePointDisabled' layer when the
+  # environment is configured with 'HasSharePointOnline: false' in 'Global\Azure.yml'.
+  - '[x={ if ($datum.Global.Azure.Environments."$($Node.Environment)".HasSharePointOnline -eq $false) { "1-AllTenantsConfig\SharePointDisabled" } else { "2-EnvironmentConfig\$($Node.Environment)\SharePoint" } }=]'
+  - '[x={ if ($datum.Global.Azure.Environments."$($Node.Environment)".HasSharePointOnline -eq $false) { "1-AllTenantsConfig\SharePointDisabled" } else { "1-AllTenantsConfig\SharePoint" } }=]'
 
   - 2-EnvironmentConfig\$($Node.Environment)\Purview
   - 1-AllTenantsConfig\Purview

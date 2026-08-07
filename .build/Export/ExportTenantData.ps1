@@ -20,12 +20,14 @@ task ExportTenantData {
             Write-Error "AzTenantId is not defined for environment $($env.Name)" -ErrorAction Stop
         }
 
-        $exportApp = @($env.Value.Identities | Where-Object { $_.Name -EQ 'M365DscExportApplication' -or $_.IsExportApplication -eq $true })
+        $exportApp = @($env.Value.Identities |
+                Where-Object { $_.Name -notmatch '^<.+>$' } |
+                Where-Object { $_.Name -EQ 'M365DscExportApplication' -or $_.IsExportApplication -eq $true })
         if ($exportApp.Count -gt 1)
         {
             Write-Error "Multiple export applications defined for environment '$($env.Name)'. Please ensure only one application has the name 'M365DscExportApplication' and / or is defined with 'IsExportApplication' set to true." -ErrorAction Stop
         }
-        if ($null -eq $exportApp)
+        if ($exportApp.Count -eq 0)
         {
             Write-Error "Export application 'M365DscExportApplication' is not defined for environment '$($env.Name)' and is no application with 'IsExportApplication' set to true" -ErrorAction Stop
         }
@@ -35,6 +37,12 @@ task ExportTenantData {
             if ($env.Value.HasExchangeOnline -eq $false -and $dscresource -like 'EXO*')
             {
                 Write-Host "Skipping the component '$dscresource'. The tenant of environment '$($env.Name)' is not licensed for Exchange Online." -ForegroundColor Yellow
+                continue
+            }
+
+            if ($env.Value.HasSharePointOnline -eq $false -and $dscresource -like 'SPO*')
+            {
+                Write-Host "Skipping the component '$dscresource'. The tenant of environment '$($env.Name)' is not licensed for SharePoint Online." -ForegroundColor Yellow
                 continue
             }
 

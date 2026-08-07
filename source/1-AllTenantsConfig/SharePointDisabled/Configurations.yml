@@ -1,0 +1,4 @@
+# Intentionally empty. The 'ResolutionPrecedence' in 'Datum.yml' points the SharePoint
+# layers here for an environment configured with 'HasSharePointOnline: false', so that no
+# cSPO* configuration is composed for it.
+[]

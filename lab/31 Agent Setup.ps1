@@ -25,11 +25,11 @@ if (-not (Test-LabAzureModuleAvailability -ErrorAction SilentlyContinue))
     return
 }
 
-$vsCodeDownloadUrl = 'https://go.microsoft.com/fwlink/?Linkid=852157'
-$gitDownloadUrl = 'https://github.com/git-for-windows/git/releases/download/v2.39.2.windows.1/Git-2.39.2-64-bit.exe'
-$vscodePowerShellExtensionDownloadUrl = 'https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-vscode/vsextensions/PowerShell/2023.1.0/vspackage'
-$notepadPlusPlusDownloadUrl = 'https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.7.6/npp.8.7.6.Installer.x64.exe'
-$vstsAgentUrl = 'https://vstsagentpackage.azureedge.net/agent/4.251.0/vsts-agent-win-x64-4.251.0.zip'
+# Chocolatey supplies all software on the build agents. The former agent CDN
+# 'vstsagentpackage.azureedge.net' has been retired and no longer resolves, while the
+# 'azure-pipelines-agent' package downloads from 'download.agent.dev.azure.com'.
+$chocolateyPackages = 'vscode', 'vscode-powershell', 'git', 'notepadplusplus'
+$agentPackagePath = 'C:\AzurePipelinesAgent'
 
 foreach ($lab in $labs)
 {
@@ -68,22 +68,44 @@ foreach ($lab in $labs)
         Start-LabVM -All -Wait
     }
 
-    $vscodeInstaller = Get-LabInternetFile -Uri $vscodeDownloadUrl -Path $labSources\SoftwarePackages -PassThru
-    $gitInstaller = Get-LabInternetFile -Uri $gitDownloadUrl -Path $labSources\SoftwarePackages -PassThru
-    Get-LabInternetFile -Uri $vscodePowerShellExtensionDownloadUrl -Path $labSources\SoftwarePackages\VSCodeExtensions\ps.vsix
-    $notepadPlusPlusInstaller = Get-LabInternetFile -Uri $notepadPlusPlusDownloadUrl -Path $labSources\SoftwarePackages -PassThru
-    $vstsAgenZip = Get-LabInternetFile -Uri $vstsAgentUrl -Path $labSources\SoftwarePackages -PassThru
-
     Write-Host "Installing software on $($vms.Count) machines"
-    Install-LabSoftwarePackage -Path $vscodeInstaller.FullName -CommandLine /SILENT -ComputerName $vms
-    Install-LabSoftwarePackage -Path $gitInstaller.FullName -CommandLine /SILENT -ComputerName $vms
-    Install-LabSoftwarePackage -Path $notepadPlusPlusInstaller.FullName -CommandLine /S -ComputerName $vms
 
-    Invoke-LabCommand -Activity 'Connecting LabSources' -ScriptBlock {
+    Invoke-LabCommand -Activity 'Installing Chocolatey' -ScriptBlock {
 
-        C:\AL\AzureLabSources.ps1
+        if (-not (Test-Path -Path "$env:ProgramData\chocolatey\bin\choco.exe"))
+        {
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            $installer = Join-Path -Path $env:TEMP -ChildPath 'InstallChocolatey.ps1'
+            Invoke-WebRequest -Uri 'https://community.chocolatey.org/install.ps1' -UseBasicParsing -OutFile $installer
+            & $installer
+            Remove-Item -Path $installer -Force
+        }
 
     } -ComputerName $vms
+
+    Invoke-LabCommand -Activity 'Installing software with Chocolatey' -ScriptBlock {
+
+        # A fresh remoting session does not inherit the machine PATH that the Chocolatey installer wrote.
+        $choco = "$env:ProgramData\chocolatey\bin\choco.exe"
+
+        foreach ($package in $chocolateyPackages)
+        {
+            & $choco install $package --yes --no-progress
+            if ($LASTEXITCODE -notin 0, 1641, 3010)
+            {
+                Write-Error "Chocolatey failed to install '$package', exit code $LASTEXITCODE."
+            }
+        }
+
+        # Without '/Url' the package only extracts the agent binaries. They are copied per agent below,
+        # so the personal access token stays out of the Chocolatey command line and its log.
+        & $choco install azure-pipelines-agent --yes --no-progress --params "'/Directory:$agentPackagePath'"
+        if ($LASTEXITCODE -notin 0, 1641, 3010)
+        {
+            Write-Error "Chocolatey failed to install 'azure-pipelines-agent', exit code $LASTEXITCODE."
+        }
+
+    } -ComputerName $vms -Variable (Get-Variable -Name chocolateyPackages, agentPackagePath)
 
     for ($i = 1; $i -le $datum.Global.ProjectSettings.NumbertOfBuildAgents; $i++)
     {
@@ -94,7 +116,8 @@ foreach ($lab in $labs)
             {
                 mkdir -Path C:\DeployDebug -ErrorAction SilentlyContinue
                 Write-Host "Installing AzDo Build Agent '$($env:COMPUTERNAME)-$i'"
-                Expand-Archive -Path Z:\SoftwarePackages\vsts-agent-win-x64-4.251.0.zip -DestinationPath "C:\Agent$i" -Force
+                $null = New-Item -Path "C:\Agent$i" -ItemType Directory -Force
+                Copy-Item -Path "$agentPackagePath\*" -Destination "C:\Agent$i" -Recurse -Force
                 "C:\Agent$i\config.cmd --unattended --url https://dev.azure.com/$($datum.Global.ProjectSettings.OrganizationName) --auth pat --token $($datum.Global.ProjectSettings.PersonalAccessToken) --pool $($datum.Global.ProjectSettings.AgentPoolName) --agent $($env:COMPUTERNAME)-$i --runAsService --windowsLogonAccount 'NT AUTHORITY\SYSTEM' --acceptTeeEula" | Set-Content -Path "C:\DeployDebug\AzDoAgentSetup$i.cmd" -Force
                 "C:\Agent$i\config.cmd remove --unattended --auth PAT --token $($datum.Global.ProjectSettings.PersonalAccessToken)" | Set-Content -Path "C:\DeployDebug\AzDoAgentRemove$i.cmd" -Force
                 & "C:\DeployDebug\AzDoAgentSetup$i.cmd"
@@ -108,7 +131,7 @@ foreach ($lab in $labs)
                 Write-Host "AzDo Build Agent '$($env:COMPUTERNAME)-$i' already installed."
             }
 
-        } -ComputerName $vms -Variable (Get-Variable -Name vstsAgenZip, datum, i)
+        } -ComputerName $vms -Variable (Get-Variable -Name agentPackagePath, datum, i)
     }
 
     Invoke-LabCommand -Activity 'Installing NuGet and PowerShellGet' -ScriptBlock {
