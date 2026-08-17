@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-07
+last-verified: 2026-08-17
 owner: active-agent
 source: repository evidence
 ---
@@ -14,6 +14,17 @@ August 2026 levels.
 
 ## Recent milestones
 
+- 2026-08-17 Fixed `.\build.ps1` failing in `TestConfigData` with Pester 6.1.0's
+  `A 'break' or 'continue' statement ... escaped from your code`. That message is
+  a misdiagnosis: Pester 6.1.0 throws it from a `finally` over any terminating
+  error in user code. The real error was `Import-Module -Name Az.Accounts
+  -RequiredVersion 5.3.2 -Force` in the top-level `BeforeAll` of
+  `tests/ConfigData/AzHelpers.Tests.ps1` dying with `Assembly with same name is
+  already loaded`, because `.build/ConfigDataPreparation.ps1` had already loaded
+  `Az.Accounts 5.5.2` and `Az.Resources 9.0.1` into the build session. The
+  `BeforeAll` now imports a module only when no module of that name is loaded,
+  and reads the version to pin from `RequiredModules.psd1` rather than repeating
+  it.
 - 2026-08-07 Fixed the `push` pipeline failing in `Deploy DSC Configuration` with
   `MSFT_SPOAccessControlSettings ... The current connection holds no SharePoint
   context`. The Dev tenant has no SharePoint Online provisioned — neither

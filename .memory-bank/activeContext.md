@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-07
+last-verified: 2026-08-17
 owner: active-agent
 source: current task evidence
 ---
@@ -8,6 +8,65 @@ source: current task evidence
 # Active context
 
 ## Current focus
+
+`.\build.ps1` failed in `TestConfigData` with `[-] tests\ConfigData\AzHelpers.Tests.ps1
+failed with: InvalidOperationException: A 'break' or 'continue' statement with a
+label that does not match any enclosing loop escaped from your code`. That
+message is a Pester 6.1.0 misdiagnosis. The real error is a
+`System.IO.FileLoadException: Assembly with same name is already loaded` raised by
+the `Import-Module -Force` calls in the file's top-level `BeforeAll`, because
+`.build/ConfigDataPreparation.ps1` has already loaded `Az.Accounts` and
+`Az.Resources` into the build session. The `BeforeAll` now imports a module only
+when the session holds none of that name, and reads the version to pin from
+`RequiredModules.psd1` so the pins cannot drift from the manifest. The edit is
+uncommitted at the user's request.
+
+## Evidence
+
+- Red proof: `.\build.ps1 -Tasks rsop` before the fix is `Build FAILED. 6 tasks,
+  1 errors` with `Tests Passed: 140, Failed: 26` and `Container failed: 1 -
+  tests\ConfigData\AzHelpers.Tests.ps1`.
+- The real error was recovered by temporarily wrapping the `BeforeAll` in a
+  `try/catch` that logged to `$env:TEMP`: `Import-Module -Name Az.Accounts
+  -RequiredVersion 5.3.2` throws `Could not load file or assembly
+  'Microsoft.Azure.PowerShell.AssemblyLoading, Version=5.3.2.0' ... Assembly with
+  same name is already loaded`. The same log dumped `Get-Module` at that point:
+  the session already held `Az.Accounts 5.5.2` and `Az.Resources 9.0.1`, loaded by
+  `Import-Module -Name Az.Resources -ErrorAction SilentlyContinue` in
+  `.build/ConfigDataPreparation.ps1:6`, which carries no version pin.
+- `output/RequiredModules/Az.Accounts` holds both `5.3.2` (the
+  `RequiredModules.psd1` pin) and a stale `5.5.2`, so the unpinned import picks
+  the higher one. Reported to the user, not changed.
+- Pester 6.1.0 masks the cause by design defect: `Invoke-ScriptBlock` wraps user
+  code in `try { do { ... } while ($false); $flowControlEscaped = $false } finally
+  { if ($flowControlEscaped) { throw (New-EscapedFlowControlErrorRecord) } }`
+  (`Pester.psm1:2211-2232`). Any terminating error skips the assignment, so the
+  `finally` throws the flow-control record over the original exception. A
+  four-line probe with a `BeforeAll { throw 'the real error' }` reports `BLOCK
+  ERROR: the real error` under Pester 5.7.1 and the bogus break/continue message
+  under 6.1.0.
+- A clean-session probe shows `Import-Module Az.Accounts -RequiredVersion 5.3.2
+  -Force` succeeds when nothing else is loaded and throws
+  `FileLoadException: Microsoft.Azure.PowerShell.Authentication.Abstractions ...
+  already loaded` once `Az.KeyVault` has pulled `Az.Accounts` in first, so the
+  trigger is the sibling module, not the version pin alone.
+- Green proof: `.\build.ps1 -Tasks rsop` is `Build succeeded. 7 tasks, 0 errors, 0
+  warnings` with `Tests Passed: 166, Failed: 0` and no failed container. The
+  standalone `Invoke-Pester -Path .\tests\ConfigData\AzHelpers.Tests.ps1` run is
+  `Passed: 26 Failed: 0 FailedContainers: 0` and leaves `Az.Accounts 5.3.2`,
+  `Az.Resources 9.0.1`, `ExchangeOnlineManagement 3.9.2` and the
+  `Microsoft.Graph.* 2.35.1` set loaded, so the clean-session path still applies
+  the manifest pins.
+- The pins are resolved with `Import-PowerShellDataFile` against
+  `RequiredModules.psd1`, the same way `tests/ConfigData/CompositeResources.Tests.ps1`
+  reads it. A probe over that manifest maps the six modules to their current
+  pins and degrades to an unpinned import for the `latest` string form
+  (`Pester`), the hashtable form (`DscBuildHelpers`) and an absent entry.
+- AST parse of the changed file reports 0 errors; `Invoke-ScriptAnalyzer` reports
+  only the pre-existing `PSUseDeclaredVarsMoreThanAssignments` on the
+  `connectingLabScripts` discovery variable.
+
+## Earlier focus
 
 The `push` pipeline failed in `Deploy DSC Configuration` with `PowerShell DSC
 resource MSFT_SPOAccessControlSettings failed to execute Test-TargetResource

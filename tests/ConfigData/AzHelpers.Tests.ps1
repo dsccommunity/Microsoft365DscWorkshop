@@ -5,12 +5,41 @@
         $env:PSModulePath = $env:PSModulePath + [IO.Path]::PathSeparator + $requiredModulesPath
     }
 
-    Import-Module -Name Az.Accounts -RequiredVersion 5.3.2 -Force
-    Import-Module -Name Az.Resources -RequiredVersion 9.0.1 -Force
-    Import-Module -Name Microsoft.Graph.Authentication -RequiredVersion 2.35.1 -Force
-    Import-Module -Name Microsoft.Graph.Applications -RequiredVersion 2.35.1 -Force
-    Import-Module -Name Microsoft.Graph.Identity.DirectoryManagement -RequiredVersion 2.35.1 -Force
-    Import-Module -Name ExchangeOnlineManagement -RequiredVersion 3.9.2 -Force
+    $requiredModules = Import-PowerShellDataFile -Path $PSScriptRoot\..\..\RequiredModules.psd1
+
+    # Importing a binary Az or Graph module into a session that already holds it fails with
+    # 'Assembly with same name is already loaded'. The build session loads Az before 'TestConfigData'
+    # runs, so take whatever is loaded and pin the version only for a session that has none.
+    $moduleNames = 'Az.Accounts',
+    'Az.Resources',
+    'Microsoft.Graph.Authentication',
+    'Microsoft.Graph.Applications',
+    'Microsoft.Graph.Identity.DirectoryManagement',
+    'ExchangeOnlineManagement'
+
+    foreach ($moduleName in $moduleNames)
+    {
+        if (Get-Module -Name $moduleName)
+        {
+            continue
+        }
+
+        $requiredVersion = $requiredModules[$moduleName]
+        if ($requiredVersion -is [hashtable])
+        {
+            $requiredVersion = $requiredVersion.Version
+        }
+
+        if ($requiredVersion -and $requiredVersion -ne 'latest')
+        {
+            Import-Module -Name $moduleName -RequiredVersion $requiredVersion
+        }
+        else
+        {
+            Import-Module -Name $moduleName
+        }
+    }
+
     Import-Module -Name $PSScriptRoot\..\..\lab\AzHelpers.psm1 -Force
 }
 

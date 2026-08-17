@@ -50,6 +50,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix the build failing in `TestConfigData` with
+  `[-] tests\ConfigData\AzHelpers.Tests.ps1 failed with:
+  InvalidOperationException: A 'break' or 'continue' statement with a label that
+  does not match any enclosing loop escaped from your code`. There is no such
+  statement; Pester 6.1.0 throws that record from a `finally` block over any
+  terminating error raised by user code, so it replaced the real message. The
+  real failure was `Import-Module -Name Az.Accounts -RequiredVersion 5.3.2
+  -Force` in the top-level `BeforeAll` dying with `Could not load file or
+  assembly 'Microsoft.Azure.PowerShell.AssemblyLoading' ... Assembly with same
+  name is already loaded`, because `.build/ConfigDataPreparation.ps1` loads
+  `Az.Resources` — and with it `Az.Accounts` — into the build session before the
+  task runs. The `BeforeAll` now imports a module only when the session holds
+  none of that name, and reads the version to pin from `RequiredModules.psd1`
+  instead of carrying a second copy of the pins.
 - Fix the `Build DSC Artifacts` and `Pack DSC Artifacts` steps failing with
   `##[error]Detected characters in arguments that may not be executed correctly
   by the shell. Please escape special characters using backtick`. The

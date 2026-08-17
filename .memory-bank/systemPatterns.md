@@ -410,3 +410,35 @@ app registrations, the Azure DevOps project and the agent VMs.
   for every environment, and Datum's knockout prefix is order-dependent under
   `merge_basetype_array: Unique` (see Decision 19). Reusing one shape keeps the
   next workload a three-file change.
+
+### Decision 27: A test `BeforeAll` adopts an already loaded binary module
+
+- Choice: `tests/ConfigData/AzHelpers.Tests.ps1` imports its `Az.*`,
+  `Microsoft.Graph.*` and `ExchangeOnlineManagement` dependencies only when
+  `Get-Module -Name <module>` returns nothing, and never with `-Force`. A module
+  the session already holds is used as it is. The version to pin is read from
+  `RequiredModules.psd1` with `Import-PowerShellDataFile`, so the test carries a
+  list of module names but no versions; an entry given as `latest` or as a
+  hashtable resolving to `latest` falls back to an unpinned import. Only the
+  script module `lab/AzHelpers.psm1` is still imported with `-Force`.
+- Rationale: `TestConfigData` runs inside the Invoke-Build session, and
+  `.build/ConfigDataPreparation.ps1:6` has already run `Import-Module -Name
+  Az.Resources -ErrorAction SilentlyContinue` there, which pulls in the highest
+  `Az.Accounts` present under `output/RequiredModules` (`5.5.2`, not the pinned
+  `5.3.2`). Re-importing a binary module into that session fails with
+  `System.IO.FileLoadException: Assembly with same name is already loaded`,
+  because `Remove-Module` cannot unload the assemblies a sibling module still
+  holds. Pinning is still worth having for a standalone `Invoke-Pester` run, so
+  the pin applies only to a session that has nothing loaded. Duplicating the
+  version literals in the test would drift from `RequiredModules.psd1` on the
+  next dependency update, and `tests/ConfigData/CompositeResources.Tests.ps1`
+  already reads that manifest the same way. The tests mock these commands and do
+  not depend on the exact version.
+- Debugging note: Pester 6.1.0 hides such an error. `Invoke-ScriptBlock` wraps
+  user code in `try { do { ... } while ($false); $flowControlEscaped = $false }
+  finally { if ($flowControlEscaped) { throw (New-EscapedFlowControlErrorRecord)
+  } }`, so any terminating error skips the assignment and the `finally` throws
+  `A 'break' or 'continue' statement with a label that does not match any
+  enclosing loop escaped from your code` over it. Pester 5.7.1 reports the real
+  error. When a container or block fails with that message, wrap the setup in a
+  `try/catch` that logs the record to `$env:TEMP` and read it from there.

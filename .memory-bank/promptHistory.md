@@ -13,3 +13,5 @@ source: session interactions
 2026-08-06 22:38 UTC | software-engineer | Fix the AzDo export job failing with `Path does not exist: ...\output\Export`, do not commit
 2026-08-07 00:00 UTC | software-engineer | Fix the push pipeline failing with `Detected characters in arguments that may not be executed correctly by the shell`
 2026-08-07 09:10 UTC | software-engineer | Fix the DSC enact failing with `MSFT_SPOAccessControlSettings ... holds no SharePoint context`, do not commit
+2026-08-17 10:00 UTC | software-engineer | Investigate and fix the build failing under Pester 6 with `a 'break' or 'continue' statement ... escaped from your code`, do not commit
+2026-08-17 11:10 UTC | software-engineer | Read the test module pins from `RequiredModules.psd1` instead of duplicating them
