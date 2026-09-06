@@ -1,0 +1,62 @@
+trigger: none
+
+parameters:
+  - name: sourceTenant
+    displayName: Source tenant of the delta report
+    type: string
+    default: templatetenant.onmicrosoft.com
+
+variables:
+  buildFolderName: output
+  defaultBranch: main
+  Agent.Source.Git.ShallowFetchDepth: 0
+
+resources:
+  pipelines:
+    - pipeline: exportPipeline
+      source: M365DSC export
+      trigger: none
+
+pool:
+  vmImage: windows-latest
+
+steps:
+  - task: PowerShell@2
+    name: displayEnvVariables
+    displayName: Display Environment Variables
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        dir -Path env: | Format-Table -Property Name, Value -AutoSize | Out-String | Write-Host
+
+  - download: exportPipeline
+    patterns: "**"
+    displayName: Download Exported Tenant Configurations
+
+  - task: PowerShell@2
+    name: InitializeModuleFolder
+    displayName: Initialize Program Files Modules
+    inputs:
+      pwsh: true
+      filePath: ./build.ps1
+      arguments: -ResolveDependency -Tasks InitializeModuleFolderForDeltaReport #-UseModuleFast
+
+  - task: PowerShell@2
+    name: deltaReport
+    displayName: Create Delta Report
+    inputs:
+      pwsh: true
+      filePath: ./build.ps1
+      arguments: -Tasks deltaReport
+    env:
+      DeltaReportInputDirectory: $(Pipeline.Workspace)/exportPipeline
+      DeltaReportSourceTenant: ${{ parameters.sourceTenant }}
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish Delta Report
+    inputs:
+      targetPath: $(buildFolderName)/DeltaReport
+      artifact: DeltaReport
+      publishLocation: pipeline
+      parallel: true

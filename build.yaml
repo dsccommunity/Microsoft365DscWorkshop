@@ -46,6 +46,10 @@ BuildWorkflow:
     - LoadDatumConfigData
     - ConvertMofToYaml
 
+  deltaReport:
+    - test7
+    - NewM365DscDeltaReport
+
   build:
     - test7
     - Clean

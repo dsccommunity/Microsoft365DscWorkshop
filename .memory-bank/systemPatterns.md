@@ -32,6 +32,17 @@ app registrations, the Azure DevOps project and the agent VMs.
 
 ## Decisions
 
+### Decision 17: Keep tenant drift reporting as a post-export step
+
+- Choice: Generate the delta report from already-exported tenant configuration
+  artifacts instead of folding comparison into the export job itself.
+- Rationale: The source and destination tenant exports are produced as a set of
+  `TenantConfig-*` artifacts, and the reporting step merges each tenant's
+  individual resource configs with `Join-M365DSCConfiguration` before comparing
+  them with `New-M365DSCDeltaReport`. This keeps the workflow deterministic: the
+  export pipeline creates the input set, then the reporting pipeline can run on
+  any artifact bundle without needing live connectivity or a second export pass.
+
 ### Decision 1: Use the canonical Memory Bank base
 
 - Choice: Keep durable project context in .memory-bank.

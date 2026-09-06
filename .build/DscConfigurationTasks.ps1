@@ -75,7 +75,7 @@ task CleanModuleFolder {
 
     Wait-DscLocalConfigurationManager
 
-    dir -Path $programFileModulePath |
+    Get-ChildItem -Path $programFileModulePath |
         Where-Object { $_.BaseName -notin $modulesToKeep } |
             Remove-Item -Recurse -Force
 
@@ -101,6 +101,28 @@ task InitializeModuleFolder {
         if ($copyErrors)
         {
             Write-Host "There were $($copyErrors.Count) errors copying the module '$($_.BaseName)'"
+        }
+    }
+
+}
+
+task InitializeModuleFolderForDeltaReport {
+
+    Wait-DscLocalConfigurationManager
+
+    $programFileModulePath = 'C:\Program Files\WindowsPowerShell\Modules'
+
+    Write-Host "Copying modules from '$requiredModulesPath' to '$programFileModulePath'"
+    Get-ChildItem -Path $requiredModulesPath | ForEach-Object {
+        $module = $_
+        Write-Host "Copying module '$($module.BaseName)'"
+        try
+        {
+            $module | Copy-Item -Destination $programFileModulePath -Recurse -Force -ErrorAction Stop
+        }
+        catch
+        {
+            throw "Failed to copy module '$($module.BaseName)' to '$programFileModulePath': $_"
         }
     }
 

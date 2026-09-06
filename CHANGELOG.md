@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `InitializeModuleFolderForDeltaReport` in `.build/DscConfigurationTasks.ps1` no
+  longer silently ignores module copy failures. A failed `Copy-Item` now
+  throws immediately, naming the module (`$_.BaseName`), instead of letting
+  the task finish with a stale preinstalled module that could cause
+  `New-M365DSCDeltaReport` to generate and publish an incorrect report.
+
 ### Added
 
 - Initial Upload
@@ -33,6 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configured without SharePoint Online, so no `cSPO*` configuration is composed
   or compiled for it, and `.build/Export/ExportTenantData.ps1` skips the `SPO*`
   components. A new configuration data test guards the mechanism.
+- Add a tenant delta-report workflow to compare exported Microsoft365DSC
+  configurations across source and destination tenants. The new `deltaReport`
+  Invoke-Build workflow in `build.yaml`, the `NewM365DscDeltaReport` task in
+  `.build/DscConfigurationTasks.ps1`, the merger in `.build/Export/DeltaReport.ps1`,
+  and the `pipelines/deltaReport.yml` pipeline now download the export output,
+  merge each tenant's configuration files with `Join-M365DSCConfiguration`,
+  generate HTML drift reports with `New-M365DSCDeltaReport`, and publish the
+  resulting `output/DeltaReport` artifact.
 
 ### Changed
 

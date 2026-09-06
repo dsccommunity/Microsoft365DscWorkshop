@@ -1,6 +1,6 @@
 ---
 status: current
-last-verified: 2026-08-17
+last-verified: 2026-09-06
 owner: active-agent
 source: current task evidence
 ---
@@ -9,7 +9,36 @@ source: current task evidence
 
 ## Current focus
 
-`.\build.ps1` failed in `TestConfigData` with `[-] tests\ConfigData\AzHelpers.Tests.ps1
+The active work on this branch is the delta-report pipeline: it adds a
+comparison workflow for exported Microsoft365DSC tenant configurations and keeps
+it separate from the main export job. The current branch diff shows the main
+pieces in `.build/DscConfigurationTasks.ps1`, `.build/Export/DeltaReport.ps1`,
+`build.yaml`, and `pipelines/deltaReport.yml`, while `lab/20 Configure AzDo
+Project.ps1` remains in the same change set as a related pipeline/project
+configuration update. The reports are generated from the exported tenant config
+artifacts, merged per tenant with `Join-M365DSCConfiguration`, and then compared
+with `New-M365DSCDeltaReport` for each destination tenant.
+
+## Evidence
+
+- `git diff --stat main...HEAD` shows the current branch is changing five files in
+  the active delta-report work: `.build/DscConfigurationTasks.ps1`, `build.yaml`,
+  `lab/20 Configure AzDo Project.ps1`, `.build/Export/DeltaReport.ps1`, and
+  `pipelines/deltaReport.yml`.
+- `build.yaml` introduces the `deltaReport` Invoke-Build workflow so the task can
+  be run independently from the main build and export sequences.
+- `.build/DscConfigurationTasks.ps1` adds
+  `InitializeModuleFolderForDeltaReport` and `NewM365DscDeltaReport`, which
+  verify input directories, merge exported tenant configs into a source-drift
+  staging structure, and write the HTML delta reports under `output/DeltaReport`.
+- `pipelines/deltaReport.yml` is a dedicated Azure DevOps pipeline definition. It
+  downloads the export artifact from the upstream export pipeline, initializes the
+  required modules, runs the delta-report task with a configured source tenant,
+  and publishes the result as the `DeltaReport` artifact.
+
+## Earlier focus
+
+`\.build.ps1` failed in `TestConfigData` with `[-] tests\ConfigData\AzHelpers.Tests.ps1
 failed with: InvalidOperationException: A 'break' or 'continue' statement with a
 label that does not match any enclosing loop escaped from your code`. That
 message is a Pester 6.1.0 misdiagnosis. The real error is a

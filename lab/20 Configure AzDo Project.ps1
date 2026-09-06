@@ -263,7 +263,7 @@ else
 # ----------------------------------------------------------
 
 Write-Host 'Creating pipelines in project.'
-$pipelineNames = 'build', 'export', 'push', 'reapply', 'test'
+$pipelineNames = 'build', 'deltaReport', 'export', 'push', 'reapply', 'test'
 foreach ($pipelineName in $pipelineNames)
 {
     if (Invoke-VSTeamRequest -Area pipelines -Version 7.1 -Method Get -ProjectName $datum.Global.ProjectSettings.ProjectName | Select-Object -ExpandProperty value | Where-Object { $_.name -eq "M365DSC $pipelineName" })
